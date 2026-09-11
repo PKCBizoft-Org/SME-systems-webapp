@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
+import Link from 'next/link'
 
 type Client = {
   id: string
@@ -119,6 +120,7 @@ export default function ClientsPage() {
             <th style={{ padding: 8 }}>Install Date</th>
             <th style={{ padding: 8 }}>Installation Status</th>
             <th style={{ padding: 8 }}>Account Status</th>
+            <th style={{ padding: 8 }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -130,6 +132,9 @@ export default function ClientsPage() {
               <td style={{ padding: 8 }}>{c.install_date}</td>
               <td style={{ padding: 8 }}>{c.installation_status}</td>
               <td style={{ padding: 8 }}>{c.account_status}</td>
+              <td style={{ padding: 8 }}>
+                <Link href={`/clients/${c.id}`}>View</Link>
+              </td>
             </tr>
           ))}
         </tbody>
