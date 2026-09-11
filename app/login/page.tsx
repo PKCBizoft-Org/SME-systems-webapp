@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const router = useRouter()
 
   const supabase = createClient()
 
@@ -17,6 +19,7 @@ export default function LoginPage() {
       setMessage('Login failed: ' + error.message)
     } else {
       setMessage('Logged in as ' + data.user?.email)
+      router.push('/clients')
     }
   }
 
