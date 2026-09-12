@@ -417,8 +417,7 @@ export default function HomePage() {
               atmosphereColor="#16d9ff"
               atmosphereAltitude={0.17}
               showGraticules
-              graticuleColor="rgba(43,220,255,.17)"
-              pointsData={NETWORK_POINTS}
+                            pointsData={NETWORK_POINTS}
               pointLat="lat"
               pointLng="lng"
               pointColor={(d: any) =>
@@ -462,7 +461,7 @@ export default function HomePage() {
               htmlLng="lng"
               htmlAltitude={0.13}
               htmlTransitionDuration={0}
-              htmlElement={(d: (typeof NETWORK_POINTS)[number]) => {
+              htmlElement={(d: any) => {
                 const element = document.createElement("div");
                 element.innerHTML = `<span class="geoAnchor"></span><span class="geoHalo"></span><span class="geoLine"></span><span class="geoArrow"></span><div class="geoCard"><div class="geoIcon"><span class="iconMount"></span></div><div class="geoText"><strong>${d.label}</strong><small>${d.sub}</small><div class="geoMeta"><em><i></i>${d.status}</em><b>${d.metric}</b></div></div></div>`;
                 const mount = element.querySelector(".iconMount");
