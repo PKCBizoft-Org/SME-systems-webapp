@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
@@ -133,35 +133,6 @@ const features = [
   },
 ];
 
-const founder = {
-  name: "Paul Kent Cairel",
-  role: "FOUNDER / GROUP CREATOR",
-  tag: "FOUNDING LEADERSHIP",
-  description:
-    "The founder and group creator of PKC BIZOFT, guiding the organization’s direction, culture and long-term vision.",
-  icon: "leader",
-};
-
-const coFounders = [
-  "Beah Polangcos Payot",
-  "Feuna Crizeth Lagolos",
-  "Hannah Clarice Apresa Luceñara",
-  "Jullia Anne De Dios",
-  "Louise Martin Erine",
-  "Madronero Justine",
-  "Mark Ivan Cainglet",
-  "Prix Cys",
-  "Ziskin Ian Bernabe",
-];
-
-const leadProgrammer = {
-  name: "Lead Programmer — To Be Decided",
-  role: "LEAD PROGRAMMER / SELECTION IN PROGRESS",
-  tag: "TEAM SELECTION",
-  description:
-    "The team is currently choosing its Lead Programmer. The role will be finalized once the ongoing selection is complete.",
-  icon: "code",
-};
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const common = {
@@ -260,23 +231,40 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
   }
 }
 
-function StickAvatar({ accent = "cyan" }: { accent?: string }) {
-  return (
-    <div className={`stickAvatar ${accent}`}>
-      <div className="stickHead" />
-      <div className="stickBody" />
-      <div className="stickShoulder left" />
-      <div className="stickShoulder right" />
-      <span className="avatarScan" />
-    </div>
-  );
-}
-
 export default function HomePage() {
   const globeRef = useRef<any>(null);
   const [activeFeature, setActiveFeature] = useState(0);
   const [networkLive, setNetworkLive] = useState(true);
   const [time, setTime] = useState("");
+  const [storySection, setStorySection] = useState("network");
+  const [introVisible, setIntroVisible] = useState(true);
+  const [introExiting, setIntroExiting] = useState(false);
+  const [introPhase, setIntroPhase] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const finishIntro = () => {
+      setIntroExiting(true);
+      window.setTimeout(() => setIntroVisible(false), 720);
+    };
+
+    const phaseTimers = [
+      window.setTimeout(() => setIntroPhase(1), 520),
+      window.setTimeout(() => setIntroPhase(2), 1350),
+      window.setTimeout(() => setIntroPhase(3), 2350),
+      window.setTimeout(() => setIntroPhase(4), 3350),
+    ];
+    const timer = window.setTimeout(finishIntro, 4400);
+    return () => {
+      phaseTimers.forEach((id) => window.clearTimeout(id));
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("introLocked", introVisible);
+    return () => document.documentElement.classList.remove("introLocked");
+  }, [introVisible]);
 
   useEffect(() => {
     const update = () =>
@@ -311,19 +299,209 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(
-      () => setActiveFeature((c) => (c + 1) % features.length),
-      4200,
+    const sections = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-story-section]"),
     );
-    return () => window.clearInterval(timer);
+
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("storyVisible");
+          }
+        });
+      },
+      { threshold: 0.16, rootMargin: "0px 0px -8% 0px" },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const sections = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-story-section]"),
+    );
+
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (visible) {
+          setStorySection(visible.target.getAttribute("data-story-section") || "network");
+        }
+      },
+      {
+        threshold: [0.2, 0.45, 0.7],
+        rootMargin: "-12% 0px -38% 0px",
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    let frame = 0;
+    let x = 0;
+    let y = 0;
+    const move = (event: PointerEvent) => {
+      x = event.clientX;
+      y = event.clientY;
+      if (!frame) {
+        frame = window.requestAnimationFrame(() => {
+          document.documentElement.style.setProperty("--mx", `${x}px`);
+          document.documentElement.style.setProperty("--my", `${y}px`);
+          frame = 0;
+        });
+      }
+    };
+    window.addEventListener("pointermove", move, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", move);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    let frame = 0;
+
+    const updateScroll = () => {
+      frame = 0;
+      const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+      const progress = Math.min(window.scrollY / maxScroll, 1);
+      document.documentElement.style.setProperty("--story-scroll", `${progress}`);
+    };
+
+    const handleScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateScroll);
+    };
+
+    updateScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (
-    <main className="page">
+    <main className={`page ${introVisible ? "hasIntro" : "introComplete"}`}>
+      {introVisible && (
+        <div className={`introScreen phase-${introPhase} ${introExiting ? "isExiting" : ""}`} role="status" aria-live="polite">
+          <div className="introNoise" />
+          <div className="introOrb introOrbOne" />
+          <div className="introOrb introOrbTwo" />
+          <div className="introGrid" />
+          <div className="introVignette" />
+          <div className="introHud introHudTL">
+            <span>PKC-NET // CORE</span><b>SECURE</b>
+          </div>
+          <div className="introHud introHudTR">
+            <span>LAT 07</span><b>SYNC 99.9%</b>
+          </div>
+          <div className="introHud introHudBL">
+            <span>LOCAL NODE</span><b>PHILIPPINES</b>
+          </div>
+          <div className="introHud introHudBR">
+            <span>BUILD 01</span><b>READY</b>
+          </div>
+          <div className="introBeam introBeamA" aria-hidden="true" />
+          <div className="introBeam introBeamB" aria-hidden="true" />
+          <div className="introStars" aria-hidden="true">
+            {Array.from({ length: 22 }, (_, index) => (
+              <i key={index} style={{ "--i": index } as CSSProperties} />
+            ))}
+          </div>
+          <div className="introScan introScanOne" aria-hidden="true" />
+          <div className="introScan introScanTwo" aria-hidden="true" />
+          <div className="introCenter">
+            <div className="introLogoWrap">
+              <div className="introRing introRingOuter" />
+              <div className="introRing introRingInner" />
+              <img src={PKC_LOGO} alt="PKC BIZOFT" className="introLogo" />
+            </div>
+            <div className="introKicker">PKC // BIZOFT</div>
+            <div className="introTitle">
+              <span>YOUR BUSINESS.</span>
+              <strong>CONNECTED.</strong>
+            </div>
+            <p className="introSubtitle">A living network for people, systems, and operations.</p>
+            <div className="introBoot">
+              <div className="introBootTop">
+                <span className="introBootLabel">INITIALIZING BUSINESS NETWORK</span>
+                <span className="introBootStatus"><i /> ONLINE</span>
+              </div>
+              <span className="introBootLine"><i /></span>
+              <div className="introBootMeta">
+                <span>AUTHENTICATING</span>
+                <span>LINKING SYSTEMS</span>
+                <span>SYNCING OPERATIONS</span>
+                <b>100%</b>
+              </div>
+              <div className="introSignalRow" aria-hidden="true">
+                <span><i /> CORE</span><span><i /> DATA</span><span><i /> PEOPLE</span><span><i /> READY</span>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="introSkip"
+            onClick={() => {
+              setIntroExiting(true);
+              window.setTimeout(() => setIntroVisible(false), 720);
+            }}
+          >
+            SKIP INTRO <span>↗</span>
+          </button>
+          <div className="introCorner introCornerTL" />
+          <div className="introCorner introCornerBR" />
+        </div>
+      )}
       <div className="ambient ambientOne" />
       <div className="ambient ambientTwo" />
       <div className="ambient ambientThree" />
       <div className="grid" />
+      <div className="cursorGlow" aria-hidden="true" />
+
+      <div className="storyProgress" aria-label="Page story progress">
+        <div className="storyProgressLine">
+          <span className="storyProgressFill" />
+        </div>
+        <div className="storySteps">
+          {[
+            ["network", "01", "NETWORK"],
+            ["systems", "02", "SYSTEM"],
+            ["features", "03", "CAPABILITIES"],
+          ].map(([id, number, label]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className={storySection === id ? "active" : ""}
+              aria-label={`Go to ${label}`}
+            >
+              <span>{number}</span>
+              <small>{label}</small>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div className="scrollHint" aria-hidden="true">
+        <span>SCROLL TO EXPLORE</span>
+        <i />
+      </div>
 
       <nav className="nav">
         <a className="brand" href="#network">
@@ -336,7 +514,7 @@ export default function HomePage() {
         <div className="navLinks">
           <a href="#network">Network</a>
           <a href="#systems">Systems</a>
-          <a href="#people">People</a>
+          <a href="/who-we-are">Who We Are</a>
           <a href="#features">Capabilities</a>
         </div>
         <div className="navRight">
@@ -352,10 +530,20 @@ export default function HomePage() {
           <a className="loginButton" href="/login">
             ENTER SYSTEM <span>↗</span>
           </a>
+          <button className={`menuButton ${mobileMenuOpen ? "open" : ""}`} type="button" onClick={() => setMobileMenuOpen((v) => !v)} aria-label="Toggle navigation" aria-expanded={mobileMenuOpen}>
+            <span /><span />
+          </button>
+        </div>
+        <div className={`mobileMenu ${mobileMenuOpen ? "open" : ""}`}>
+          <a href="#network" onClick={() => setMobileMenuOpen(false)}>NETWORK <b>01</b></a>
+          <a href="#systems" onClick={() => setMobileMenuOpen(false)}>SYSTEMS <b>02</b></a>
+          <a href="/who-we-are" onClick={() => setMobileMenuOpen(false)}>WHO WE ARE <b>03</b></a>
+          <a href="#features" onClick={() => setMobileMenuOpen(false)}>CAPABILITIES <b>04</b></a>
+          <a href="/login" onClick={() => setMobileMenuOpen(false)}>ENTER SYSTEM <b>↗</b></a>
         </div>
       </nav>
 
-      <section className="hero" id="network">
+      <section className="hero storySection storyVisible" id="network" data-story-section="network">
         <div className="heroCopy">
           <div className="eyebrow">
             <span className="pulse" />
@@ -375,8 +563,8 @@ export default function HomePage() {
             <a href="/login" className="primaryButton">
               OPEN BIZOFT <span>→</span>
             </a>
-            <a href="#people" className="secondaryButton">
-              MEET THE TEAM
+            <a href="/who-we-are" className="secondaryButton">
+              WHO WE ARE
             </a>
           </div>
           <div className="miniStats">
@@ -393,6 +581,17 @@ export default function HomePage() {
               <span>ROOM TO SCALE</span>
             </div>
           </div>
+          <div className="heroSignalStrip" aria-label="Network capabilities">
+            <span><i /> CLIENTS</span>
+            <span><i /> SERVICES</span>
+            <span><i /> PEOPLE</span>
+            <span><i /> DATA</span>
+            <b>ALL CONNECTED</b>
+          </div>
+          <a href="/who-we-are" className="teamRoute" aria-label="Meet the PKC BIZOFT team">
+            <span><i /> PEOPLE / FOUNDING NETWORK</span>
+            <b>MEET THE TEAM ↗</b>
+          </a>
         </div>
 
         <div className="globeWrap">
@@ -501,10 +700,21 @@ export default function HomePage() {
             <strong>EARTH LINK</strong>
             <small>AUTO ROTATION • ACTIVE</small>
           </div>
+          <div className="heroTelemetry" aria-hidden="true">
+            <span><b>LATENCY</b><strong>18ms</strong></span>
+            <span><b>UPTIME</b><strong>99.9%</strong></span>
+            <span><b>STATUS</b><strong>STABLE</strong></span>
+          </div>
         </div>
       </section>
 
-      <section className="systems" id="systems">
+      <div className="signalTicker" aria-hidden="true">
+        <div className="tickerTrack">
+          <span>PKC NETWORK</span><i /> <span>CLIENTS</span><i /> <span>SERVICES</span><i /> <span>OPERATIONS</span><i /> <span>DATA</span><i /> <span>PEOPLE</span><i /> <span>PKC NETWORK</span><i /> <span>CLIENTS</span><i /> <span>SERVICES</span><i /> <span>OPERATIONS</span><i /> <span>DATA</span><i /> <span>PEOPLE</span><i />
+        </div>
+      </div>
+
+      <section className="systems storySection" id="systems" data-story-section="systems">
         <div className="sectionHeading">
           <div>
             <span className="sectionKicker">THE SYSTEM</span>
@@ -612,196 +822,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="people" id="people">
-        <div className="peopleHeading">
-          <div>
-            <span className="sectionKicker">WHO WE ARE</span>
-            <h2>
-              People behind
-              <br />
-              <em>the system.</em>
-            </h2>
-          </div>
-          <p>
-            PKC BIZOFT is more than software. It is a founding team building
-            practical systems, connecting people and turning business operations
-            into something easier to see, manage and grow.
-          </p>
-        </div>
-
-        <article className="founderSpotlight">
-          <div className="founderVisual">
-            <div className="founderGrid" />
-            <div className="founderGlow" />
-            <div className="founderBadge">
-              <span className="badgeDot" /> FOUNDING LEADERSHIP
-            </div>
-            <StickAvatar accent="cyan" />
-            <div className="founderOrbit founderOrbitA" />
-            <div className="founderOrbit founderOrbitB" />
-            <span className="founderNode fn1" />
-            <span className="founderNode fn2" />
-            <span className="founderNode fn3" />
-          </div>
-          <div className="founderCopy">
-            <div className="leaderTop">
-              <span>{founder.tag}</span>
-              <b>01</b>
-            </div>
-            <div className="founderIdentity">
-              <div className="founderIcon">
-                <Icon name={founder.icon} size={24} />
-              </div>
-              <div>
-                <h3>{founder.name}</h3>
-                <small>{founder.role}</small>
-              </div>
-            </div>
-            <p>{founder.description}</p>
-            <div className="founderMeta">
-              <span>
-                <i /> PROFILE / PRIVATE
-              </span>
-              <span>ORIGIN NODE / PKC</span>
-            </div>
-          </div>
-        </article>
-
-        <div className="coFounderSection">
-          <div className="subsectionHeading">
-            <div>
-              <span className="sectionKicker">CO-FOUNDERS</span>
-              <h3>
-                The founding team.
-                <br />
-                <em>Equal roots. Shared vision.</em>
-              </h3>
-            </div>
-            <p>
-              These are the people recognized as co-founders of PKC BIZOFT.
-              Profiles remain intentionally private and use a neutral visual
-              identity.
-            </p>
-          </div>
-          <div className="coFounderGrid">
-            {coFounders.map((name, index) => (
-              <article className="coFounderCard" key={name}>
-                <div className="coFounderTop">
-                  <span>CO-FOUNDER</span>
-                  <b>{String(index + 1).padStart(2, "0")}</b>
-                </div>
-                <div className="coFounderVisual">
-                  <div className="miniGrid" />
-                  <StickAvatar accent={index % 2 === 0 ? "muted" : "violet"} />
-                  <span className="coNode cn1" />
-                  <span className="coNode cn2" />
-                </div>
-                <div className="coFounderInfo">
-                  <div className="coFounderIcon">
-                    <Icon name="cofounder" size={17} />
-                  </div>
-                  <div>
-                    <strong>{name}</strong>
-                    <small>PKC BIZOFT • CO-FOUNDER</small>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <article className="leadProgrammerCard">
-          <div className="leadProgrammerVisual">
-            <div className="programmerGrid" />
-            <div className="programmerGlow" />
-            <div className="codeOrb">
-              <span>&lt;/&gt;</span>
-            </div>
-            <div className="codeOrbit codeOrbitA" />
-            <div className="codeOrbit codeOrbitB" />
-            <span className="codeNode cp1" />
-            <span className="codeNode cp2" />
-            <span className="codeNode cp3" />
-          </div>
-          <div className="leadProgrammerCopy">
-            <div className="leaderTop">
-              <span>{leadProgrammer.tag}</span>
-              <b>02</b>
-            </div>
-            <div className="founderIdentity">
-              <div className="founderIcon programmerIcon">
-                <Icon name={leadProgrammer.icon} size={24} />
-              </div>
-              <div>
-                <h3>Lead Programmer</h3>
-                <small>{leadProgrammer.role}</small>
-              </div>
-            </div>
-            <p>
-              The team is currently choosing its Lead Programmer. The role will
-              be finalized once the ongoing selection is complete.
-            </p>
-            <div className="selectionStatus">
-              <span className="selectionPulse" /> TEAM SELECTION IN PROGRESS{" "}
-              <b>● ACTIVE</b>
-            </div>
-            <div className="founderMeta">
-              <span>POSITION / OPEN</span>
-              <span>DECISION / TEAM</span>
-            </div>
-          </div>
-        </article>
-
-        <div className="whatWeDo">
-          <div>
-            <span className="sectionKicker">WHAT WE DO</span>
-            <h3>
-              We build the pieces
-              <br />
-              that keep business moving.
-            </h3>
-          </div>
-          <div className="doGrid">
-            <div>
-              <span>01</span>
-              <Icon name="clients" size={18} />
-              <strong>BUSINESS SYSTEMS</strong>
-              <p>
-                Digital tools that organize customers, services and daily
-                operations.
-              </p>
-            </div>
-            <div>
-              <span>02</span>
-              <Icon name="server" size={18} />
-              <strong>TECH & INFRASTRUCTURE</strong>
-              <p>
-                Connected infrastructure that keeps information and workflows
-                moving.
-              </p>
-            </div>
-            <div>
-              <span>03</span>
-              <Icon name="pulse" size={18} />
-              <strong>AUTOMATION</strong>
-              <p>
-                Smarter workflows that reduce repetitive work and surface useful
-                signals.
-              </p>
-            </div>
-            <div>
-              <span>04</span>
-              <Icon name="shield" size={18} />
-              <strong>SECURITY</strong>
-              <p>
-                Access-aware systems designed to keep business data separated
-                and protected.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="features" id="features">
+      <section className="features storySection" id="features" data-story-section="features">
         <div className="featureIntro">
           <span className="sectionKicker">CAPABILITIES</span>
           <h2>
@@ -838,7 +859,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer>
+      <section className="finalCta storySection" data-story-section="features">
+        <div className="finalCtaGrid" />
+        <div className="finalCtaCopy">
+          <span className="sectionKicker">NEXT / PRIVATE WORKSPACE</span>
+          <h2>Ready to move<br /><em>inside the system?</em></h2>
+          <p>The public network shows the architecture. The workspace is where your business actually moves.</p>
+          <a href="/login" className="primaryButton">ENTER BIZOFT <span>↗</span></a>
+        </div>
+        <div className="finalCtaCore"><div className="ctaRing ctaRingA" /><div className="ctaRing ctaRingB" /><img src={PKC_LOGO} alt="PKC BIZOFT" /><span>PRIVATE / 01</span></div>
+      </section>
+
+      <footer className="storySection" data-story-section="features">
         <div className="footerBrand">
           <img
             className="brandLogo footerLogo"
@@ -858,6 +890,12 @@ export default function HomePage() {
 
         :global(html) {
           scroll-behavior: smooth;
+          scroll-padding-top: 92px;
+          overscroll-behavior-y: none;
+        }
+
+        :global([id]) {
+          scroll-margin-top: 92px;
         }
 
         :global(body) {
@@ -962,9 +1000,14 @@ export default function HomePage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          position: relative;
-          z-index: 20;
+          position: sticky;
+          top: 0;
+          z-index: 50;
           border-bottom: 1px solid rgba(122, 235, 255, 0.12);
+          background: linear-gradient(180deg, rgba(2, 8, 12, 0.94), rgba(2, 8, 12, 0.68));
+          backdrop-filter: blur(18px) saturate(125%);
+          -webkit-backdrop-filter: blur(18px) saturate(125%);
+          box-shadow: 0 14px 45px rgba(0, 0, 0, 0.18);
         }
 
         .brand,
@@ -1089,6 +1132,18 @@ export default function HomePage() {
           z-index: 3;
         }
 
+        .heroCopy::before {
+          content: "01 / NETWORK ONLINE";
+          display: inline-block;
+          margin-bottom: 18px;
+          padding: 6px 9px;
+          border: 1px solid rgba(89, 230, 255, 0.14);
+          background: rgba(7, 25, 33, 0.45);
+          color: rgba(153, 241, 255, 0.5);
+          font-size: 8px;
+          letter-spacing: .2em;
+        }
+
         .heroCopy {
           padding: 65px 0 80px;
           position: relative;
@@ -1166,6 +1221,94 @@ export default function HomePage() {
         .secondaryButton:hover {
           border-color: rgba(134, 237, 255, 0.6);
           color: white;
+        }
+
+        .heroSignalStrip {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px 14px;
+          margin-top: 20px;
+          padding-top: 13px;
+          border-top: 1px solid rgba(122, 235, 255, 0.11);
+          color: rgba(207, 246, 255, 0.52);
+          font-size: 8px;
+          letter-spacing: 0.16em;
+        }
+
+        .heroSignalStrip span {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+        }
+
+        .heroSignalStrip i {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: #58edff;
+          box-shadow: 0 0 9px rgba(88, 237, 255, 0.85);
+          animation: signalPulse 1.8s ease-in-out infinite;
+        }
+
+        .heroSignalStrip span:nth-child(2) i { animation-delay: .25s; }
+        .heroSignalStrip span:nth-child(3) i { animation-delay: .5s; }
+        .heroSignalStrip span:nth-child(4) i { animation-delay: .75s; }
+
+        .heroSignalStrip b {
+          margin-left: auto;
+          color: rgba(141, 243, 255, 0.9);
+          font-weight: 600;
+        }
+
+        @keyframes signalPulse {
+          0%, 100% { opacity: .35; transform: scale(.8); }
+          50% { opacity: 1; transform: scale(1.35); }
+        }
+
+        .teamRoute {
+          margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+          max-width: 500px; padding: 11px 13px; border: 1px solid rgba(112,235,255,.1); border-radius: 7px;
+          background: linear-gradient(90deg,rgba(8,31,40,.45),rgba(4,14,20,.25)); color: rgba(221,251,255,.48);
+          font-size: 8px; letter-spacing: .15em; transition: transform .3s ease,border-color .3s ease,color .3s ease,background .3s ease;
+        }
+        .teamRoute span,.teamRoute b { display:inline-flex; align-items:center; gap:7px; }
+        .teamRoute i { width:5px; height:5px; border-radius:50%; background:#4cefc0; box-shadow:0 0 10px #4cefc0; animation:signalPulse 1.8s ease-in-out infinite; }
+        .teamRoute b { color:rgba(150,244,255,.78); font-weight:700; }
+        .teamRoute:hover { transform:translateY(-2px); border-color:rgba(104,235,255,.3); color:rgba(232,253,255,.85); background:rgba(10,38,47,.5); }
+
+        .heroTelemetry {
+          position: absolute;
+          right: 2px;
+          bottom: 42px;
+          display: grid;
+          grid-template-columns: repeat(3, auto);
+          gap: 1px;
+          padding: 1px;
+          border: 1px solid rgba(116, 238, 255, 0.14);
+          background: rgba(1, 10, 15, 0.7);
+          backdrop-filter: blur(12px);
+        }
+
+        .heroTelemetry span {
+          min-width: 78px;
+          padding: 9px 11px;
+          display: grid;
+          gap: 3px;
+          background: rgba(5, 18, 25, 0.78);
+        }
+
+        .heroTelemetry b {
+          font-size: 7px;
+          letter-spacing: .18em;
+          color: rgba(177, 233, 242, .42);
+        }
+
+        .heroTelemetry strong {
+          font-size: 10px;
+          letter-spacing: .12em;
+          color: #bff9ff;
         }
 
         .miniStats {
@@ -1924,584 +2067,6 @@ export default function HomePage() {
           color: rgba(215, 252, 255, 0.58);
         }
 
-        .people {
-          padding: 100px 0 0;
-          position: relative;
-          z-index: 5;
-        }
-
-        .founderSpotlight {
-          min-height: 500px;
-          display: grid;
-          grid-template-columns: 1.05fr 0.95fr;
-          border: 1px solid rgba(107, 233, 255, 0.14);
-          border-radius: 16px;
-          background: linear-gradient(
-            135deg,
-            rgba(8, 29, 37, 0.9),
-            rgba(2, 11, 16, 0.96)
-          );
-          overflow: hidden;
-          position: relative;
-          box-shadow:
-            0 28px 90px rgba(0, 0, 0, 0.28),
-            inset 0 1px rgba(255, 255, 255, 0.035);
-        }
-
-        .founderVisual,
-        .leadProgrammerVisual {
-          min-height: 500px;
-          position: relative;
-          display: grid;
-          place-items: center;
-          overflow: hidden;
-          background:
-            radial-gradient(
-              circle at 50% 48%,
-              rgba(24, 220, 255, 0.13),
-              transparent 30%
-            ),
-            rgba(2, 12, 17, 0.65);
-        }
-
-        .founderGrid,
-        .programmerGrid,
-        .miniGrid {
-          position: absolute;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(66, 229, 255, 0.045) 1px, transparent 1px),
-            linear-gradient(
-              90deg,
-              rgba(66, 229, 255, 0.045) 1px,
-              transparent 1px
-            );
-          background-size: 30px 30px;
-          mask-image: linear-gradient(to bottom, black, transparent 92%);
-        }
-
-        .founderGlow,
-        .programmerGlow {
-          position: absolute;
-          width: 250px;
-          height: 250px;
-          border-radius: 50%;
-          background: rgba(43, 221, 255, 0.12);
-          filter: blur(45px);
-        }
-
-        .founderBadge {
-          position: absolute;
-          top: 24px;
-          left: 25px;
-          z-index: 5;
-          font-size: 10px;
-          letter-spacing: 0.17em;
-          color: rgba(220, 252, 255, 0.5);
-          padding: 8px 10px;
-          border: 1px solid rgba(81, 232, 255, 0.14);
-          border-radius: 999px;
-          background: rgba(5, 21, 27, 0.7);
-        }
-
-        .badgeDot,
-        .selectionPulse {
-          display: inline-block;
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #4cefc0;
-          box-shadow: 0 0 10px #4cefc0;
-          margin-right: 7px;
-        }
-
-        .founderOrbit,
-        .codeOrbit {
-          position: absolute;
-          border: 1px solid rgba(83, 232, 255, 0.17);
-          border-radius: 50%;
-          pointer-events: none;
-        }
-
-        .founderOrbitA {
-          width: 360px;
-          height: 135px;
-          transform: rotate(-17deg);
-          animation: founderOrbitA 9s linear infinite;
-        }
-
-        .founderOrbitB {
-          width: 310px;
-          height: 115px;
-          transform: rotate(26deg);
-          animation: founderOrbitB 12s linear infinite;
-        }
-
-        @keyframes founderOrbitA {
-          to {
-            transform: rotate(343deg);
-          }
-        }
-
-        @keyframes founderOrbitB {
-          to {
-            transform: rotate(-334deg);
-          }
-        }
-
-        .founderNode,
-        .codeNode,
-        .coNode {
-          position: absolute;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #52e7ff;
-          box-shadow: 0 0 12px #52e7ff;
-        }
-
-        .fn1 {
-          top: 23%;
-          left: 18%;
-        }
-        .fn2 {
-          top: 18%;
-          right: 20%;
-        }
-        .fn3 {
-          bottom: 20%;
-          right: 17%;
-        }
-
-        .founderCopy,
-        .leadProgrammerCopy {
-          padding: 42px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          position: relative;
-        }
-
-        .leaderTop {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 18px;
-          color: rgba(220, 252, 255, 0.42);
-          font-size: 10px;
-          letter-spacing: 0.17em;
-        }
-
-        .leaderTop b {
-          color: #53e8ff;
-        }
-
-        .founderIdentity {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-
-        .founderIcon {
-          width: 52px;
-          height: 52px;
-          display: grid;
-          place-items: center;
-          border: 1px solid rgba(80, 231, 255, 0.25);
-          border-radius: 9px;
-          color: #55e8ff;
-          background: rgba(37, 216, 245, 0.06);
-          flex: 0 0 52px;
-        }
-
-        .founderIdentity h3 {
-          margin: 0 0 7px;
-          font-size: 32px;
-          letter-spacing: -0.04em;
-        }
-
-        .founderIdentity small {
-          font-size: 10px;
-          letter-spacing: 0.15em;
-          color: #53e8ff;
-        }
-
-        .founderCopy > p,
-        .leadProgrammerCopy > p {
-          margin: 25px 0 28px;
-          max-width: 510px;
-          color: rgba(220, 250, 255, 0.62);
-          line-height: 1.85;
-          font-size: 14px;
-        }
-
-        .founderMeta {
-          display: flex;
-          justify-content: space-between;
-          gap: 15px;
-          border-top: 1px solid rgba(100, 231, 255, 0.1);
-          padding-top: 15px;
-          color: rgba(220, 252, 255, 0.42);
-          font-size: 10px;
-          letter-spacing: 0.15em;
-        }
-
-        .founderMeta i {
-          display: inline-block;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #4cefc0;
-          box-shadow: 0 0 8px #4cefc0;
-          margin-right: 5px;
-        }
-
-        .coFounderSection {
-          margin-top: 72px;
-        }
-
-        .subsectionHeading {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          gap: 50px;
-          margin-bottom: 24px;
-        }
-
-        .subsectionHeading h3 {
-          margin: 11px 0 0;
-          font-size: 36px;
-          line-height: 1;
-          letter-spacing: -0.045em;
-        }
-
-        .subsectionHeading h3 em {
-          color: transparent;
-          -webkit-text-stroke: 1px rgba(154, 242, 255, 0.55);
-          font-style: normal;
-        }
-
-        .subsectionHeading > p {
-          max-width: 420px;
-          margin: 0;
-          color: rgba(221, 250, 255, 0.55);
-          line-height: 1.8;
-          font-size: 13px;
-        }
-
-        .coFounderGrid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-        }
-
-        .coFounderCard {
-          min-height: 265px;
-          padding: 18px;
-          border: 1px solid rgba(107, 233, 255, 0.1);
-          border-radius: 12px;
-          background: linear-gradient(
-            145deg,
-            rgba(8, 28, 36, 0.8),
-            rgba(2, 12, 17, 0.92)
-          );
-          transition: 0.3s;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .coFounderCard:hover {
-          transform: translateY(-4px);
-          border-color: rgba(89, 232, 255, 0.3);
-          box-shadow: 0 20px 55px rgba(0, 0, 0, 0.25);
-        }
-
-        .coFounderTop {
-          display: flex;
-          justify-content: space-between;
-          color: rgba(220, 252, 255, 0.42);
-          font-size: 10px;
-          letter-spacing: 0.15em;
-        }
-
-        .coFounderTop b {
-          color: #53e8ff;
-        }
-
-        .coFounderVisual {
-          height: 142px;
-          margin-top: 12px;
-          border: 1px solid rgba(94, 231, 255, 0.07);
-          border-radius: 8px;
-          display: grid;
-          place-items: center;
-          position: relative;
-          overflow: hidden;
-          background:
-            radial-gradient(circle, rgba(38, 215, 245, 0.07), transparent 48%),
-            rgba(2, 12, 17, 0.7);
-        }
-
-        .coFounderVisual .stickAvatar {
-          transform: scale(0.62);
-        }
-
-        .coNode.cn1 {
-          top: 18%;
-          left: 13%;
-        }
-        .coNode.cn2 {
-          bottom: 16%;
-          right: 15%;
-        }
-
-        .coFounderInfo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-top: 15px;
-        }
-
-        .coFounderIcon {
-          width: 39px;
-          height: 39px;
-          display: grid;
-          place-items: center;
-          border: 1px solid rgba(80, 231, 255, 0.18);
-          border-radius: 7px;
-          color: #53e8ff;
-          background: rgba(37, 216, 245, 0.045);
-          flex: 0 0 39px;
-        }
-
-        .coFounderInfo strong {
-          display: block;
-          font-size: 14px;
-          line-height: 1.3;
-        }
-
-        .coFounderInfo small {
-          display: block;
-          margin-top: 5px;
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          color: rgba(220, 252, 255, 0.48);
-        }
-
-        .leadProgrammerCard {
-          margin-top: 64px;
-          display: grid;
-          grid-template-columns: 0.85fr 1.15fr;
-          min-height: 390px;
-          border: 1px solid rgba(191, 168, 255, 0.16);
-          border-radius: 16px;
-          background: linear-gradient(
-            145deg,
-            rgba(16, 15, 30, 0.78),
-            rgba(5, 10, 17, 0.9)
-          );
-          overflow: hidden;
-          position: relative;
-          box-shadow:
-            0 25px 80px rgba(0, 0, 0, 0.24),
-            inset 0 1px rgba(255, 255, 255, 0.03);
-        }
-
-        .leadProgrammerVisual {
-          min-height: 390px;
-          background:
-            radial-gradient(
-              circle at 50% 48%,
-              rgba(170, 129, 255, 0.12),
-              transparent 30%
-            ),
-            rgba(3, 9, 16, 0.72);
-        }
-
-        .programmerGlow {
-          background: rgba(145, 100, 255, 0.13);
-        }
-
-        .codeOrb {
-          width: 125px;
-          height: 125px;
-          border: 1px solid rgba(199, 170, 255, 0.55);
-          border-radius: 50%;
-          display: grid;
-          place-items: center;
-          color: #c9b1ff;
-          font-size: 24px;
-          letter-spacing: 0.06em;
-          box-shadow:
-            0 0 0 18px rgba(177, 135, 255, 0.025),
-            0 0 60px rgba(151, 106, 255, 0.18),
-            inset 0 0 35px rgba(151, 106, 255, 0.08);
-          animation: codeOrb 3.5s ease-in-out infinite;
-        }
-
-        .codeOrb span {
-          font-family: monospace;
-        }
-
-        .codeOrbitA {
-          width: 320px;
-          height: 105px;
-          transform: rotate(20deg);
-          border-color: rgba(197, 168, 255, 0.18);
-          animation: codeOrbitA 10s linear infinite;
-        }
-
-        .codeOrbitB {
-          width: 270px;
-          height: 90px;
-          transform: rotate(-28deg);
-          border-color: rgba(197, 168, 255, 0.14);
-          animation: codeOrbitB 13s linear infinite;
-        }
-
-        @keyframes codeOrb {
-          50% {
-            transform: scale(1.04);
-          }
-        }
-
-        @keyframes codeOrbitA {
-          to {
-            transform: rotate(380deg);
-          }
-        }
-
-        @keyframes codeOrbitB {
-          to {
-            transform: rotate(-388deg);
-          }
-        }
-
-        .cp1 {
-          top: 20%;
-          left: 18%;
-          background: #c7b1ff;
-          box-shadow: 0 0 12px #c7b1ff;
-        }
-        .cp2 {
-          top: 25%;
-          right: 17%;
-          background: #65eaff;
-          box-shadow: 0 0 12px #65eaff;
-        }
-        .cp3 {
-          bottom: 18%;
-          right: 24%;
-          background: #c7b1ff;
-          box-shadow: 0 0 12px #c7b1ff;
-        }
-
-        .programmerIcon {
-          color: #c6aaff;
-          border-color: rgba(198, 168, 255, 0.28);
-          background: rgba(157, 111, 255, 0.07);
-        }
-
-        .selectionStatus {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 6px;
-          margin: 0 0 23px;
-          padding: 13px 15px;
-          border: 1px solid rgba(76, 239, 192, 0.15);
-          border-radius: 8px;
-          background: rgba(76, 239, 192, 0.035);
-          color: #9ef6dc;
-          font-size: 11px;
-          letter-spacing: 0.12em;
-        }
-
-        .selectionStatus b {
-          margin-left: auto;
-          font-size: 10px;
-          color: #58efc1;
-        }
-
-        .selectionPulse {
-          animation: selectionBlink 1.7s infinite;
-        }
-
-        @keyframes selectionBlink {
-          50% {
-            opacity: 0.3;
-            transform: scale(0.75);
-          }
-        }
-
-        .whatWeDo {
-          margin-top: 82px;
-          padding-top: 0;
-          display: grid;
-          grid-template-columns: 0.8fr 1.2fr;
-          gap: 70px;
-        }
-
-        .whatWeDo h3 {
-          margin: 12px 0 0;
-          font-size: 38px;
-          line-height: 0.98;
-          letter-spacing: -0.045em;
-        }
-
-        .doGrid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-
-        .doGrid > div {
-          min-height: 190px;
-          padding: 22px;
-          border: 1px solid rgba(107, 233, 255, 0.11);
-          border-radius: 12px;
-          background: linear-gradient(
-            145deg,
-            rgba(8, 28, 36, 0.72),
-            rgba(2, 12, 17, 0.9)
-          );
-          transition: 0.3s;
-          position: relative;
-        }
-
-        .doGrid > div:hover {
-          transform: translateY(-4px);
-          border-color: rgba(89, 232, 255, 0.28);
-          box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
-        }
-
-        .doGrid > div > span {
-          position: absolute;
-          top: 16px;
-          right: 18px;
-          font-size: 9px;
-          letter-spacing: 0.14em;
-          color: rgba(220, 252, 255, 0.26);
-        }
-
-        .doGrid svg {
-          color: #53e8ff;
-          margin-top: 12px;
-        }
-
-        .doGrid strong {
-          display: block;
-          margin-top: 17px;
-          font-size: 11px;
-          letter-spacing: 0.15em;
-        }
-
-        .doGrid p {
-          margin: 10px 0 0;
-          font-size: 12px;
-          line-height: 1.7;
-          color: rgba(220, 250, 255, 0.54);
-        }
-
         .features {
           padding: 120px 0 115px;
           display: grid;
@@ -2778,6 +2343,879 @@ export default function HomePage() {
           color: #c2a9ff;
         }
 
+
+        /* --------------------------------------------------------------
+           CINEMATIC INTRO
+           A short first-impression sequence before the page story begins.
+        -------------------------------------------------------------- */
+        html.introLocked,
+        html.introLocked body {
+          overflow: hidden;
+        }
+
+        .introScreen {
+          position: fixed;
+          inset: 0;
+          z-index: 200;
+          display: grid;
+          place-items: center;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 50% 44%, rgba(11, 111, 148, .20), transparent 25%),
+            radial-gradient(circle at 18% 80%, rgba(27, 104, 150, .12), transparent 26%),
+            #020a12;
+          animation: introIn .65s ease both;
+        }
+
+        .introScreen.isExiting {
+          pointer-events: none;
+          animation: introOut .72s cubic-bezier(.76,0,.24,1) forwards;
+        }
+
+
+        .introVignette {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: radial-gradient(circle at 50% 48%, transparent 25%, rgba(0,0,0,.22) 68%, rgba(0,0,0,.7) 100%);
+        }
+
+        .introHud {
+          position: absolute;
+          z-index: 3;
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          color: rgba(143,205,229,.36);
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: .16em;
+          text-transform: uppercase;
+          opacity: 0;
+          transition: opacity .7s ease, transform .7s ease;
+        }
+        .introHud b { color: rgba(83,225,184,.58); font-weight: 800; }
+        .introHudTL { top: 34px; left: 38px; transform: translateX(-12px); }
+        .introHudTR { top: 34px; right: 38px; transform: translateX(12px); }
+        .introHudBL { bottom: 34px; left: 38px; transform: translateX(-12px); }
+        .introHudBR { bottom: 34px; right: 38px; transform: translateX(12px); }
+        .introScreen.phase-1 .introHud, .introScreen.phase-2 .introHud, .introScreen.phase-3 .introHud, .introScreen.phase-4 .introHud { opacity: 1; transform: translateX(0); }
+
+        .introBeam {
+          position: absolute;
+          z-index: 1;
+          width: 42vw;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(77,214,255,.4), transparent);
+          box-shadow: 0 0 30px rgba(56,203,255,.3);
+          opacity: 0;
+          pointer-events: none;
+        }
+        .introBeamA { top: 42%; left: -10vw; transform: rotate(-18deg); animation: introBeamSweep 5.5s ease-in-out infinite; }
+        .introBeamB { top: 58%; right: -10vw; transform: rotate(18deg); animation: introBeamSweep 6.2s ease-in-out 1.2s infinite reverse; }
+        .introScreen.phase-2 .introBeam, .introScreen.phase-3 .introBeam, .introScreen.phase-4 .introBeam { opacity: 1; }
+
+        .introSignalRow {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+          margin-top: 17px;
+          color: rgba(135,191,212,.3);
+          font-size: 6px;
+          font-weight: 800;
+          letter-spacing: .14em;
+        }
+        .introSignalRow span { display: flex; align-items: center; gap: 5px; }
+        .introSignalRow i { width: 4px; height: 4px; border-radius: 50%; background: #45dfbb; box-shadow: 0 0 8px rgba(69,223,187,.7); animation: introStatusPulse 1.2s ease-in-out infinite; }
+        .introSignalRow span:nth-child(2) i { animation-delay: .15s; }
+        .introSignalRow span:nth-child(3) i { animation-delay: .3s; }
+        .introSignalRow span:nth-child(4) i { animation-delay: .45s; }
+
+        .introNoise {
+          position: absolute;
+          inset: 0;
+          opacity: .12;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+          mix-blend-mode: screen;
+          pointer-events: none;
+        }
+
+        .introGrid {
+          position: absolute;
+          inset: -20%;
+          opacity: .18;
+          background-image:
+            linear-gradient(rgba(66, 174, 218, .08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(66, 174, 218, .08) 1px, transparent 1px);
+          background-size: 54px 54px;
+          transform: perspective(700px) rotateX(62deg) translateY(24%);
+          transform-origin: center bottom;
+          animation: introGridMove 7s linear infinite;
+        }
+
+        .introOrb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(50px);
+          pointer-events: none;
+        }
+
+        .introOrbOne {
+          width: 34vw;
+          height: 34vw;
+          top: -16vw;
+          right: -8vw;
+          background: rgba(0, 156, 211, .12);
+        }
+
+        .introOrbTwo {
+          width: 30vw;
+          height: 30vw;
+          bottom: -18vw;
+          left: -8vw;
+          background: rgba(37, 90, 180, .13);
+        }
+
+        .introStars {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          pointer-events: none;
+          opacity: .65;
+        }
+
+        .introStars i {
+          --i: 0;
+          position: absolute;
+          left: calc((var(--i) * 37.7%) - 30%);
+          top: calc((var(--i) * 19.3%) % 100%);
+          width: 2px;
+          height: 2px;
+          border-radius: 50%;
+          background: rgba(137, 222, 255, .65);
+          box-shadow: 0 0 9px rgba(65, 205, 255, .5);
+          animation: introStarFloat calc(3.2s + (var(--i) * .13s)) ease-in-out infinite alternate;
+          animation-delay: calc(var(--i) * -.17s);
+        }
+
+        .introScan {
+          position: absolute;
+          left: -10%;
+          width: 120%;
+          height: 1px;
+          pointer-events: none;
+          background: linear-gradient(90deg, transparent, rgba(83, 214, 255, .28), transparent);
+          box-shadow: 0 0 22px rgba(50, 201, 255, .2);
+        }
+
+        .introScanOne {
+          top: 31%;
+          animation: introScan 5.5s ease-in-out infinite;
+        }
+
+        .introScanTwo {
+          top: 69%;
+          opacity: .45;
+          animation: introScan 7s ease-in-out 1.2s infinite reverse;
+        }
+
+        .introCenter {
+          position: relative;
+          z-index: 2;
+          width: min(680px, 88vw);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+
+        .introLogoWrap {
+          position: relative;
+          width: 118px;
+          height: 118px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 28px;
+          animation: introLogoIn 1.1s cubic-bezier(.2,.8,.2,1) .15s both;
+        }
+
+        .introLogo {
+          width: 67px;
+          height: 67px;
+          object-fit: contain;
+          filter: drop-shadow(0 0 22px rgba(30, 190, 255, .34));
+        }
+
+        .introRing {
+          position: absolute;
+          inset: 0;
+          border: 1px solid rgba(67, 199, 240, .22);
+          border-radius: 50%;
+        }
+
+        .introRingOuter {
+          animation: introRing 3.2s linear infinite;
+        }
+
+        .introRingInner {
+          inset: 13px;
+          border-style: dashed;
+          border-color: rgba(86, 207, 255, .35);
+          animation: introRingReverse 5s linear infinite;
+        }
+
+        .introKicker {
+          color: rgba(104, 202, 239, .72);
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: .42em;
+          margin-left: .42em;
+          animation: introTextIn .8s ease .55s both;
+        }
+
+        .introTitle {
+          margin-top: 18px;
+          display: grid;
+          gap: 2px;
+          font-size: clamp(30px, 5vw, 62px);
+          line-height: .98;
+          letter-spacing: -.045em;
+          font-weight: 300;
+          color: #eaf9ff;
+          animation: introTextIn .9s cubic-bezier(.2,.8,.2,1) .7s both;
+        }
+
+        .introTitle strong {
+          color: #54d6ff;
+          font-weight: 700;
+          text-shadow: 0 0 32px rgba(38, 191, 255, .18);
+        }
+
+        .introSubtitle {
+          max-width: 520px;
+          margin: 17px auto 0;
+          color: rgba(190, 221, 236, .55);
+          font-size: 12px;
+          line-height: 1.7;
+          animation: introTextIn .8s ease .95s both;
+        }
+
+        .introBoot {
+          width: min(470px, 78vw);
+          margin-top: 42px;
+          animation: introTextIn .8s ease 1.15s both;
+        }
+
+        .introBootTop {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+        }
+
+        .introBootLabel,
+        .introBootStatus,
+        .introBootMeta {
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: .2em;
+          color: rgba(145, 202, 226, .42);
+        }
+
+        .introBootLabel {
+          text-align: left;
+        }
+
+        .introBootStatus {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          color: rgba(83, 225, 184, .72);
+        }
+
+        .introBootStatus i {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #53e1b8;
+          box-shadow: 0 0 10px rgba(83, 225, 184, .9);
+          animation: introStatusPulse 1.2s ease-in-out infinite;
+        }
+
+        .introBootLine {
+          display: block;
+          width: 100%;
+          height: 2px;
+          margin-top: 10px;
+          overflow: hidden;
+          background: rgba(83, 173, 214, .12);
+        }
+
+        .introBootLine i {
+          display: block;
+          width: 100%;
+          height: 100%;
+          transform-origin: left;
+          background: linear-gradient(90deg, rgba(46, 198, 255, .15), #32c9ff, rgba(76, 239, 197, .75));
+          box-shadow: 0 0 16px rgba(41, 202, 255, .7);
+          animation: introBootProgress 2.2s cubic-bezier(.2,.7,.2,1) .85s both;
+        }
+
+        .introBootMeta {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr) auto;
+          gap: 8px;
+          margin-top: 10px;
+          font-size: 6px;
+          letter-spacing: .14em;
+        }
+
+        .introBootMeta span {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .introBootMeta b {
+          color: rgba(101, 211, 246, .65);
+          font-size: 6px;
+          font-weight: 800;
+        }
+
+        .introSkip {
+          position: absolute;
+          z-index: 4;
+          right: 28px;
+          bottom: 25px;
+          border: 0;
+          background: transparent;
+          color: rgba(181, 216, 231, .42);
+          font: 700 8px/1 inherit;
+          letter-spacing: .18em;
+          cursor: pointer;
+          padding: 10px;
+          transition: color .25s ease, transform .25s ease;
+        }
+
+        .introSkip:hover {
+          color: #eaf9ff;
+          transform: translateX(3px);
+        }
+
+        .introCorner {
+          position: absolute;
+          width: 70px;
+          height: 70px;
+          opacity: .45;
+          border-color: rgba(75, 190, 236, .28);
+        }
+
+        .introCornerTL {
+          top: 26px;
+          left: 26px;
+          border-top: 1px solid;
+          border-left: 1px solid;
+        }
+
+        .introCornerBR {
+          right: 26px;
+          bottom: 26px;
+          border-right: 1px solid;
+          border-bottom: 1px solid;
+        }
+
+
+        .introScreen.phase-2 .introLogo { filter: drop-shadow(0 0 34px rgba(30, 190, 255, .6)); }
+        .introScreen.phase-3 .introTitle strong { text-shadow: 0 0 42px rgba(38, 191, 255, .38); }
+        .introScreen.phase-4 .introBootLine i { box-shadow: 0 0 24px rgba(41, 202, 255, .95); }
+
+        @keyframes introIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes introOut {
+          0% { opacity: 1; transform: scale(1); filter: blur(0); }
+          100% { opacity: 0; transform: scale(1.035); filter: blur(10px); visibility: hidden; }
+        }
+
+        @keyframes introLogoIn {
+          from { opacity: 0; transform: scale(.55) rotate(-15deg); }
+          to { opacity: 1; transform: scale(1) rotate(0); }
+        }
+
+        @keyframes introRing {
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes introRingReverse {
+          to { transform: rotate(-360deg); }
+        }
+
+        @keyframes introTextIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes introBootProgress {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+
+        @keyframes introGridMove {
+          from { background-position: 0 0; }
+          to { background-position: 0 54px; }
+        }
+
+        @keyframes introStarFloat {
+          from { opacity: .18; transform: translate3d(0, 8px, 0) scale(.75); }
+          to { opacity: .85; transform: translate3d(0, -10px, 0) scale(1.25); }
+        }
+
+        @keyframes introScan {
+          0%, 100% { transform: translateY(-18vh); opacity: 0; }
+          15% { opacity: .55; }
+          50% { opacity: .8; }
+          85% { opacity: .25; }
+          100% { transform: translateY(18vh); }
+        }
+
+        @keyframes introBeamSweep {
+          0%, 100% { transform: translateX(-18vw) rotate(-18deg); opacity: 0; }
+          30% { opacity: .45; }
+          60% { opacity: .75; }
+          100% { transform: translateX(118vw) rotate(-18deg); opacity: 0; }
+        }
+
+        @keyframes introStatusPulse {
+          0%, 100% { opacity: .45; transform: scale(.75); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .heroSignalStrip b {
+          width: 100%;
+          margin-left: 0;
+          padding-top: 2px;
+        }
+
+        .heroTelemetry {
+          right: 10px;
+          bottom: 28px;
+        }
+
+        @media (max-width: 700px) {
+          .introLogoWrap { width: 96px; height: 96px; margin-bottom: 22px; }
+          .introLogo { width: 55px; height: 55px; }
+          .introTitle { font-size: clamp(28px, 9vw, 44px); }
+          .introSubtitle { font-size: 11px; padding: 0 16px; }
+          .introBoot { margin-top: 32px; }
+          .introBootTop { gap: 10px; }
+          .introBootMeta { grid-template-columns: 1fr 1fr; }
+          .introBootMeta span:nth-child(3) { display: none; }
+          .introBootMeta b { text-align: right; }
+          .introSkip { right: 14px; bottom: 14px; }
+          .introHud { font-size: 5px; letter-spacing: .1em; }
+          .introHudTL, .introHudBL { left: 16px; }
+          .introHudTR, .introHudBR { right: 16px; }
+          .introSignalRow { gap: 6px; }
+          .introCorner { width: 45px; height: 45px; }
+          .introCornerTL { top: 16px; left: 16px; }
+          .introCornerBR { right: 16px; bottom: 16px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .introScreen,
+          .introLogoWrap,
+          .introKicker,
+          .introTitle,
+          .introSubtitle,
+          .introBoot,
+          .introBootLine i,
+          .introRingOuter,
+          .introRingInner,
+          .introGrid,
+          .introStars i,
+          .introScanOne,
+          .introScanTwo,
+          .introBootStatus i,
+          .introSignalRow i {
+            animation: none !important;
+          }
+          .introBeam, .introHud { transition: none !important; animation: none !important; }
+        }
+
+        /* --------------------------------------------------------------
+           SCROLL STORY LAYER
+           Additive only: the existing layout/content stays untouched.
+        -------------------------------------------------------------- */
+        html {
+          scroll-behavior: smooth;
+          scroll-padding-top: 92px;
+          overscroll-behavior-y: none;
+        }
+
+        body {
+          scroll-behavior: smooth;
+        }
+
+        .page {
+          --story-scroll: 0;
+        }
+
+        .storySection {
+          scroll-snap-align: start;
+          scroll-margin-top: 92px;
+          will-change: opacity, transform;
+        }
+
+        .cursorGlow{position:fixed;left:var(--mx,50%);top:var(--my,50%);width:360px;height:360px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(46,224,255,.075),transparent 68%);filter:blur(3px);pointer-events:none;z-index:1;mix-blend-mode:screen;transition:opacity .3s ease}.signalTicker{position:relative;z-index:4;overflow:hidden;border-top:1px solid rgba(99,232,255,.08);border-bottom:1px solid rgba(99,232,255,.08);background:rgba(2,11,15,.7);white-space:nowrap}.tickerTrack{display:flex;align-items:center;gap:18px;width:max-content;padding:11px 0;animation:ticker 34s linear infinite;color:rgba(205,247,255,.28);font-size:8px;letter-spacing:.22em}.tickerTrack i{width:3px;height:3px;border-radius:50%;background:#4eeaff;box-shadow:0 0 10px rgba(78,234,255,.8)}@keyframes ticker{to{transform:translateX(-50%)}}.menuButton,.mobileMenu{display:none}.finalCta{width:min(1400px,calc(100% - 64px));min-height:440px;margin:80px auto 90px;position:relative;overflow:hidden;border:1px solid rgba(102,231,255,.11);border-radius:18px;background:radial-gradient(circle at 80% 50%,rgba(61,221,255,.1),transparent 28%),linear-gradient(135deg,rgba(5,21,28,.92),rgba(2,9,13,.86));display:grid;grid-template-columns:1.15fr .85fr;align-items:center;padding:70px}.finalCtaGrid{position:absolute;inset:0;opacity:.23;background-image:linear-gradient(rgba(90,230,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(90,230,255,.06) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(90deg,black,transparent 75%)}.finalCtaCopy{position:relative;z-index:2}.finalCta h2{margin:14px 0 20px;font-size:clamp(48px,6vw,82px);line-height:.9;letter-spacing:-.065em}.finalCta h2 em{font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(132,239,255,.72)}.finalCta p{max-width:510px;color:rgba(220,250,255,.5);font-size:13px;line-height:1.8;margin:0 0 28px}.finalCtaCore{justify-self:end;width:260px;height:260px;border:1px solid rgba(86,231,255,.17);border-radius:50%;display:grid;place-items:center;position:relative;background:rgba(3,16,22,.65);box-shadow:0 0 80px rgba(40,215,255,.09),inset 0 0 50px rgba(40,215,255,.05)}.finalCtaCore img{width:108px;height:108px;object-fit:contain;filter:drop-shadow(0 0 22px rgba(70,232,255,.24));z-index:2}.finalCtaCore span{position:absolute;bottom:-28px;font-size:8px;letter-spacing:.18em;color:rgba(178,242,255,.34)}.ctaRing{position:absolute;border:1px solid rgba(80,230,255,.16);border-radius:50%}.ctaRingA{inset:20px;animation:spin 15s linear infinite}.ctaRingB{inset:-16px;border-style:dashed;border-color:rgba(176,148,255,.12);animation:spin 21s linear infinite reverse}
+        @media (max-width:620px){.finalCta{margin:55px auto 65px;min-height:520px;padding:42px 22px}.finalCta h2{font-size:clamp(43px,12vw,64px)}.finalCtaCore{width:170px;height:170px}.finalCtaCore img{width:76px;height:76px}.cursorGlow{display:none}.tickerTrack{animation-duration:28s}}
+        @media (prefers-reduced-motion: no-preference) {
+          .page {
+            scroll-snap-type: y proximity;
+          }
+        }
+
+        .storyProgress {
+          position: fixed;
+          z-index: 40;
+          left: 24px;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: stretch;
+          gap: 13px;
+          pointer-events: none;
+        }
+
+        .storyProgressLine {
+          position: relative;
+          width: 1px;
+          min-height: 156px;
+          overflow: hidden;
+          background: rgba(80, 170, 220, .16);
+        }
+
+        .storyProgressFill {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: calc(100% * var(--story-scroll));
+          transform-origin: top;
+          background: linear-gradient(to bottom, #16b9ff, rgba(22, 185, 255, .1));
+          box-shadow: 0 0 10px rgba(22, 185, 255, .55);
+        }
+
+        .storySteps {
+          display: flex;
+          flex-direction: column;
+          gap: 13px;
+          pointer-events: auto;
+        }
+
+        .storySteps a {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 108px;
+          color: rgba(183, 211, 229, .38);
+          text-decoration: none;
+          transition: color .35s ease, transform .35s ease;
+        }
+
+        .storySteps a::before {
+          content: "";
+          width: 5px;
+          height: 5px;
+          flex: 0 0 5px;
+          border: 1px solid rgba(73, 183, 235, .4);
+          border-radius: 50%;
+          background: #061b2c;
+          box-shadow: 0 0 0 0 rgba(24, 177, 255, 0);
+          transition: background .35s ease, box-shadow .35s ease, transform .35s ease;
+        }
+
+        .storySteps a span {
+          font-size: 8px;
+          letter-spacing: .16em;
+          opacity: .55;
+        }
+
+        .storySteps a small {
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: .15em;
+          white-space: nowrap;
+        }
+
+        .storySteps a:hover,
+        .storySteps a.active {
+          color: #eaf8ff;
+          transform: translateX(3px);
+        }
+
+        .storySteps a.active::before {
+          background: #18b7ff;
+          border-color: #7cddff;
+          transform: scale(1.35);
+          box-shadow: 0 0 12px rgba(24, 183, 255, .9);
+        }
+
+        .scrollHint {
+          position: fixed;
+          z-index: 30;
+          right: 30px;
+          bottom: 28px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: rgba(179, 215, 235, .52);
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: .2em;
+          pointer-events: none;
+          opacity: calc(1 - (var(--story-scroll) * 5));
+          transition: opacity .2s ease;
+        }
+
+        .scrollHint i {
+          position: relative;
+          width: 34px;
+          height: 1px;
+          overflow: visible;
+          background: rgba(100, 196, 239, .35);
+        }
+
+        .scrollHint i::after {
+          content: "";
+          position: absolute;
+          right: 0;
+          top: -2px;
+          width: 5px;
+          height: 5px;
+          border-right: 1px solid #56caff;
+          border-bottom: 1px solid #56caff;
+          transform: rotate(45deg);
+          animation: scrollArrow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes scrollArrow {
+          0%, 100% { transform: translateX(0) rotate(45deg); opacity: .35; }
+          50% { transform: translateX(7px) rotate(45deg); opacity: 1; }
+        }
+
+        .storySection {
+          --story-distance: 42px;
+          position: relative;
+          transition:
+            opacity .9s cubic-bezier(.2,.7,.2,1),
+            transform 1s cubic-bezier(.2,.7,.2,1),
+            filter .9s ease;
+        }
+
+        .storySection:not(.storyVisible) {
+          opacity: .18;
+          transform: translate3d(0, var(--story-distance), 0);
+          filter: blur(3px);
+        }
+
+        .storySection.storyVisible {
+          opacity: 1;
+          transform: translate3d(0, 0, 0);
+          filter: blur(0);
+        }
+
+        .storySection .sectionHeading,
+        .storySection .peopleHeading,
+        .storySection .whatWeDo,
+        .storySection .featureIntro {
+          transition:
+            opacity .85s ease .12s,
+            transform .85s cubic-bezier(.2,.7,.2,1) .12s;
+        }
+
+        .storySection:not(.storyVisible) .sectionHeading,
+        .storySection:not(.storyVisible) .peopleHeading,
+        .storySection:not(.storyVisible) .whatWeDo,
+        .storySection:not(.storyVisible) .featureIntro {
+          opacity: 0;
+          transform: translateY(28px);
+        }
+
+        .storySection.storyVisible .sectionHeading,
+        .storySection.storyVisible .peopleHeading,
+        .storySection.storyVisible .whatWeDo,
+        .storySection.storyVisible .featureIntro {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .storySection .systemCard,
+        .storySection .founderSpotlight,
+        .storySection .leadProgrammerCard,
+        .storySection .coFounderCard,
+        .storySection .doGrid > div,
+        .storySection .featureCard {
+          transition:
+            opacity .75s ease,
+            transform .8s cubic-bezier(.2,.7,.2,1),
+            border-color .35s ease,
+            box-shadow .35s ease;
+        }
+
+        .storySection:not(.storyVisible) .systemCard,
+        .storySection:not(.storyVisible) .founderSpotlight,
+        .storySection:not(.storyVisible) .leadProgrammerCard,
+        .storySection:not(.storyVisible) .coFounderCard,
+        .storySection:not(.storyVisible) .doGrid > div,
+        .storySection:not(.storyVisible) .featureCard {
+          opacity: 0;
+          transform: translateY(32px) scale(.985);
+        }
+
+        .storySection.storyVisible .systemCard,
+        .storySection.storyVisible .founderSpotlight,
+        .storySection.storyVisible .leadProgrammerCard,
+        .storySection.storyVisible .coFounderCard,
+        .storySection.storyVisible .doGrid > div,
+        .storySection.storyVisible .featureCard {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+
+        .storySection.storyVisible .systemCard:nth-child(2),
+        .storySection.storyVisible .coFounderCard:nth-child(2),
+        .storySection.storyVisible .doGrid > div:nth-child(2),
+        .storySection.storyVisible .featureCard:nth-child(2) {
+          transition-delay: .08s;
+        }
+
+        .storySection.storyVisible .systemCard:nth-child(3),
+        .storySection.storyVisible .coFounderCard:nth-child(3),
+        .storySection.storyVisible .doGrid > div:nth-child(3),
+        .storySection.storyVisible .featureCard:nth-child(3) {
+          transition-delay: .16s;
+        }
+
+        .storySection.storyVisible .coFounderCard:nth-child(4),
+        .storySection.storyVisible .doGrid > div:nth-child(4),
+        .storySection.storyVisible .featureCard:nth-child(4) {
+          transition-delay: .24s;
+        }
+
+        .storySection.storyVisible .coFounderCard:nth-child(5),
+        .storySection.storyVisible .doGrid > div:nth-child(5),
+        .storySection.storyVisible .featureCard:nth-child(5) {
+          transition-delay: .32s;
+        }
+
+        .storySection.storyVisible .coFounderCard:nth-child(6) {
+          transition-delay: .40s;
+        }
+
+        .storySection.storyVisible .coFounderCard:nth-child(7) {
+          transition-delay: .48s;
+        }
+
+        .storySection.storyVisible .coFounderCard:nth-child(8) {
+          transition-delay: .56s;
+        }
+
+        .storySection.storyVisible .coFounderCard:nth-child(9) {
+          transition-delay: .64s;
+        }
+
+        .hero.storySection {
+          --story-distance: 0px;
+        }
+
+        .hero.storySection .heroCopy {
+          animation: heroStoryIn 1.1s cubic-bezier(.2,.7,.2,1) both;
+        }
+
+        .hero.storySection .globeWrap {
+          animation: heroGlobeIn 1.35s cubic-bezier(.2,.7,.2,1) .08s both;
+        }
+
+        @keyframes heroStoryIn {
+          from { opacity: 0; transform: translateY(28px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes heroGlobeIn {
+          from { opacity: 0; transform: translateY(40px) scale(.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @media (max-width: 980px) {
+          .teamRoute { max-width: none; }
+          .storyProgress {
+            left: 14px;
+          }
+
+          .storySteps a {
+            width: 8px;
+          }
+
+          .storySteps a span,
+          .storySteps a small {
+            display: none;
+          }
+
+          .scrollHint {
+            right: 18px;
+          }
+        }
+
+        @media (max-width: 700px) {
+          .storyProgress {
+            display: none;
+          }
+
+          .scrollHint {
+            bottom: 18px;
+            right: 16px;
+          }
+
+          .storySection:not(.storyVisible) {
+            transform: translate3d(0, 24px, 0);
+            filter: blur(2px);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          html {
+            scroll-behavior: auto;
+          }
+
+          .storySection,
+          .storySection .sectionHeading,
+          .storySection .peopleHeading,
+          .storySection .whatWeDo,
+          .storySection .featureIntro,
+          .storySection .systemCard,
+          .storySection .founderSpotlight,
+          .storySection .leadProgrammerCard,
+          .storySection .coFounderCard,
+          .storySection .doGrid > div,
+          .storySection .featureCard,
+          .hero.storySection .heroCopy,
+          .hero.storySection .globeWrap {
+            opacity: 1 !important;
+            transform: none !important;
+            filter: none !important;
+            animation: none !important;
+            transition: none !important;
+          }
+
+          .storyProgress,
+          .scrollHint {
+            display: none;
+          }
+        }
+
         @media (max-width: 1180px) {
           .navLinks {
             gap: 14px;
@@ -2833,6 +3271,17 @@ export default function HomePage() {
         }
 
         @media (max-width: 800px) {
+          .navLinks,.navRight .clock,.navRight .liveToggle{display:none}
+          .navRight{margin-left:auto}
+          .menuButton{display:flex;width:42px;height:42px;align-items:center;justify-content:center;flex-direction:column;gap:6px;border:1px solid rgba(106,231,255,.14);background:rgba(4,17,23,.72);color:#a9f6ff;border-radius:7px;cursor:pointer}
+          .menuButton span{width:15px;height:1px;background:currentColor;transition:transform .3s ease}
+          .menuButton.open span:first-child{transform:translateY(3.5px) rotate(45deg)}
+          .menuButton.open span:last-child{transform:translateY(-3.5px) rotate(-45deg)}
+          .mobileMenu{display:grid;position:absolute;left:0;right:0;top:calc(100% + 10px);padding:8px;border:1px solid rgba(105,231,255,.12);background:rgba(2,10,15,.95);backdrop-filter:blur(22px);transform:translateY(-10px);opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+          .mobileMenu.open{opacity:1;transform:none;pointer-events:auto}
+          .mobileMenu a{display:flex;justify-content:space-between;padding:16px 14px;border-bottom:1px solid rgba(105,231,255,.07);font-size:9px;letter-spacing:.18em;color:rgba(226,253,255,.68)}
+          .mobileMenu a:last-child{border:0;color:#86efff}.mobileMenu b{font-weight:500;color:rgba(126,238,255,.35)}
+
           .navLinks,
           .clock {
             display: none;
@@ -2861,6 +3310,10 @@ export default function HomePage() {
         }
 
         @media (max-width: 700px) {
+          .heroTelemetry {
+            display: none;
+          }
+
           .nav,
           .hero,
           .systems,
