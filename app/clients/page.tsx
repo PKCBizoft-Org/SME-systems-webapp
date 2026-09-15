@@ -34,6 +34,18 @@ type Filters = {
   to: string
 }
 
+type SortKey =
+  | 'customer_name'
+  | 'area'
+  | 'plan_name'
+  | 'install_date'
+  | 'installation_status'
+  | 'account_status'
+
+type SortDirection = 'asc' | 'desc'
+
+const PAGE_SIZE = 25
+
 const DEFAULT_FILTERS: Filters = {
   name: '',
   area: '',
@@ -58,6 +70,13 @@ function formatDate(date: string | null) {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function normalizeArea(value: string | null) {
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
 }
 
 function statusClass(status: string | null) {
@@ -100,6 +119,14 @@ export default function ClientsPage() {
   const [error, setError] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [showFilters, setShowFilters] = useState(true)
+
+  const [sortKey, setSortKey] = useState<SortKey>('install_date')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [bulkStatus, setBulkStatus] = useState('')
+  const [bulkSaving, setBulkSaving] = useState(false)
+  const [bulkMessage, setBulkMessage] = useState('')
 
   const supabase = useMemo(() => createClient(), [])
 
@@ -197,14 +224,34 @@ export default function ClientsPage() {
   // ------------------------------------------------------------
 
   const areas = useMemo(() => {
-    return Array.from(
-      new Set(
-        clients
-          .map((client) => client.area)
-          .filter(Boolean)
-          .map((value) => String(value)),
-      ),
-    ).sort()
+    const uniqueAreas = new Map<string, string>()
+
+    for (const client of clients) {
+      const displayArea = String(client.area || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+
+      const key = normalizeArea(displayArea)
+      if (key && !uniqueAreas.has(key)) {
+        uniqueAreas.set(key, displayArea)
+      }
+    }
+
+    return Array.from(uniqueAreas.values()).sort((a, b) =>
+      a.localeCompare(b),
+    )
+  }, [clients])
+
+  const areaCustomerCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    for (const client of clients) {
+      const key = normalizeArea(client.area)
+      if (!key) continue
+      counts.set(key, (counts.get(key) || 0) + 1)
+    }
+
+    return counts
   }, [clients])
 
   const plans = useMemo(() => {
@@ -241,107 +288,232 @@ export default function ClientsPage() {
   }, [clients])
 
   // ------------------------------------------------------------
-  // FILTER CLIENTS
+  // FILTER, SORT, PAGINATION & SELECTION
   // ------------------------------------------------------------
 
   const filteredClients = useMemo(() => {
     return clients.filter((client) => {
-      const customerName = String(
-        client.customer_name || '',
-      )
+      const searchableText = [
+        client.customer_name,
+        client.account_id,
+        client.mobile_number,
+        client.pppoe_name,
+        client.area,
+        client.technicians,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
 
-      const area = String(client.area || '')
+      const area = normalizeArea(client.area)
       const plan = String(client.plan_name || '')
-      const installation = String(
-        client.installation_status || '',
-      )
-      const account = String(
-        client.account_status || '',
-      )
+      const installation = String(client.installation_status || '')
+      const account = String(client.account_status || '')
+      const installDate = String(client.install_date || '')
 
-      const installDate = String(
-        client.install_date || '',
-      )
-
-      // Customer-name search
       if (
         filters.name &&
-        !customerName
-          .toLowerCase()
-          .includes(filters.name.toLowerCase())
+        !searchableText.includes(filters.name.toLowerCase().trim())
       ) {
         return false
       }
 
-      // Area filter
-      if (
-        filters.area &&
-        area !== filters.area
-      ) {
-        return false
-      }
-
-      // Plan filter
-      if (
-        filters.plan &&
-        plan !== filters.plan
-      ) {
-        return false
-      }
-
-      // Installation status
-      if (
-        filters.installation &&
-        installation !== filters.installation
-      ) {
-        return false
-      }
-
-      // Account status
-      if (
-        filters.account &&
-        account !== filters.account
-      ) {
-        return false
-      }
-
-      // Install date FROM
-      if (
-        filters.from &&
-        installDate < filters.from
-      ) {
-        return false
-      }
-
-      // Install date TO
-      if (
-        filters.to &&
-        installDate > filters.to
-      ) {
-        return false
-      }
+      if (filters.area && area !== normalizeArea(filters.area)) return false
+      if (filters.plan && plan !== filters.plan) return false
+      if (filters.installation && installation !== filters.installation) return false
+      if (filters.account && account !== filters.account) return false
+      if (filters.from && (!installDate || installDate < filters.from)) return false
+      if (filters.to && (!installDate || installDate > filters.to)) return false
 
       return true
     })
   }, [clients, filters])
 
-  const updateFilter = (
-    key: keyof Filters,
-    value: string,
-  ) => {
-    setFilters((current) => ({
-      ...current,
-      [key]: value,
-    }))
+  const sortedClients = useMemo(() => {
+    const result = [...filteredClients]
+
+    result.sort((a, b) => {
+      const getValue = (client: Client) => {
+        if (sortKey === 'install_date') return client.install_date || ''
+        return String(client[sortKey] || '').toLowerCase().trim()
+      }
+
+      const aValue = getValue(a)
+      const bValue = getValue(b)
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return result
+  }, [filteredClients, sortKey, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sortedClients.length / PAGE_SIZE))
+
+  const paginatedClients = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return sortedClients.slice(start, start + PAGE_SIZE)
+  }, [sortedClients, currentPage])
+
+  const pageStart = sortedClients.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
+  const pageEnd = Math.min(currentPage * PAGE_SIZE, sortedClients.length)
+
+  const activeClients = filteredClients.filter(
+    (client) => String(client.account_status || '').toLowerCase() === 'active',
+  ).length
+
+  const overdueClients = filteredClients.filter(
+    (client) => String(client.account_status || '').toLowerCase() === 'overdue',
+  ).length
+
+  const updateFilter = (key: keyof Filters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }))
+    setCurrentPage(1)
   }
 
   const clearFilters = () => {
     setFilters(DEFAULT_FILTERS)
+    setCurrentPage(1)
   }
 
-  const activeFilterCount = Object.values(filters).filter(
-    Boolean,
-  ).length
+  const activeFilterCount = Object.values(filters).filter(Boolean).length
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDirection(key === 'install_date' ? 'desc' : 'asc')
+    }
+    setCurrentPage(1)
+  }
+
+  const sortIndicator = (key: SortKey) => {
+    if (sortKey !== key) return '↕'
+    return sortDirection === 'asc' ? '↑' : '↓'
+  }
+
+  const allVisibleSelected =
+    paginatedClients.length > 0 &&
+    paginatedClients.every((client) => selectedIds.includes(client.id))
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds((current) =>
+        current.filter((id) => !paginatedClients.some((client) => client.id === id)),
+      )
+      return
+    }
+
+    setSelectedIds((current) => [
+      ...current,
+      ...paginatedClients
+        .map((client) => client.id)
+        .filter((id) => !current.includes(id)),
+    ])
+  }
+
+  const toggleClientSelection = (id: string) => {
+    setSelectedIds((current) =>
+      current.includes(id)
+        ? current.filter((selectedId) => selectedId !== id)
+        : [...current, id],
+    )
+  }
+
+  const exportClients = () => {
+    const rows = selectedIds.length > 0
+      ? clients.filter((client) => selectedIds.includes(client.id))
+      : sortedClients
+
+    if (rows.length === 0) return
+
+    const headers = [
+      'Customer',
+      'Account ID',
+      'Area',
+      'Plan',
+      'Install Date',
+      'Installation Status',
+      'Account Status',
+      'Mobile Number',
+      'PPPoE Name',
+      'Technician',
+    ]
+
+    const csvCell = (value: string | null) =>
+      `"${String(value || '').replaceAll('"', '""')}"`
+
+    const csv = [
+      headers.join(','),
+      ...rows.map((client) => [
+        client.customer_name,
+        client.account_id,
+        client.area,
+        client.plan_name,
+        client.install_date,
+        client.installation_status,
+        client.account_status,
+        client.mobile_number,
+        client.pppoe_name,
+        client.technicians,
+      ].map(csvCell).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `pkc-clients-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const applyBulkStatus = async () => {
+    if (!bulkStatus || selectedIds.length === 0) return
+
+    setBulkSaving(true)
+    setBulkMessage('')
+
+    try {
+      const { error: updateError } = await supabase
+        .from('clients')
+        .update({ account_status: bulkStatus })
+        .in('id', selectedIds)
+
+      if (updateError) throw updateError
+
+      setClients((current) =>
+        current.map((client) =>
+          selectedIds.includes(client.id)
+            ? { ...client, account_status: bulkStatus }
+            : client,
+        ),
+      )
+      setSelectedIds([])
+      setBulkStatus('')
+      setBulkMessage(`${selectedIds.length} client${selectedIds.length === 1 ? '' : 's'} updated.`)
+    } catch (err) {
+      console.error('Bulk client update error:', err)
+      setBulkMessage(
+        err instanceof Error ? err.message : 'Unable to update selected clients.',
+      )
+    } finally {
+      setBulkSaving(false)
+    }
+  }
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
+
+  useEffect(() => {
+    const visibleIds = new Set(clients.map((client) => client.id))
+    setSelectedIds((current) => current.filter((id) => visibleIds.has(id)))
+  }, [clients])
 
   // ------------------------------------------------------------
   // LOADING
@@ -451,57 +623,37 @@ export default function ClientsPage() {
         <div className="statsGrid">
           <div className="statCard">
             <div className="statIcon">👥</div>
-
             <div>
-              <div className="statLabel">
-                CLIENTS
-              </div>
-
-              <div className="statValue">
-                {filteredClients.length}
-              </div>
-            </div>
-          </div>
-
-          <div className="statCard">
-            <div className="statIcon">📡</div>
-
-            <div>
-              <div className="statLabel">
-                PLANS
-              </div>
-
-              <div className="statValue">
-                {plans.length}
-              </div>
-            </div>
-          </div>
-
-          <div className="statCard">
-            <div className="statIcon">📍</div>
-
-            <div>
-              <div className="statLabel">
-                AREAS
-              </div>
-
-              <div className="statValue">
-                {areas.length}
-              </div>
+              <div className="statLabel">CLIENTS</div>
+              <div className="statValue">{filteredClients.length}</div>
+              <div className="statHint">{clients.length} total records</div>
             </div>
           </div>
 
           <div className="statCard">
             <div className="statIcon">✓</div>
-
             <div>
-              <div className="statLabel">
-                FILTERED
-              </div>
+              <div className="statLabel">ACTIVE</div>
+              <div className="statValue">{activeClients}</div>
+              <div className="statHint">Currently active</div>
+            </div>
+          </div>
 
-              <div className="statValue">
-                {activeFilterCount}
-              </div>
+          <div className="statCard">
+            <div className="statIcon">!</div>
+            <div>
+              <div className="statLabel">OVERDUE</div>
+              <div className="statValue">{overdueClients}</div>
+              <div className="statHint">Needs attention</div>
+            </div>
+          </div>
+
+          <div className="statCard">
+            <div className="statIcon">📍</div>
+            <div>
+              <div className="statLabel">AREAS</div>
+              <div className="statValue">{areas.length}</div>
+              <div className="statHint">Unique service areas</div>
             </div>
           </div>
         </div>
@@ -563,7 +715,7 @@ export default function ClientsPage() {
                       event.target.value,
                     )
                   }
-                  placeholder="Search customer..."
+                  placeholder="Search name, account ID, mobile, PPPoE, area..."
                 />
               </label>
 
@@ -593,6 +745,9 @@ export default function ClientsPage() {
                       value={area}
                     >
                       {area}
+                      {areaCustomerCounts.get(normalizeArea(area))
+                        ? ` (${areaCustomerCounts.get(normalizeArea(area))})`
+                        : ''}
                     </option>
                   ))}
                 </select>
@@ -761,6 +916,49 @@ export default function ClientsPage() {
           </div>
         )}
 
+        {selectedIds.length > 0 && (
+          <section className="bulkPanel">
+            <div>
+              <strong>{selectedIds.length} selected</strong>
+              <span>Select clients from the table to apply a bulk action.</span>
+            </div>
+            <div className="bulkActions">
+              <select
+                value={bulkStatus}
+                onChange={(event) => setBulkStatus(event.target.value)}
+              >
+                <option value="">Set account status...</option>
+                {accountStatuses.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="bulkApplyButton"
+                onClick={applyBulkStatus}
+                disabled={!bulkStatus || bulkSaving}
+              >
+                {bulkSaving ? 'Updating...' : 'Apply'}
+              </button>
+              <button
+                type="button"
+                className="bulkExportButton"
+                onClick={exportClients}
+              >
+                Export selected
+              </button>
+              <button
+                type="button"
+                className="bulkClearButton"
+                onClick={() => setSelectedIds([])}
+              >
+                Clear
+              </button>
+            </div>
+            {bulkMessage && <div className="bulkMessage">{bulkMessage}</div>}
+          </section>
+        )}
+
         {/* ==========================================================
             TABLE
         ========================================================== */}
@@ -773,21 +971,19 @@ export default function ClientsPage() {
               </div>
 
               <div className="tableSubtitle">
-                Showing{' '}
-                <strong>
-                  {filteredClients.length}
-                </strong>{' '}
-                of{' '}
-                <strong>
-                  {clients.length}
-                </strong>{' '}
-                clients
+                Showing <strong>{pageStart}–{pageEnd}</strong> of <strong>{sortedClients.length}</strong> matching clients
+                {selectedIds.length > 0 && <> · <strong>{selectedIds.length}</strong> selected</>}
               </div>
             </div>
 
-            <div className="connectionStatus">
-              <span className="connectionDot" />
-              Supabase connected
+            <div className="tableHeaderActions">
+              <button type="button" className="exportButton" onClick={exportClients}>
+                Export CSV{selectedIds.length > 0 ? ' selected' : ''}
+              </button>
+              <div className="connectionStatus">
+                <span className="connectionDot" />
+                Supabase connected
+              </div>
             </div>
           </div>
 
@@ -821,20 +1017,31 @@ export default function ClientsPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Customer</th>
-                    <th>Area</th>
-                    <th>Plan</th>
-                    <th>Install date</th>
-                    <th>Installation</th>
-                    <th>Account</th>
+                    <th className="checkColumn">
+                      <input type="checkbox" aria-label="Select visible clients" checked={allVisibleSelected} onChange={toggleSelectAllVisible} />
+                    </th>
+                    <th><button className="sortButton" onClick={() => toggleSort('customer_name')}>Customer {sortIndicator('customer_name')}</button></th>
+                    <th><button className="sortButton" onClick={() => toggleSort('area')}>Area {sortIndicator('area')}</button></th>
+                    <th><button className="sortButton" onClick={() => toggleSort('plan_name')}>Plan {sortIndicator('plan_name')}</button></th>
+                    <th><button className="sortButton" onClick={() => toggleSort('install_date')}>Install date {sortIndicator('install_date')}</button></th>
+                    <th><button className="sortButton" onClick={() => toggleSort('installation_status')}>Installation {sortIndicator('installation_status')}</button></th>
+                    <th><button className="sortButton" onClick={() => toggleSort('account_status')}>Account {sortIndicator('account_status')}</button></th>
                     <th />
                   </tr>
                 </thead>
 
                 <tbody>
-                  {filteredClients.map(
+                  {paginatedClients.map(
                     (client) => (
-                      <tr key={client.id}>
+                      <tr key={client.id} className={selectedIds.includes(client.id) ? 'rowSelected' : ''}>
+                        <td className="checkColumn">
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${client.customer_name || 'client'}`}
+                            checked={selectedIds.includes(client.id)}
+                            onChange={() => toggleClientSelection(client.id)}
+                          />
+                        </td>
                         {/* CUSTOMER */}
 
                         <td>
@@ -925,6 +1132,18 @@ export default function ClientsPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {sortedClients.length > 0 && (
+            <div className="paginationBar">
+              <span className="paginationText">Page {currentPage} of {totalPages}</span>
+              <div className="paginationButtons">
+                <button type="button" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>First</button>
+                <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1}>Previous</button>
+                <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages}>Next</button>
+                <button type="button" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>Last</button>
+              </div>
             </div>
           )}
         </section>
@@ -1313,6 +1532,161 @@ const styles = `
   select option {
     background: #071117;
     color: white;
+  }
+
+  .statHint {
+    margin-top: 4px;
+    color: #526a7b;
+    font-size: 9px;
+  }
+
+  .tableHeaderActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .exportButton,
+  .bulkExportButton,
+  .bulkApplyButton,
+  .bulkClearButton {
+    border: 1px solid rgba(21,153,255,0.2);
+    background: rgba(21,153,255,0.07);
+    color: #8bcaff;
+    padding: 8px 11px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 750;
+  }
+
+  .exportButton:hover,
+  .bulkExportButton:hover,
+  .bulkApplyButton:hover:not(:disabled),
+  .bulkClearButton:hover {
+    background: rgba(21,153,255,0.13);
+    border-color: rgba(21,153,255,0.4);
+  }
+
+  .bulkPanel {
+    position: relative;
+    margin-bottom: 15px;
+    padding: 14px 16px;
+    border: 1px solid rgba(21,153,255,0.18);
+    background: rgba(21,153,255,0.045);
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  .bulkPanel strong {
+    display: block;
+    font-size: 12px;
+  }
+
+  .bulkPanel span {
+    display: block;
+    margin-top: 3px;
+    color: #607787;
+    font-size: 10px;
+  }
+
+  .bulkActions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+
+  .bulkActions select {
+    width: auto;
+    min-width: 170px;
+  }
+
+  .bulkApplyButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .bulkMessage {
+    flex-basis: 100%;
+    color: #78c5ff;
+    font-size: 10px;
+  }
+
+  .checkColumn {
+    width: 42px;
+    text-align: center !important;
+    padding-left: 12px !important;
+    padding-right: 8px !important;
+  }
+
+  .checkColumn input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: #1599ff;
+  }
+
+  .sortButton {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .sortButton:hover {
+    color: #9fd4ff;
+  }
+
+  .rowSelected {
+    background: rgba(21,153,255,0.06);
+  }
+
+  .paginationBar {
+    padding: 14px 18px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .paginationText {
+    color: #607787;
+    font-size: 10px;
+  }
+
+  .paginationButtons {
+    display: flex;
+    gap: 6px;
+  }
+
+  .paginationButtons button {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.035);
+    color: #8ca1b1;
+    padding: 7px 9px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 10px;
+  }
+
+  .paginationButtons button:hover:not(:disabled) {
+    color: white;
+    border-color: rgba(21,153,255,0.35);
+  }
+
+  .paginationButtons button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 
   .errorBox {
@@ -1713,6 +2087,38 @@ const styles = `
       align-items: flex-start;
       flex-direction: column;
       padding: 17px 18px;
+    }
+
+    .tableHeaderActions {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .exportButton {
+      width: 100%;
+    }
+
+    .paginationBar {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .paginationButtons {
+      width: 100%;
+    }
+
+    .paginationButtons button {
+      flex: 1;
+    }
+
+    .bulkActions {
+      width: 100%;
+    }
+
+    .bulkActions select,
+    .bulkActions button {
+      flex: 1;
     }
 
     .footer {
