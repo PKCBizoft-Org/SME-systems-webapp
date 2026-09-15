@@ -234,13 +234,14 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 export default function HomePage() {
   const globeRef = useRef<any>(null);
   const [activeFeature, setActiveFeature] = useState(0);
-  const [networkLive, setNetworkLive] = useState(true);
   const [time, setTime] = useState("");
   const [storySection, setStorySection] = useState("network");
   const [introVisible, setIntroVisible] = useState(true);
   const [introExiting, setIntroExiting] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState(NETWORK_POINTS.find((point) => point.id === "philippines") ?? NETWORK_POINTS[0]);
+  const [showFeatureDetail, setShowFeatureDetail] = useState(false);
 
   useEffect(() => {
     const finishIntro = () => {
@@ -475,34 +476,6 @@ export default function HomePage() {
       <div className="grid" />
       <div className="cursorGlow" aria-hidden="true" />
 
-      <div className="storyProgress" aria-label="Page story progress">
-        <div className="storyProgressLine">
-          <span className="storyProgressFill" />
-        </div>
-        <div className="storySteps">
-          {[
-            ["network", "01", "NETWORK"],
-            ["systems", "02", "SYSTEM"],
-            ["features", "03", "CAPABILITIES"],
-          ].map(([id, number, label]) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              className={storySection === id ? "active" : ""}
-              aria-label={`Go to ${label}`}
-            >
-              <span>{number}</span>
-              <small>{label}</small>
-            </a>
-          ))}
-        </div>
-      </div>
-
-      <div className="scrollHint" aria-hidden="true">
-        <span>SCROLL TO EXPLORE</span>
-        <i />
-      </div>
-
       <nav className="nav">
         <a className="brand" href="#network">
           <img className="brandLogo" src={PKC_LOGO} alt="PKC BIZOFT" />
@@ -519,14 +492,6 @@ export default function HomePage() {
         </div>
         <div className="navRight">
           <span className="clock">{time || "--:--:--"} PHT</span>
-          <button
-            className={`liveToggle ${networkLive ? "on" : ""}`}
-            onClick={() => setNetworkLive((v) => !v)}
-            aria-label="Toggle network status"
-          >
-            <span />
-            {networkLive ? "LIVE" : "PAUSED"}
-          </button>
           <a className="loginButton" href="/login">
             ENTER SYSTEM <span>↗</span>
           </a>
@@ -543,6 +508,43 @@ export default function HomePage() {
         </div>
       </nav>
 
+          <nav className="whereYouAre" aria-label="Jump to section">
+            <div className="whereYouAreTop">
+              <span className="whereYouAreLabel"><i /> WHERE YOU ARE</span>
+              <span className="whereYouAreCount">{storySection === "network" ? "01" : storySection === "systems" ? "02" : "03"} / 03</span>
+            </div>
+            <div className="whereYouAreChoices">
+              <a href="#network" className={storySection === "network" ? "whereYouAreChoice active" : "whereYouAreChoice"} aria-current={storySection === "network" ? "location" : undefined}>
+                <span className="whereYouAreChoiceDot" />
+                <span className="whereYouAreChoiceCollapsed">Network</span>
+                <span className="whereYouAreChoiceExpanded">
+                  <span className="whereYouAreChoiceNumber">01</span>
+                  <span className="whereYouAreChoiceText"><strong>NETWORK</strong><small>THE CONNECTED BUSINESS NETWORK</small></span>
+                  <span className="whereYouAreChoiceArrow">↗</span>
+                </span>
+              </a>
+              <a href="#systems" className={storySection === "systems" ? "whereYouAreChoice active" : "whereYouAreChoice"} aria-current={storySection === "systems" ? "location" : undefined}>
+                <span className="whereYouAreChoiceDot" />
+                <span className="whereYouAreChoiceCollapsed">Systems</span>
+                <span className="whereYouAreChoiceExpanded">
+                  <span className="whereYouAreChoiceNumber">02</span>
+                  <span className="whereYouAreChoiceText"><strong>SYSTEMS</strong><small>THE OPERATIONAL LAYER</small></span>
+                  <span className="whereYouAreChoiceArrow">↗</span>
+                </span>
+              </a>
+              <a href="#features" className={storySection === "features" ? "whereYouAreChoice active" : "whereYouAreChoice"} aria-current={storySection === "features" ? "location" : undefined}>
+                <span className="whereYouAreChoiceDot" />
+                <span className="whereYouAreChoiceCollapsed">Capabilities</span>
+                <span className="whereYouAreChoiceExpanded">
+                  <span className="whereYouAreChoiceNumber">03</span>
+                  <span className="whereYouAreChoiceText"><strong>CAPABILITIES</strong><small>WHAT PKC BIZOFT CAN DO</small></span>
+                  <span className="whereYouAreChoiceArrow">↗</span>
+                </span>
+              </a>
+            </div>
+            <span className="whereYouAreHint">SELECT A DESTINATION</span>
+          </nav>
+
       <section className="hero storySection storyVisible" id="network" data-story-section="network">
         <div className="heroCopy">
           <div className="eyebrow">
@@ -555,9 +557,9 @@ export default function HomePage() {
             <span>Connected.</span>
           </h1>
           <p>
-            PKC BIZOFT turns everyday operations into a living network —
-            connecting clients, services, people and data in one intelligent
-            workspace.
+            PKC BIZOFT connects the moving parts of your business — clients,
+            services, people and data — so the work behind the scenes stays
+            visible, coordinated and ready to move.
           </p>
           <div className="heroActions">
             <a href="/login" className="primaryButton">
@@ -581,6 +583,7 @@ export default function HomePage() {
               <span>ROOM TO SCALE</span>
             </div>
           </div>
+
           <div className="heroSignalStrip" aria-label="Network capabilities">
             <span><i /> CLIENTS</span>
             <span><i /> SERVICES</span>
@@ -635,7 +638,7 @@ export default function HomePage() {
               ringMaxRadius={(d: any) => (d.id === "philippines" ? 4.5 : 3.1)}
               ringPropagationSpeed={1.3}
               ringRepeatPeriod={1150}
-              arcsData={networkLive ? ROUTE_ARCS : []}
+              arcsData={ROUTE_ARCS}
               arcStartLat="startLat"
               arcStartLng="startLng"
               arcEndLat="endLat"
@@ -646,7 +649,7 @@ export default function HomePage() {
               arcDashLength={0.45}
               arcDashGap={1.25}
               arcDashAnimateTime={1800}
-              pathsData={networkLive ? ROUTES : []}
+              pathsData={ROUTES}
               pathPoints="coords"
               pathPointLat={(p: number[]) => p[0]}
               pathPointLng={(p: number[]) => p[1]}
@@ -662,7 +665,9 @@ export default function HomePage() {
               htmlTransitionDuration={0}
               htmlElement={(d: any) => {
                 const element = document.createElement("div");
-                element.innerHTML = `<span class="geoAnchor"></span><span class="geoHalo"></span><span class="geoLine"></span><span class="geoArrow"></span><div class="geoCard"><div class="geoIcon"><span class="iconMount"></span></div><div class="geoText"><strong>${d.label}</strong><small>${d.sub}</small><div class="geoMeta"><em><i></i>${d.status}</em><b>${d.metric}</b></div></div></div>`;
+                element.innerHTML = `<span class="geoAnchor"></span><span class="geoHalo"></span><span class="geoLine"></span><span class="geoArrow"></span><button class="geoCard" type="button" aria-label="Inspect ${d.label}"><div class="geoIcon"><span class="iconMount"></span></div><div class="geoText"><strong>${d.label}</strong><small>${d.sub}</small><div class="geoMeta"><em><i></i>${d.status}</em><b>${d.metric}</b></div><span class="geoAction">INSPECT NODE ↗</span></div></button>`;
+                const card = element.querySelector(".geoCard") as HTMLButtonElement | null;
+                if (card) card.addEventListener("click", () => setSelectedNode(d));
                 const mount = element.querySelector(".iconMount");
                 if (mount) {
                   const icons: any = {
@@ -690,29 +695,19 @@ export default function HomePage() {
             />
           </div>
           <div className="globeLabel bottom">
-            <span>
-              <i /> ROUTES SYNCHRONIZED
-            </span>
-            <b>{networkLive ? "LIVE" : "STANDBY"}</b>
+            <span><i /> NETWORK ROUTES</span>
+            <b>SYNCHRONIZED</b>
           </div>
-          <div className="orbitReadout">
-            <span className="orbitDot" />
-            <strong>EARTH LINK</strong>
-            <small>AUTO ROTATION • ACTIVE</small>
-          </div>
-          <div className="heroTelemetry" aria-hidden="true">
-            <span><b>LATENCY</b><strong>18ms</strong></span>
-            <span><b>UPTIME</b><strong>99.9%</strong></span>
-            <span><b>STATUS</b><strong>STABLE</strong></span>
+          <div className="nodeInspector" aria-live="polite">
+            <div className="nodeInspectorTop"><span><i /> SELECTED NODE</span><b>{selectedNode.status}</b></div>
+            <strong>{selectedNode.label}</strong>
+            <span>{selectedNode.sub}</span>
+            <div className="nodeInspectorMeta"><span>METRIC <b>{selectedNode.metric}</b></span><span>REGION <b>{selectedNode.id === "philippines" ? "PH" : selectedNode.id.toUpperCase()}</b></span></div>
+
           </div>
         </div>
       </section>
 
-      <div className="signalTicker" aria-hidden="true">
-        <div className="tickerTrack">
-          <span>PKC NETWORK</span><i /> <span>CLIENTS</span><i /> <span>SERVICES</span><i /> <span>OPERATIONS</span><i /> <span>DATA</span><i /> <span>PEOPLE</span><i /> <span>PKC NETWORK</span><i /> <span>CLIENTS</span><i /> <span>SERVICES</span><i /> <span>OPERATIONS</span><i /> <span>DATA</span><i /> <span>PEOPLE</span><i />
-        </div>
-      </div>
 
       <section className="systems storySection" id="systems" data-story-section="systems">
         <div className="sectionHeading">
@@ -725,8 +720,8 @@ export default function HomePage() {
             </h2>
           </div>
           <p>
-            A connected view of the signals that matter — without turning the
-            homepage into a wall of dashboards.
+            One operational layer for the signals your team actually needs.
+            Clear enough to understand at a glance, powerful enough to grow with the work.
           </p>
         </div>
         <div className="systemGrid">
@@ -761,10 +756,10 @@ export default function HomePage() {
               <div className="dataParticle p3" />
             </div>
             <div className="systemCopy">
-              <h3>Everything talks.</h3>
+              <h3>Everything works together.</h3>
               <p>
-                Bring your core business signals into a single connected
-                environment.
+                Connect clients, billing, operations and data so one update can
+                move through the business without getting lost between systems.
               </p>
             </div>
           </article>
@@ -792,10 +787,10 @@ export default function HomePage() {
               </div>
             </div>
             <div className="systemCopy">
-              <h3>See what matters.</h3>
+              <h3>See the signal, not the noise.</h3>
               <p>
-                Turn scattered activity into clean, readable operational
-                signals.
+                Turn scattered activity into clear operational signals your team
+                can understand and act on quickly.
               </p>
             </div>
           </article>
@@ -812,10 +807,10 @@ export default function HomePage() {
               <span>SECURE</span>
             </div>
             <div className="systemCopy">
-              <h3>Stay protected.</h3>
+              <h3>Keep every workspace protected.</h3>
               <p>
-                Tenant-aware access keeps business information isolated and
-                controlled.
+                Controlled, tenant-aware access keeps business information
+                separated while the right people stay connected to their work.
               </p>
             </div>
           </article>
@@ -831,8 +826,8 @@ export default function HomePage() {
             <em>your workflow.</em>
           </h2>
           <p>
-            Focused tools for the parts of a business that need the clearest
-            view.
+            Practical tools for the moments where clarity matters most —
+            from customer relationships to day-to-day operations.
           </p>
         </div>
         <div className="featureList">
@@ -841,7 +836,10 @@ export default function HomePage() {
               type="button"
               key={feature.number}
               className={`featureCard ${activeFeature === index ? "active" : ""}`}
-              onClick={() => setActiveFeature(index)}
+              onClick={() => {
+                setActiveFeature(index);
+                setShowFeatureDetail(true);
+              }}
               aria-pressed={activeFeature === index}
             >
               <span className="featureCardTop">
@@ -859,12 +857,26 @@ export default function HomePage() {
         </div>
       </section>
 
+      {showFeatureDetail && (
+        <div className="featureDetailBackdrop" role="presentation" onClick={() => setShowFeatureDetail(false)}>
+          <aside className="featureDetail" role="dialog" aria-modal="true" aria-label={`${features[activeFeature].title} details`} onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="featureDetailClose" onClick={() => setShowFeatureDetail(false)} aria-label="Close feature details">×</button>
+            <span className="sectionKicker">CAPABILITY / {features[activeFeature].number}</span>
+            <div className="featureDetailIcon"><Icon name={features[activeFeature].icon} size={28} /></div>
+            <h3>{features[activeFeature].title}</h3>
+            <p>{features[activeFeature].text}</p>
+            <div className="featureDetailList"><span><i /> CONNECTED WORKFLOW</span><span><i /> CLEAR OPERATIONAL SIGNALS</span><span><i /> BUILT TO SCALE</span></div>
+            <button type="button" className="primaryButton detailAction" onClick={() => { setShowFeatureDetail(false); document.getElementById("network")?.scrollIntoView({ behavior: "smooth" }); }}>BACK TO NETWORK <span>↑</span></button>
+          </aside>
+        </div>
+      )}
+
       <section className="finalCta storySection" data-story-section="features">
         <div className="finalCtaGrid" />
         <div className="finalCtaCopy">
           <span className="sectionKicker">NEXT / PRIVATE WORKSPACE</span>
-          <h2>Ready to move<br /><em>inside the system?</em></h2>
-          <p>The public network shows the architecture. The workspace is where your business actually moves.</p>
+          <h2>Ready to put<br /><em>the network to work?</em></h2>
+          <p>The public network shows how the pieces connect. BIZOFT is where your team turns that connection into everyday action.</p>
           <a href="/login" className="primaryButton">ENTER BIZOFT <span>↗</span></a>
         </div>
         <div className="finalCtaCore"><div className="ctaRing ctaRingA" /><div className="ctaRing ctaRingB" /><img src={PKC_LOGO} alt="PKC BIZOFT" /><span>PRIVATE / 01</span></div>
@@ -1077,30 +1089,6 @@ export default function HomePage() {
           opacity: 0.45;
         }
 
-        .liveToggle {
-          border: 1px solid rgba(65, 229, 255, 0.22);
-          background: rgba(16, 45, 54, 0.55);
-          color: #9eeefa;
-          padding: 8px 11px;
-          border-radius: 999px;
-          font-size: 10px;
-          letter-spacing: 0.16em;
-          cursor: pointer;
-        }
-
-        .liveToggle span {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          display: inline-block;
-          background: #53656b;
-          margin-right: 6px;
-        }
-
-        .liveToggle.on span {
-          background: #46f4bd;
-          box-shadow: 0 0 9px #46f4bd;
-        }
 
         .loginButton,
         .primaryButton {
@@ -2868,8 +2856,8 @@ export default function HomePage() {
           will-change: opacity, transform;
         }
 
-        .cursorGlow{position:fixed;left:var(--mx,50%);top:var(--my,50%);width:360px;height:360px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(46,224,255,.075),transparent 68%);filter:blur(3px);pointer-events:none;z-index:1;mix-blend-mode:screen;transition:opacity .3s ease}.signalTicker{position:relative;z-index:4;overflow:hidden;border-top:1px solid rgba(99,232,255,.08);border-bottom:1px solid rgba(99,232,255,.08);background:rgba(2,11,15,.7);white-space:nowrap}.tickerTrack{display:flex;align-items:center;gap:18px;width:max-content;padding:11px 0;animation:ticker 34s linear infinite;color:rgba(205,247,255,.28);font-size:8px;letter-spacing:.22em}.tickerTrack i{width:3px;height:3px;border-radius:50%;background:#4eeaff;box-shadow:0 0 10px rgba(78,234,255,.8)}@keyframes ticker{to{transform:translateX(-50%)}}.menuButton,.mobileMenu{display:none}.finalCta{width:min(1400px,calc(100% - 64px));min-height:440px;margin:80px auto 90px;position:relative;overflow:hidden;border:1px solid rgba(102,231,255,.11);border-radius:18px;background:radial-gradient(circle at 80% 50%,rgba(61,221,255,.1),transparent 28%),linear-gradient(135deg,rgba(5,21,28,.92),rgba(2,9,13,.86));display:grid;grid-template-columns:1.15fr .85fr;align-items:center;padding:70px}.finalCtaGrid{position:absolute;inset:0;opacity:.23;background-image:linear-gradient(rgba(90,230,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(90,230,255,.06) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(90deg,black,transparent 75%)}.finalCtaCopy{position:relative;z-index:2}.finalCta h2{margin:14px 0 20px;font-size:clamp(48px,6vw,82px);line-height:.9;letter-spacing:-.065em}.finalCta h2 em{font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(132,239,255,.72)}.finalCta p{max-width:510px;color:rgba(220,250,255,.5);font-size:13px;line-height:1.8;margin:0 0 28px}.finalCtaCore{justify-self:end;width:260px;height:260px;border:1px solid rgba(86,231,255,.17);border-radius:50%;display:grid;place-items:center;position:relative;background:rgba(3,16,22,.65);box-shadow:0 0 80px rgba(40,215,255,.09),inset 0 0 50px rgba(40,215,255,.05)}.finalCtaCore img{width:108px;height:108px;object-fit:contain;filter:drop-shadow(0 0 22px rgba(70,232,255,.24));z-index:2}.finalCtaCore span{position:absolute;bottom:-28px;font-size:8px;letter-spacing:.18em;color:rgba(178,242,255,.34)}.ctaRing{position:absolute;border:1px solid rgba(80,230,255,.16);border-radius:50%}.ctaRingA{inset:20px;animation:spin 15s linear infinite}.ctaRingB{inset:-16px;border-style:dashed;border-color:rgba(176,148,255,.12);animation:spin 21s linear infinite reverse}
-        @media (max-width:620px){.finalCta{margin:55px auto 65px;min-height:520px;padding:42px 22px}.finalCta h2{font-size:clamp(43px,12vw,64px)}.finalCtaCore{width:170px;height:170px}.finalCtaCore img{width:76px;height:76px}.cursorGlow{display:none}.tickerTrack{animation-duration:28s}}
+        .cursorGlow{position:fixed;left:var(--mx,50%);top:var(--my,50%);width:360px;height:360px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(46,224,255,.075),transparent 68%);filter:blur(3px);pointer-events:none;z-index:1;mix-blend-mode:screen;transition:opacity .3s ease}.menuButton,.mobileMenu{display:none}.finalCta{width:min(1400px,calc(100% - 64px));min-height:440px;margin:80px auto 90px;position:relative;overflow:hidden;border:1px solid rgba(102,231,255,.11);border-radius:18px;background:radial-gradient(circle at 80% 50%,rgba(61,221,255,.1),transparent 28%),linear-gradient(135deg,rgba(5,21,28,.92),rgba(2,9,13,.86));display:grid;grid-template-columns:1.15fr .85fr;align-items:center;padding:70px}.finalCtaGrid{position:absolute;inset:0;opacity:.23;background-image:linear-gradient(rgba(90,230,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(90,230,255,.06) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(90deg,black,transparent 75%)}.finalCtaCopy{position:relative;z-index:2}.finalCta h2{margin:14px 0 20px;font-size:clamp(48px,6vw,82px);line-height:.9;letter-spacing:-.065em}.finalCta h2 em{font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(132,239,255,.72)}.finalCta p{max-width:510px;color:rgba(220,250,255,.5);font-size:13px;line-height:1.8;margin:0 0 28px}.finalCtaCore{justify-self:end;width:260px;height:260px;border:1px solid rgba(86,231,255,.17);border-radius:50%;display:grid;place-items:center;position:relative;background:rgba(3,16,22,.65);box-shadow:0 0 80px rgba(40,215,255,.09),inset 0 0 50px rgba(40,215,255,.05)}.finalCtaCore img{width:108px;height:108px;object-fit:contain;filter:drop-shadow(0 0 22px rgba(70,232,255,.24));z-index:2}.finalCtaCore span{position:absolute;bottom:-28px;font-size:8px;letter-spacing:.18em;color:rgba(178,242,255,.34)}.ctaRing{position:absolute;border:1px solid rgba(80,230,255,.16);border-radius:50%}.ctaRingA{inset:20px;animation:spin 15s linear infinite}.ctaRingB{inset:-16px;border-style:dashed;border-color:rgba(176,148,255,.12);animation:spin 21s linear infinite reverse}
+        @media (max-width:620px){.finalCta{margin:55px auto 65px;min-height:520px;padding:42px 22px}.finalCta h2{font-size:clamp(43px,12vw,64px)}.finalCtaCore{width:170px;height:170px}.finalCtaCore img{width:76px;height:76px}.cursorGlow{display:none}}
         @media (prefers-reduced-motion: no-preference) {
           .page {
             scroll-snap-type: y proximity;
@@ -3151,19 +3139,6 @@ export default function HomePage() {
 
         @media (max-width: 980px) {
           .teamRoute { max-width: none; }
-          .storyProgress {
-            left: 14px;
-          }
-
-          .storySteps a {
-            width: 8px;
-          }
-
-          .storySteps a span,
-          .storySteps a small {
-            display: none;
-          }
-
           .scrollHint {
             right: 18px;
           }
@@ -3271,7 +3246,7 @@ export default function HomePage() {
         }
 
         @media (max-width: 800px) {
-          .navLinks,.navRight .clock,.navRight .liveToggle{display:none}
+          .navLinks,.navRight .clock{display:none}
           .navRight{margin-left:auto}
           .menuButton{display:flex;width:42px;height:42px;align-items:center;justify-content:center;flex-direction:column;gap:6px;border:1px solid rgba(106,231,255,.14);background:rgba(4,17,23,.72);color:#a9f6ff;border-radius:7px;cursor:pointer}
           .menuButton span{width:15px;height:1px;background:currentColor;transition:transform .3s ease}
@@ -3333,10 +3308,6 @@ export default function HomePage() {
 
           .brand small {
             font-size: 8px;
-          }
-
-          .navRight .liveToggle {
-            display: none;
           }
 
           .loginButton {
@@ -3529,9 +3500,973 @@ export default function HomePage() {
             scroll-behavior: auto !important;
           }
         }
-      `}</style>
+        /* ===== Experience upgrade ===== */
+        .storyProgress {
+          left: 22px;
+          width: 214px;
+          padding: 15px 14px 14px;
+          display: grid;
+          grid-template-columns: 5px 1fr;
+          grid-template-rows: auto 1fr;
+          gap: 12px;
+          pointer-events: auto;
+          border: 1px solid rgba(83, 232, 255, .12);
+          border-radius: 12px;
+          background: linear-gradient(160deg, rgba(4, 19, 26, .86), rgba(2, 9, 14, .72));
+          backdrop-filter: blur(18px);
+          box-shadow: 0 18px 55px rgba(0,0,0,.26), inset 0 1px rgba(255,255,255,.035);
+        }
+        .storyProgressHeader {
+          grid-column: 1 / -1;
+          display: grid;
+          gap: 5px;
+          padding-bottom: 9px;
+          border-bottom: 1px solid rgba(100, 230, 255, .08);
+        }
+        .storyProgressEyebrow {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 8px;
+          letter-spacing: .18em;
+          color: rgba(205, 249, 255, .43);
+        }
+        .storyProgressEyebrow i {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #54edc0;
+          box-shadow: 0 0 9px #54edc0;
+          animation: blink 1.5s ease-in-out infinite;
+        }
+        .storyProgressHeader strong {
+          font-size: 17px;
+          letter-spacing: .05em;
+          color: #dffcff;
+        }
+        .storyProgressHeader small {
+          font-size: 7px;
+          letter-spacing: .16em;
+          color: rgba(181, 237, 247, .32);
+        }
+        .storyProgressLine {
+          width: 2px;
+          min-height: 168px;
+          background: rgba(80,170,220,.13);
+          border-radius: 99px;
+        }
+        .storyProgressFill { width: 100%; }
+        .storySteps {
+          display: grid;
+          gap: 4px;
+          min-width: 0;
+        }
+        .storySteps a {
+          width: 100%;
+          min-height: 52px;
+          display: grid;
+          grid-template-columns: 28px 1fr 14px;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 7px;
+          border: 1px solid transparent;
+          border-radius: 8px;
+          color: rgba(216, 249, 255, .43);
+          transition: .28s ease;
+        }
+        .storySteps a:hover {
+          color: rgba(230, 253, 255, .86);
+          border-color: rgba(82,230,255,.12);
+          background: rgba(47,220,255,.045);
+          transform: translateX(3px);
+        }
+        .storySteps a.active {
+          color: #eaffff;
+          border-color: rgba(83,232,255,.18);
+          background: linear-gradient(90deg, rgba(49,222,255,.1), rgba(49,222,255,.025));
+          box-shadow: inset 2px 0 #42e7ff;
+        }
+        .storyStepNumber {
+          font-size: 9px;
+          letter-spacing: .12em;
+          color: #4de4ff;
+        }
+        .storyStepCopy { display: grid; gap: 3px; }
+        .storyStepCopy b { font-size: 9px; letter-spacing: .15em; }
+        .storyStepCopy small { font-size: 7px; line-height: 1.35; color: rgba(193,239,247,.32); }
+        .storyStepArrow { font-size: 12px; opacity: .25; transition: .25s; }
+        .storySteps a.active .storyStepArrow,
+        .storySteps a:hover .storyStepArrow { opacity: 1; color: #55eaff; }
+
+        :global(.geoCard) {
+          pointer-events: auto !important;
+          appearance: none;
+          -webkit-appearance: none;
+          cursor: pointer;
+          text-align: left;
+          color: inherit;
+          transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease;
+        }
+        :global(.geoCard:hover) {
+          transform: translateX(-50%) translateY(-4px) scale(1.025);
+          border-color: rgba(81,227,255,.55);
+          box-shadow: 0 18px 44px rgba(0,0,0,.42), 0 0 30px rgba(26,211,255,.13);
+        }
+        :global(.geoCard:focus-visible) { outline: 1px solid #55eaff; outline-offset: 4px; }
+        :global(.geoAction) {
+          display: inline-block;
+          margin-top: 6px;
+          font-size: 7px;
+          letter-spacing: .16em;
+          color: rgba(90,237,255,.62);
+        }
+        .nodeInspector {
+          position: absolute;
+          z-index: 9;
+          left: 34px;
+          bottom: 82px;
+          width: 205px;
+          padding: 13px;
+          border: 1px solid rgba(83,232,255,.16);
+          border-radius: 10px;
+          background: rgba(2,12,18,.78);
+          backdrop-filter: blur(15px);
+          box-shadow: 0 16px 42px rgba(0,0,0,.3);
+          animation: inspectorIn .55s cubic-bezier(.2,.8,.2,1) both;
+        }
+        .nodeInspectorTop, .nodeInspectorMeta { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+        .nodeInspectorTop span, .nodeInspectorMeta span { font-size:7px; letter-spacing:.14em; color:rgba(201,245,253,.35); }
+        .nodeInspectorTop span i { display:inline-block; width:5px; height:5px; margin-right:5px; border-radius:50%; background:#4cefc0; box-shadow:0 0 8px #4cefc0; }
+        .nodeInspectorTop b { font-size:7px; letter-spacing:.14em; color:#55e7c1; }
+        .nodeInspector > strong { display:block; margin-top:10px; font-size:11px; letter-spacing:.11em; color:#e9fdff; }
+        .nodeInspector > span { display:block; margin-top:4px; font-size:8px; letter-spacing:.1em; color:rgba(205,246,252,.4); }
+        .nodeInspectorMeta { margin-top:10px; padding-top:9px; border-top:1px solid rgba(104,229,255,.08); }
+        .nodeInspectorMeta b { color:rgba(226,253,255,.7); font-weight:600; }
+        .nodeInspector > button {
+          width:100%; margin-top:11px; padding:8px 9px; border:1px solid rgba(81,227,255,.15); border-radius:6px;
+          background:rgba(61,220,255,.05); color:rgba(222,252,255,.68); font-size:7px; letter-spacing:.15em; cursor:pointer;
+          transition:.25s ease;
+        }
+        .nodeInspector > button:hover { background:rgba(61,220,255,.1); border-color:rgba(81,227,255,.35); color:#eaffff; }
+        @keyframes inspectorIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+        .networkGraphic { height: 248px; flex-basis: 248px; }
+        .networkCore { width: 104px; height: 104px; box-shadow: 0 0 55px rgba(34,218,255,.16), inset 0 0 30px rgba(34,218,255,.1); }
+        .networkCore i { width: 138px; height: 138px; }
+        .node { min-width: 88px; padding: 9px 11px; font-size: 8px; border-radius: 7px; }
+        .nodeA { top: 16%; left: 7%; }
+        .nodeB { top: 16%; right: 7%; }
+        .nodeC { bottom: 13%; left: 9%; }
+        .nodeD { bottom: 13%; right: 9%; }
+        .dataParticle { width: 6px; height: 6px; }
+        .systemCard.large { background: radial-gradient(circle at 50% 38%, rgba(25,207,240,.06), transparent 40%), linear-gradient(145deg,rgba(10,31,39,.88),rgba(2,12,17,.96)); }
+        .systemCard.large::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(115deg,transparent 25%,rgba(76,232,255,.035) 50%,transparent 75%); transform:translateX(-100%); animation:cardSweep 6s ease-in-out infinite; }
+        @keyframes cardSweep { 55%,100% { transform:translateX(100%); } }
+
+        .featureCard { isolation:isolate; }
+        .featureCard::before { content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; opacity:0; background:radial-gradient(circle at 80% 15%,rgba(80,231,255,.13),transparent 38%); transition:.35s; }
+        .featureCard.active::before, .featureCard:hover::before { opacity:1; }
+        .featureText { transition:color .3s, transform .3s; }
+        .featureCard.active .featureText { color:rgba(225,253,255,.72); transform:translateX(2px); }
+
+        .featureDetailBackdrop { position:fixed; inset:0; z-index:100; display:grid; place-items:center; padding:24px; background:rgba(0,5,9,.62); backdrop-filter:blur(10px); animation:fadeIn .22s ease both; }
+        .featureDetail { position:relative; width:min(520px,100%); padding:34px; border:1px solid rgba(83,232,255,.2); border-radius:16px; background:linear-gradient(145deg,rgba(7,26,34,.97),rgba(2,10,15,.98)); box-shadow:0 35px 100px rgba(0,0,0,.5), 0 0 55px rgba(34,218,255,.08); animation:detailIn .35s cubic-bezier(.2,.8,.2,1) both; }
+        .featureDetailClose { position:absolute; top:14px; right:14px; width:34px; height:34px; border:1px solid rgba(105,231,255,.12); border-radius:7px; background:rgba(255,255,255,.025); color:rgba(225,252,255,.6); font-size:20px; cursor:pointer; transition:.2s; }
+        .featureDetailClose:hover { color:#eaffff; border-color:rgba(105,231,255,.35); transform:rotate(90deg); }
+        .featureDetailIcon { width:58px; height:58px; margin:28px 0 18px; display:grid; place-items:center; border:1px solid rgba(83,232,255,.22); border-radius:12px; color:#53e8ff; background:rgba(44,220,255,.06); box-shadow:0 0 30px rgba(44,220,255,.08); }
+        .featureDetail h3 { margin:0; font-size:34px; letter-spacing:-.045em; }
+        .featureDetail p { margin:14px 0 24px; color:rgba(220,250,255,.58); line-height:1.8; font-size:13px; }
+        .featureDetailList { display:grid; gap:10px; padding:16px 0; border-top:1px solid rgba(105,231,255,.08); border-bottom:1px solid rgba(105,231,255,.08); }
+        .featureDetailList span { font-size:8px; letter-spacing:.16em; color:rgba(206,247,254,.48); }
+        .featureDetailList i { display:inline-block; width:5px; height:5px; margin-right:8px; border-radius:50%; background:#53e8ff; box-shadow:0 0 8px #53e8ff; }
+        .detailAction { display:inline-flex; margin-top:22px; }
+        @keyframes fadeIn { from{opacity:0}to{opacity:1} }
+        @keyframes detailIn { from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none} }
+
+        @media (max-width: 980px) {
+          .storyProgress { left:10px; width:190px; }
+          .storyProgressHeader strong { font-size:15px; }
+        }
+        @media (max-width: 800px) {
+          .nodeInspector { left:14px; bottom:58px; width:190px; }
+          .storyProgress { display:none; }
+        }
+        @media (max-width: 620px) {
+          .nodeInspector { left:10px; bottom:45px; width:178px; padding:10px; }
+          .networkGraphic { height:205px; flex-basis:205px; }
+          .networkCore { width:82px; height:82px; }
+          .networkCore i { width:108px; height:108px; }
+          .node { min-width:68px; padding:7px 8px; font-size:7px; }
+          .featureDetail { padding:26px 22px; }
+          .featureDetail h3 { font-size:29px; }
+        }
+        /* Final responsive layout pass */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: hidden; }
+        .hero, .systems, .features, .people, footer, .nav { max-width: 1400px; }
+
+        /* The journey control is now a bottom navigation rail so it never fights with globe labels. */
+        .storyProgress {
+          position: fixed;
+          left: 50%;
+          right: auto;
+          top: auto;
+          bottom: 18px;
+          width: min(680px, calc(100vw - 40px));
+          min-height: 0;
+          transform: translateX(-50%);
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 16px;
+          align-items: center;
+          padding: 10px 12px;
+          border-radius: 12px;
+          z-index: 45;
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+        }
+        .storyProgressHeader {
+          min-width: 122px;
+          padding: 0;
+          border: 0;
+          display: grid;
+          gap: 2px;
+        }
+        .storyProgressEyebrow { font-size: 7px; }
+        .storyProgressHeader strong { font-size: 12px; }
+        .storyProgressHeader small { font-size: 6px; }
+        .storyProgressLine { display: none; }
+        .storySteps {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 5px;
+        }
+        .storySteps a {
+          min-height: 44px;
+          grid-template-columns: 22px 1fr 10px;
+          gap: 6px;
+          padding: 7px 8px;
+        }
+        .storyStepCopy b { font-size: 7px; }
+        .storyStepCopy small { font-size: 6px; }
+        .storyStepNumber { font-size: 7px; }
+        .storyStepArrow { font-size: 9px; }
+
+        .globeWrap {
+          width: 100%;
+          max-width: 760px;
+          margin-right: 0;
+          justify-self: center;
+        }
+        .globeStage {
+          width: min(680px, 56vw);
+          height: min(680px, 56vw);
+        }
+        .nodeInspector {
+          left: auto;
+          right: 18px;
+          bottom: 34px;
+          width: 190px;
+        }
+        .heroTelemetry { right: 12px; bottom: 8px; }
+
+        @media (max-width: 1180px) {
+          .hero { grid-template-columns: 1fr; }
+          .heroCopy { padding-right: 0; }
+          .globeWrap { height: 610px; margin-top: -18px; }
+          .globeStage { width: min(680px, 72vw); height: min(680px, 72vw); }
+        }
+
+        @media (max-width: 800px) {
+          .storyProgress { display: none; }
+          .nodeInspector {
+            right: 50%;
+            transform: translateX(50%);
+            bottom: 22px;
+            width: min(330px, calc(100% - 28px));
+          }
+          .globeTelemetry, .heroTelemetry { display: none; }
+        }
+
+        @media (max-width: 620px) {
+          .nav, .hero, .systems, .features, .people, footer { width: calc(100% - 28px); }
+          .nav { height: 68px; }
+          .navLinks { display: none; }
+          .navRight { gap: 8px; }
+          .clock { display: none; }
+          .loginButton { padding: 9px 10px; }
+          .heroCopy { padding-top: 38px; }
+          h1 { font-size: clamp(46px, 13vw, 62px); }
+          .heroCopy > p { max-width: 100%; font-size: 12px; line-height: 1.7; }
+          .miniStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 28px; }
+          .miniStats strong { font-size: 18px; }
+          .miniStats span { font-size: 6.5px; line-height: 1.35; }
+          .heroSignalStrip { gap: 7px 10px; }
+          .heroSignalStrip b { width: 100%; margin-left: 0; padding-top: 2px; }
+          .globeWrap { height: 445px; margin: -4px -14px 0; }
+          .globeStage { width: 470px; height: 470px; transform: scale(.86); transform-origin: center center; }
+          .globeLabel.top { top: 10px; }
+          .globeLabel.bottom { bottom: 8px; }
+          .nodeInspector { bottom: 10px; padding: 10px; }
+          .nodeInspector > strong { font-size: 10px; }
+          .nodeInspectorMeta { margin-top: 8px; }
+          .systemCard.large { min-height: 390px; }
+          .networkGraphic { height: 190px; flex-basis: 190px; }
+          .featureDetailBackdrop { padding: 14px; }
+          .featureDetail { padding: 24px 18px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .storyProgressEyebrow i, .systemCard.large::after, .nodeInspector, .featureDetail, .featureDetailBackdrop { animation:none !important; }
+        }
+
+        /* ==============================================================
+           WHERE YOU ARE — contained in the hero copy column so it never
+           overlaps the globe, node inspector, or other floating UI.
+        ============================================================== */
+                /* ==============================================================
+           WHERE YOU ARE — compact idle rail / expanded hover cards
+           ============================================================== */
+        .whereYouAre {
+          position: fixed;
+          z-index: 60;
+          right: 18px;
+          top: 62%;
+          width: 360px;
+          margin: 0;
+          padding: 8px 0;
+          transform: translateY(-50%);
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          pointer-events: none;
+        }
+
+        .whereYouAreTop {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 0 10px 7px;
+          opacity: .72;
+        }
+
+        .whereYouAreLabel,
+        .whereYouAreCount,
+        .whereYouAreHint {
+          font-size: 7px;
+          font-weight: 600;
+          letter-spacing: .16em;
+          color: rgba(199, 244, 252, .38);
+        }
+
+        .whereYouAreLabel {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .whereYouAreLabel i {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #4cefc0;
+          box-shadow: 0 0 9px rgba(76, 239, 192, .7);
+        }
+
+        .whereYouAreCount {
+          color: rgba(83, 232, 255, .48);
+        }
+
+        .whereYouAreChoices {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+          margin-top: 0;
+        }
+
+        .whereYouAreChoice {
+          position: relative;
+          width: 132px;
+          min-height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding: 0 11px;
+          border: 1px solid transparent;
+          border-radius: 8px;
+          color: inherit;
+          text-decoration: none;
+          overflow: hidden;
+          pointer-events: auto;
+          transition:
+            width .28s cubic-bezier(.22, 1, .36, 1),
+            min-height .28s ease,
+            border-color .22s ease,
+            background .22s ease,
+            box-shadow .28s ease;
+        }
+
+        /* IMPORTANT: active only changes the indicator.
+           It does NOT expand the item until the user hovers/focuses it. */
+        .whereYouAreChoice:hover,
+        .whereYouAreChoice:focus-visible {
+          width: min(100%, 340px);
+          min-height: 54px;
+          border-color: rgba(91, 220, 240, .16);
+          background: linear-gradient(
+            135deg,
+            rgba(8, 35, 44, .9),
+            rgba(3, 16, 22, .86)
+          );
+          box-shadow:
+            0 12px 30px rgba(0, 0, 0, .24),
+            inset 0 0 24px rgba(77, 228, 255, .028);
+        }
+
+        .whereYouAreChoice:focus-visible {
+          outline: 1px solid rgba(77, 228, 255, .72);
+          outline-offset: 2px;
+        }
+
+        .whereYouAreChoiceDot {
+          position: absolute;
+          right: 10px;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: rgba(190, 240, 248, .3);
+          transition: background .22s ease, box-shadow .22s ease, transform .22s ease;
+        }
+
+        .whereYouAreChoice.active .whereYouAreChoiceDot {
+          background: #4de4ff;
+          box-shadow: 0 0 9px rgba(77, 228, 255, .72);
+          transform: scale(1.15);
+        }
+
+        .whereYouAreChoice:hover .whereYouAreChoiceDot,
+        .whereYouAreChoice:focus-visible .whereYouAreChoiceDot {
+          background: #4de4ff;
+          box-shadow: 0 0 9px rgba(77, 228, 255, .72);
+        }
+
+        .whereYouAreChoiceCollapsed {
+          display: block;
+          padding-right: 13px;
+          font-size: 8px;
+          font-weight: 600;
+          letter-spacing: .12em;
+          text-transform: uppercase;
+          color: rgba(215, 249, 255, .5);
+          transition: opacity .16s ease, transform .22s ease;
+        }
+
+        .whereYouAreChoice.active .whereYouAreChoiceCollapsed {
+          color: rgba(232, 253, 255, .76);
+        }
+
+        .whereYouAreChoice:hover .whereYouAreChoiceCollapsed,
+        .whereYouAreChoice:focus-visible .whereYouAreChoiceCollapsed {
+          opacity: 0;
+          transform: translateX(8px);
+          pointer-events: none;
+        }
+
+        .whereYouAreChoiceExpanded {
+          width: 100%;
+          display: grid;
+          grid-template-columns: auto 1fr auto;
+          align-items: center;
+          gap: 10px;
+          padding-right: 13px;
+          opacity: 0;
+          transform: translateX(8px);
+          pointer-events: none;
+          transition:
+            opacity .18s ease .06s,
+            transform .28s cubic-bezier(.22, 1, .36, 1) .02s;
+        }
+
+        .whereYouAreChoice:hover .whereYouAreChoiceExpanded,
+        .whereYouAreChoice:focus-visible .whereYouAreChoiceExpanded {
+          opacity: 1;
+          transform: translateX(0);
+          pointer-events: auto;
+        }
+
+        .whereYouAreChoiceNumber {
+          font-size: 7px;
+          letter-spacing: .1em;
+          color: rgba(83, 232, 255, .42);
+        }
+
+        .whereYouAreChoice.active .whereYouAreChoiceNumber {
+          color: #4de4ff;
+        }
+
+        .whereYouAreChoiceText {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .whereYouAreChoiceText strong {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 9px;
+          letter-spacing: .12em;
+          color: rgba(232, 253, 255, .86);
+        }
+
+        .whereYouAreChoiceText small {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 6px;
+          letter-spacing: .09em;
+          color: rgba(205, 246, 252, .34);
+        }
+
+        .whereYouAreChoiceArrow {
+          font-size: 12px;
+          line-height: 1;
+          color: rgba(205, 246, 252, .32);
+          transition: transform .22s ease, color .22s ease;
+        }
+
+        .whereYouAreChoice:hover .whereYouAreChoiceArrow,
+        .whereYouAreChoice:focus-visible .whereYouAreChoiceArrow {
+          transform: translate(2px, -2px);
+          color: #4de4ff;
+        }
+
+        .whereYouAreHint {
+          display: block;
+          margin: 7px 10px 0 0;
+          text-align: right;
+          font-size: 6px;
+          letter-spacing: .18em;
+          color: rgba(199, 244, 252, .18);
+        }
+
+        @media (max-width: 1180px) {
+          .whereYouAre {
+            right: 12px;
+            width: 330px;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .whereYouAre {
+            top: auto;
+            right: 12px;
+            left: 12px;
+            bottom: 12px;
+            width: auto;
+            padding: 8px;
+            transform: none;
+            border: 1px solid rgba(83, 232, 255, .1);
+            border-radius: 12px;
+            background: rgba(3, 14, 19, .88);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, .24);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+          }
+
+          .whereYouAreTop {
+            padding: 0 5px 6px;
+          }
+
+          .whereYouAreChoices {
+            flex-direction: row;
+            align-items: stretch;
+            gap: 4px;
+          }
+
+          .whereYouAreChoice,
+          .whereYouAreChoice:hover,
+          .whereYouAreChoice:focus-visible {
+            flex: 1;
+            width: auto;
+            min-height: 40px;
+          }
+        }
+
+        @media (max-width: 620px) {
+          .whereYouAre {
+            right: 8px;
+            left: 8px;
+            bottom: 8px;
+            padding: 7px;
+          }
+
+          .whereYouAreChoiceCollapsed {
+            font-size: 7px;
+          }
+
+          .whereYouAreHint {
+            display: none;
+          }
+        }
+
+        /* ==============================================================
+           FINAL UI COMPOSITION PASS
+           Goal: clean hierarchy, no overlapping utility cards, balanced
+           hero composition, and fewer competing floating elements.
+        ============================================================== */
+
+        .page {
+          width: 100%;
+          overflow-x: clip;
+        }
+
+        .nav {
+          width: min(1400px, calc(100% - 64px));
+          margin-inline: auto;
+          position: sticky;
+          top: 14px;
+          z-index: 60;
+        }
+
+        .hero {
+          width: min(1400px, calc(100% - 64px));
+          margin-inline: auto;
+          min-height: calc(100vh - 92px);
+          padding: 72px 0 88px;
+          display: grid;
+          grid-template-columns: minmax(420px, .82fr) minmax(560px, 1.18fr);
+          align-items: center;
+          gap: clamp(28px, 5vw, 82px);
+        }
+
+        .heroCopy {
+          position: relative;
+          z-index: 8;
+          max-width: 610px;
+          padding: 0;
+        }
+
+        .heroCopy > p {
+          max-width: 540px;
+        }
+
+        .heroActions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 30px;
+        }
+
+        .miniStats {
+          max-width: 540px;
+          margin-top: 42px;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .heroSignalStrip {
+          max-width: 540px;
+          margin-top: 18px;
+        }
+
+        .globeWrap {
+          position: relative;
+          width: min(100%, 760px);
+          height: min(760px, calc(100vh - 150px));
+          min-height: 560px;
+          margin: 0 auto;
+          display: grid;
+          place-items: center;
+          isolation: isolate;
+        }
+
+        .globeStage {
+          position: relative;
+          width: min(680px, 54vw);
+          height: min(680px, 54vw);
+          max-width: 680px;
+          max-height: 680px;
+          margin: 0 auto;
+          transform: none;
+        }
+
+        .globeLabel {
+          z-index: 5;
+          pointer-events: none;
+          white-space: nowrap;
+        }
+
+        .globeLabel.top {
+          top: 5%;
+          right: 4%;
+        }
+
+        .globeLabel.bottom {
+          bottom: 6%;
+          left: 4%;
+        }
+
+        /* The selected-node card belongs to the globe column only. */
+        .nodeInspector {
+          z-index: 12;
+          left: auto;
+          right: 2%;
+          bottom: 7%;
+          width: min(230px, 30%);
+          max-width: 230px;
+          transform: none;
+        }
+
+        /* Remove competing floating telemetry/readouts. */
+        .orbitReadout,
+        .heroTelemetry,
+        .scrollHint,
+        .storyProgress {
+          display: none !important;
+        }
+
+        .systems,
+        .features,
+        .people,
+        footer {
+          width: min(1400px, calc(100% - 64px));
+          margin-inline: auto;
+        }
+
+        .sectionHeading {
+          align-items: end;
+          gap: 40px;
+        }
+
+        .systemGrid {
+          align-items: stretch;
+          gap: 14px;
+        }
+
+        .systemCard {
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .systemCard.large {
+          min-height: 430px;
+        }
+
+        .networkGraphic {
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .whatWeDo,
+        .features {
+          gap: 18px;
+        }
+
+        .featureCard {
+          min-width: 0;
+        }
+
+        /* Keep the feature detail modal visually independent from page cards. */
+        .featureDetailBackdrop {
+          z-index: 100;
+        }
+
+        @media (max-width: 1180px) {
+          .hero {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            padding-top: 48px;
+            min-height: auto;
+          }
+
+          .heroCopy {
+            max-width: 760px;
+            margin-inline: auto;
+            text-align: center;
+          }
+
+          .heroCopy > p,
+          .miniStats,
+          .heroSignalStrip {
+            margin-left: auto;
+            margin-right: auto;
+          }
+
+          .heroActions {
+            justify-content: center;
+          }
+
+          .globeWrap {
+            width: min(100%, 760px);
+            height: 680px;
+            min-height: 0;
+          }
+
+          .globeStage {
+            width: min(680px, 72vw);
+            height: min(680px, 72vw);
+          }
+
+          .nodeInspector {
+            right: 2%;
+            bottom: 4%;
+          }
+        }
+
+        @media (max-width: 800px) {
+          .nav,
+          .hero,
+          .systems,
+          .features,
+          .people,
+          footer {
+            width: calc(100% - 28px);
+          }
+
+          .nav {
+            top: 8px;
+          }
+
+          .hero {
+            padding: 38px 0 64px;
+          }
+
+          .heroCopy {
+            text-align: left;
+          }
+
+          .heroActions {
+            justify-content: flex-start;
+          }
+
+          .globeWrap {
+            width: 100%;
+            height: 520px;
+            overflow: visible;
+          }
+
+          .globeStage {
+            width: min(620px, 96vw);
+            height: min(620px, 96vw);
+          }
+
+          .globeLabel.top {
+            top: 4%;
+            right: 1%;
+          }
+
+          .globeLabel.bottom {
+            bottom: 4%;
+            left: 1%;
+          }
+
+          .nodeInspector {
+            right: 50%;
+            bottom: 2%;
+            width: min(330px, calc(100% - 28px));
+            max-width: 330px;
+            transform: translateX(50%);
+          }
+
+          .miniStats {
+            gap: 8px;
+          }
+        }
+
+        @media (max-width: 620px) {
+          .hero {
+            padding-top: 28px;
+          }
+
+          .miniStats {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-top: 28px;
+          }
+
+          .globeWrap {
+            height: 440px;
+            margin-top: -4px;
+          }
+
+          .globeStage {
+            width: 470px;
+            height: 470px;
+            transform: scale(.84);
+            transform-origin: center center;
+          }
+
+          .globeLabel {
+            font-size: 7px;
+          }
+
+          .globeLabel.top {
+            top: 3px;
+            right: 0;
+          }
+
+          .globeLabel.bottom {
+            bottom: 3px;
+            left: 0;
+          }
+
+          .nodeInspector {
+            bottom: 0;
+            width: min(320px, calc(100% - 20px));
+          }
+
+          .systemCard.large {
+            min-height: 380px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .storySection,
+          .heroCopy,
+          .globeWrap,
+          .systemCard,
+          .featureCard {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+        /* Final safety override for the compact WHERE YOU ARE rail. */
+        .whereYouAreChoice.active {
+          width: 132px;
+          min-height: 30px;
+          border-color: transparent;
+          background: transparent;
+          box-shadow: none;
+        }
+
+        .whereYouAreChoice.active .whereYouAreChoiceCollapsed {
+          opacity: 1;
+          transform: none;
+          pointer-events: auto;
+        }
+
+        .whereYouAreChoice.active .whereYouAreChoiceExpanded {
+          opacity: 0;
+          transform: translateX(8px);
+          pointer-events: none;
+        }
+
+        @media (max-width: 900px) {
+          .whereYouAreChoice.active {
+            width: auto;
+            min-height: 40px;
+          }
+        }
+
+      `}
+      </style>
     </main>
   );
 }
-// PKC Git tracker test
-//llolloaksdkaskda
