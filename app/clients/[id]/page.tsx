@@ -401,7 +401,8 @@ export default function ClientDetailPage() {
       }
 
       // Prefer the database audit trigger. If the project does not have one,
-      // create a client-side fallback record with the currently signed-in email.
+      // create a client-side fallback record with the currently signed-in email
+      // (HISTORY LOG(edit) AHHAHAHA).
       if (actorEmail) {
         const { data: recentAudit } = await supabase
           .from("audit_log")
@@ -876,7 +877,7 @@ export default function ClientDetailPage() {
 
   // Keep this memoized value before every conditional return.
   // Hooks must execute in the exact same order on every render, including
-  // loading, error, and not-found renders.
+  // loading, error, and not-found renders(TECHNICIAN ADD FORM AHHAHA).
   const technicianOptions = useMemo(() => {
     const values = new Set<string>();
 

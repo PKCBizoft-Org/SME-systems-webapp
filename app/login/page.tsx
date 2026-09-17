@@ -473,7 +473,7 @@ export default function LoginPage() {
   const [passwordToggleMessage, setPasswordToggleMessage] = useState("");
   const [loginErrorMessage, setLoginErrorMessage] = useState("");
   const [robotInteraction, setRobotInteraction] = useState<
-    "none" | "email" | "password" | "passwordToggle" | "remember" | "forgot" | "signin"
+    "none" | "email" | "password" | "passwordToggle" | "remember" | "forgot" | "signin" | "signup"
   >("none");
   const [robotStatus, setRobotStatus] = useState<
     "idle" | "email" | "password" | "loading" | "error" | "success"
@@ -498,10 +498,12 @@ export default function LoginPage() {
         ? "sad"
         : robotStatus === "success"
           ? "happy"
-          : robotInteraction === "signin"
+          : robotInteraction === "signup"
             ? "happy"
-            : robotInteraction === "remember" || robotInteraction === "forgot"
-              ? "curious"
+            : robotInteraction === "signin"
+              ? "happy"
+              : robotInteraction === "remember" || robotInteraction === "forgot"
+                ? "curious"
               : robotStatus === "password"
                 ? "thinking"
                 : robotStatus === "email"
@@ -637,7 +639,9 @@ export default function LoginPage() {
                       ? "Forgot something? I've got you."
                       : robotInteraction === "signin"
                         ? "Ready when you are!"
-                        : robotInteraction === "email"
+                        : robotInteraction === "signup"
+                          ? "Hey! New here? Come on — let's get your PKC BIZOFT account started! 🚀"
+                          : robotInteraction === "email"
                           ? email.trim().length === 0
                             ? "Your email is empty. Give me an email to get started."
                             : !isEmailValid
@@ -776,7 +780,7 @@ export default function LoginPage() {
                 onBlur={(event) => {
                   // Keep the privacy hands up when focus moves from the password
                   // input to the show/hide button inside the same field.
-                  // Remove them as soon as focus leaves the password field entirely.
+                  // Remove them as soon as focus/curosr leaves the password field entirely.
                   const nextFocusedElement = event.relatedTarget as Node | null;
                   const passwordField = event.currentTarget.closest(".field");
                   const focusStaysInPasswordField =
@@ -913,6 +917,36 @@ export default function LoginPage() {
               <span className="buttonArrow">→</span>
             </button>
           </form>
+
+          <div className="signupPrompt">
+            <span>Don't have an account?</span>
+            <a
+              href="/login/SignUp"
+              className="signupLink"
+              aria-label="Create a new PKC BIZOFT account"
+              onMouseEnter={() => {
+                if (!loading && robotStatus !== "success") {
+                  setRobotStatus("idle");
+                  setRobotInteraction("signup");
+                }
+              }}
+              onMouseLeave={() => {
+                if (!loading && robotStatus !== "success") {
+                  setRobotInteraction("none");
+                }
+              }}
+              onFocus={() => {
+                if (!loading && robotStatus !== "success") {
+                  setRobotStatus("idle");
+                  setRobotInteraction("signup");
+                }
+              }}
+              onBlur={() => setRobotInteraction("none")}
+            >
+              <span>Create an account</span>
+              <span className="signupArrow" aria-hidden="true">→</span>
+            </a>
+          </div>
 
           <div className="secureNote">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1309,11 +1343,16 @@ export default function LoginPage() {
           animation: robotReactSignin 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
         }
 
+        .robotInteraction-signup .robotSvg {
+          animation: robotReactSignup 0.85s cubic-bezier(0.2, 0.9, 0.2, 1) infinite;
+        }
+
         .robotInteraction-email .robotGlow,
         .robotInteraction-password .robotGlow,
         .robotInteraction-remember .robotGlow,
         .robotInteraction-forgot .robotGlow,
-        .robotInteraction-signin .robotGlow {
+        .robotInteraction-signin .robotGlow,
+        .robotInteraction-signup .robotGlow {
           opacity: 0.95;
           transform: scale(1.08);
           transition: opacity 0.25s ease, transform 0.35s ease;
@@ -1326,8 +1365,9 @@ export default function LoginPage() {
           animation: sensorPulse 1.1s ease-in-out infinite;
         }
 
-        .robotInteraction-remember .antenna {
-          animation: antennaExcited 0.65s ease-in-out;
+        .robotInteraction-remember .antenna,
+        .robotInteraction-signup .antenna {
+          animation: antennaExcited 0.65s ease-in-out infinite;
         }
 
         .robotInteraction-forgot .leftSensor,
@@ -1336,7 +1376,9 @@ export default function LoginPage() {
         }
 
         .robotInteraction-signin .leftSensor,
-        .robotInteraction-signin .rightSensor {
+        .robotInteraction-signin .rightSensor,
+        .robotInteraction-signup .leftSensor,
+        .robotInteraction-signup .rightSensor {
           animation: sensorPulse 0.75s ease-in-out infinite;
         }
 
@@ -1416,6 +1458,14 @@ export default function LoginPage() {
           opacity: 1;
           transform: translateY(0) scale(1);
           animation: reactionFloat 3.2s ease-in-out infinite;
+        }
+
+        .robotInteraction-signup ~ .robotReaction {
+          border-color: rgba(103,232,249,.38);
+          box-shadow:
+            0 20px 55px rgba(0,0,0,.34),
+            0 0 42px rgba(0,190,230,.16),
+            inset 0 1px 0 rgba(255,255,255,.06);
         }
 
         .robotReaction::after {
@@ -1885,12 +1935,60 @@ export default function LoginPage() {
           transform: translateX(3px);
         }
 
+        .signupPrompt {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin-top: 16px;
+          color: #647f8a;
+          font-size: 11px;
+          line-height: 1.5;
+          text-align: center;
+        }
+
+        .signupLink {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #67e8f9;
+          font-size: 11px;
+          font-weight: 800;
+          text-decoration: none;
+          transition:
+            color 0.2s ease,
+            transform 0.2s ease,
+            text-shadow 0.2s ease;
+        }
+
+        .signupLink:hover {
+          color: #c5faff;
+          transform: translateY(-1px);
+          text-shadow: 0 0 12px rgba(103, 232, 249, 0.45);
+        }
+
+        .signupLink:focus-visible {
+          outline: 2px solid rgba(103, 232, 249, 0.55);
+          outline-offset: 4px;
+          border-radius: 4px;
+        }
+
+        .signupArrow {
+          display: inline-block;
+          transition: transform 0.2s ease;
+        }
+
+        .signupLink:hover .signupArrow {
+          transform: translateX(3px);
+        }
+
         .secureNote {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          margin-top: 18px;
+          margin-top: 14px;
           padding-top: 16px;
           border-top: 1px solid rgba(103, 232, 249, 0.07);
           color: #5e7984;
@@ -2023,6 +2121,14 @@ export default function LoginPage() {
           0%, 100% { transform: translateY(0) scale(1); }
           35% { transform: translateY(-5px) scale(1.018); }
           65% { transform: translateY(-2px) scale(1.008); }
+        }
+
+        @keyframes robotReactSignup {
+          0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+          18% { transform: translateY(-8px) rotate(-1.4deg) scale(1.025); }
+          38% { transform: translateY(-3px) rotate(1.4deg) scale(1.012); }
+          58% { transform: translateY(-6px) rotate(-0.8deg) scale(1.02); }
+          78% { transform: translateY(0) rotate(0.5deg) scale(1.005); }
         }
 
         @keyframes antennaExcited {
@@ -2822,11 +2928,14 @@ export default function LoginPage() {
           .robotInteraction-remember .robotSvg,
           .robotInteraction-forgot .robotSvg,
           .robotInteraction-signin .robotSvg,
+          .robotInteraction-signup .robotSvg,
           .robotInteraction-remember .antenna,
           .robotInteraction-forgot .leftSensor,
           .robotInteraction-forgot .rightSensor,
           .robotInteraction-signin .leftSensor,
           .robotInteraction-signin .rightSensor,
+          .robotInteraction-signup .leftSensor,
+          .robotInteraction-signup .rightSensor,
           .heroCopy,
           .robotArea,
           .loginCard {

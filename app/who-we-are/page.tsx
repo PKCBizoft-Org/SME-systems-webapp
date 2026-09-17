@@ -21,7 +21,7 @@ const coFounders = [
   "Louise Martin Erine",
   "Madronero Justine",
   "Mark Ivan Cainglet",
-  "Prix Cys",
+  "Prince AJ Y. Cuyos",
   "Ziskin Ian Bernabe",
 ];
 
