@@ -1697,7 +1697,7 @@ export default function ClientDetailPage() {
               <h2 id="confirm-save-title">Are you sure you want to save?</h2>
               <p>
                 You changed <strong>{pendingChange.label}</strong>. The new value
-                will be saved to this customer's Supabase record.
+                will be saved to this customer's Database record.
               </p>
               <div className="confirmValues">
                 <div>
