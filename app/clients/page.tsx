@@ -118,6 +118,7 @@ export default function ClientsPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
   const [userEmail, setUserEmail] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
   const [showFilters, setShowFilters] = useState(true)
 
   const [sortKey, setSortKey] = useState<SortKey>('install_date')
@@ -191,12 +192,13 @@ export default function ClientsPage() {
           ),
         )
 
-        console.log('PKC tenant access:', {
-          userId: session.user.id,
-          email: session.user.email,
-          tenantIds,
-          memberships,
-        })
+        console.log('PKC tenant access loaded')
+
+        setIsAdmin(
+          (memberships || []).some(
+            (membership) => membership.role === 'admin',
+          ),
+        )
 
         if (tenantIds.length === 0) {
           setClients([])
@@ -613,12 +615,17 @@ export default function ClientsPage() {
         </Link>
 
         <div className="topActions">
-          <Link
-            href="/"
-            className="homeLink"
-          >
-            Home
-          </Link>
+          <nav className="topNav">
+            <Link href="/clients" className="topNavLink active">
+              Clients
+            </Link>
+
+            {isAdmin && (
+              <Link href="/users" className="topNavLink">
+                Users
+              </Link>
+            )}
+          </nav>
 
           <div className="sessionPill">
             <span className="sessionDot" />
@@ -1304,14 +1311,35 @@ const styles = `
     gap: 18px;
   }
 
-  .homeLink {
-    color: #9bb0c0;
-    text-decoration: none;
-    font-size: 14px;
+  .topNav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 11px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
   }
 
-  .homeLink:hover {
+  .topNavLink {
+    padding: 8px 16px;
+    border-radius: 8px;
+    color: #9bb0c0;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s ease;
+  }
+
+  .topNavLink:hover {
     color: white;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .topNavLink.active {
+    color: #eef7ff;
+    background: rgba(21,153,255,0.14);
+    box-shadow: inset 0 0 0 1px rgba(21,153,255,0.3);
   }
 
   .sessionPill {
@@ -2067,7 +2095,7 @@ const styles = `
       height: 70px;
     }
 
-    .homeLink {
+    .topNav {
       display: none;
     }
 
