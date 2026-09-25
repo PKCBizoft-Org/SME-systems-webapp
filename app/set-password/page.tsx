@@ -1,266 +1,277 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+'use client'
 
-type TenantRole = "admin" | "technician" | "customer" | "accounting";
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabaseClient'
 
-const ALLOWED_ROLES: TenantRole[] = [
-  "admin",
-  "technician",
-  "customer",
-  "accounting",
-];
+export default function SetPasswordPage() {
+  const router = useRouter()
+  const supabase = createClient()
 
-export async function POST(request: NextRequest) {
-  try {
-    const authorization = request.headers.get("authorization");
+  const [checking, setChecking] = useState(true)
+  const [hasSession, setHasSession] = useState(false)
+  const [email, setEmail] = useState('')
 
-    if (!authorization?.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { error: "Authentication is required." },
-        { status: 401 },
-      );
-    }
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
 
-    const accessToken = authorization.slice(7).trim();
+  useEffect(() => {
+    let cancelled = false
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing." },
-        { status: 500 },
-      );
-    }
-
-    if (!serviceRoleKey) {
-      return NextResponse.json(
-        {
-          error:
-            "SUPABASE_SERVICE_ROLE_KEY is not set on the server. Add it to your environment variables (never expose it to the browser) to enable account creation.",
-        },
-        { status: 500 },
-      );
-    }
-
-    /*
-      This client uses the caller's own session, so it is subject
-      to the same RLS policies as the rest of the app — it can only
-      see what the requesting admin is actually allowed to see.
-    */
-    const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-
-    const { data: userData, error: userError } =
-      await callerClient.auth.getUser(accessToken);
-
-    if (userError || !userData.user) {
-      return NextResponse.json(
-        { error: "Your session is invalid or expired." },
-        { status: 401 },
-      );
-    }
-
-    const body = await request.json();
-
-    const email =
-      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const role = typeof body.role === "string" ? body.role : "";
-    const tenantId =
-      typeof body.tenantId === "string" ? body.tenantId.trim() : "";
-
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        { error: "A valid email address is required." },
-        { status: 400 },
-      );
-    }
-
-    if (!ALLOWED_ROLES.includes(role as TenantRole)) {
-      return NextResponse.json(
-        { error: "Role must be admin, technician, or customer." },
-        { status: 400 },
-      );
-    }
-
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: "A tenant is required." },
-        { status: 400 },
-      );
-    }
-
-    /*
-      Confirm the caller is actually an admin of the tenant they are
-      inviting into. This is the check that stops any authenticated
-      user from inviting themselves into a tenant they don't run.
-    */
-    const { data: callerMembership, error: callerMembershipError } =
-      await callerClient
-        .from("tenant_users")
-        .select("role")
-        .eq("user_id", userData.user.id)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
-
-    if (callerMembershipError) {
-      return NextResponse.json(
-        { error: "Unable to verify your admin access." },
-        { status: 500 },
-      );
-    }
-
-    if (!callerMembership || callerMembership.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only tenant admins can invite users." },
-        { status: 403 },
-      );
-    }
-
-    /*
-      Everything past this point uses the service-role key. It never
-      reaches the browser, and it is only reached after the admin
-      check above has already passed.
-    */
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    let invitedUserId: string | null = null;
-
-    const redirectTo = new URL("/set-password", request.nextUrl.origin).toString();
-
-    const { data: inviteData, error: inviteError } =
-      await adminClient.auth.admin.inviteUserByEmail(email, {
-        redirectTo,
-        data: {
-          invited_by_email: userData.user.email,
-          invited_by_id: userData.user.id,
-        },
-      });
-
-    if (inviteError) {
-      const alreadyRegistered = inviteError.message
-        ?.toLowerCase()
-        .includes("already been registered");
-
-      if (!alreadyRegistered) {
-        return NextResponse.json(
-          { error: `Unable to invite this user: ${inviteError.message}` },
-          { status: 502 },
-        );
-      }
-
+    async function check() {
       /*
-        The person already has an account (maybe from another tenant
-        or a prior invite). Look them up instead of failing, so an
-        admin can still grant them access to this tenant.
+        The invite link's tokens are in the URL when this page first
+        loads. The Supabase client (with detectSessionInUrl enabled,
+        which is the default) reads them and creates a session
+        automatically — we just need to wait a moment and check.
       */
-      const { data: existingUsers, error: listError } =
-        await adminClient.auth.admin.listUsers();
+      const { data } = await supabase.auth.getSession()
 
-      if (listError) {
-        return NextResponse.json(
-          { error: "Unable to look up the existing account." },
-          { status: 502 },
-        );
+      if (cancelled) return
+
+      if (data.session) {
+        setHasSession(true)
+        setEmail(data.session.user.email || '')
       }
 
-      const existing = existingUsers.users.find(
-        (u) => u.email?.toLowerCase() === email,
-      );
+      setChecking(false)
+    }
 
-      if (!existing) {
-        return NextResponse.json(
-          {
-            error:
-              "This email is already registered, but the matching account could not be found.",
-          },
-          { status: 502 },
-        );
+    check()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setHasSession(true)
+        setEmail(session.user.email || '')
+        setChecking(false)
       }
+    })
 
-      invitedUserId = existing.id;
-    } else {
-      invitedUserId = inviteData.user?.id ?? null;
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setError('')
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
     }
 
-    if (!invitedUserId) {
-      return NextResponse.json(
-        { error: "Unable to determine the invited user's ID." },
-        { status: 502 },
-      );
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
     }
 
-    /*
-      Mirror the two-table setup this project already uses:
-      profiles.role is the app-wide role, tenant_users links the
-      person to this specific tenant with a role scoped to it.
-    */
-    const { error: profileError } = await adminClient.from("profiles").upsert(
-      {
-        id: invitedUserId,
-        email,
-        role,
-      },
-      { onConflict: "id" },
-    );
+    setSaving(true)
 
-    if (profileError) {
-      return NextResponse.json(
-        { error: `Unable to save the user's profile: ${profileError.message}` },
-        { status: 500 },
-      );
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    })
+
+    setSaving(false)
+
+    if (updateError) {
+      setError(updateError.message)
+      return
     }
 
-    const { data: existingMembership } = await adminClient
-      .from("tenant_users")
-      .select("user_id")
-      .eq("user_id", invitedUserId)
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
-
-    if (existingMembership) {
-      const { error: updateError } = await adminClient
-        .from("tenant_users")
-        .update({ role })
-        .eq("user_id", invitedUserId)
-        .eq("tenant_id", tenantId);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: `Unable to update tenant access: ${updateError.message}` },
-          { status: 500 },
-        );
-      }
-    } else {
-      const { error: insertError } = await adminClient
-        .from("tenant_users")
-        .insert({ user_id: invitedUserId, tenant_id: tenantId, role });
-
-      if (insertError) {
-        return NextResponse.json(
-          { error: `Unable to grant tenant access: ${insertError.message}` },
-          { status: 500 },
-        );
-      }
-    }
-
-    return NextResponse.json({
-      ok: true,
-      email,
-      role,
-      tenantId,
-      userId: invitedUserId,
-    });
-  } catch (error) {
-    console.error("Invite user route error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred while inviting this user." },
-      { status: 500 },
-    );
+    setSuccess(true)
+    window.setTimeout(() => router.replace('/clients'), 1500)
   }
+
+  if (checking) {
+    return (
+      <main className="setPasswordPage">
+        <div className="card">
+          <p className="checking">Checking your invite link...</p>
+        </div>
+        <style jsx>{styles}</style>
+      </main>
+    )
+  }
+
+  if (!hasSession) {
+    return (
+      <main className="setPasswordPage">
+        <div className="card">
+          <h1>This link isn't valid</h1>
+          <p className="subtitle">
+            This invite link may have expired or already been used.
+            Ask your admin to send a new invite.
+          </p>
+        </div>
+        <style jsx>{styles}</style>
+      </main>
+    )
+  }
+
+  return (
+    <main className="setPasswordPage">
+      <div className="card">
+        <h1>Set your password</h1>
+        <p className="subtitle">
+          You're setting a password for <strong>{email}</strong>.
+        </p>
+
+        {success ? (
+          <div className="successBox">
+            Password set. Taking you to your dashboard...
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="form">
+            <label>
+              <span>New password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Confirm password</span>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </label>
+
+            {error && <div className="errorBox">{error}</div>}
+
+            <button type="submit" disabled={saving}>
+              {saving ? 'Setting password...' : 'Set password and continue'}
+            </button>
+          </form>
+        )}
+      </div>
+
+      <style jsx>{styles}</style>
+    </main>
+  )
 }
+
+const styles = `
+  .setPasswordPage {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #05090d;
+    color: #eef7ff;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 20px;
+  }
+
+  .card {
+    width: min(420px, 100%);
+    padding: 34px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #0a1017;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    letter-spacing: -0.03em;
+  }
+
+  .subtitle {
+    margin: 0 0 24px;
+    color: #8ca1b1;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .subtitle strong {
+    color: #eef7ff;
+  }
+
+  .checking {
+    text-align: center;
+    color: #8ca1b1;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .form {
+    display: grid;
+    gap: 16px;
+  }
+
+  .form label {
+    display: grid;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9bb0c0;
+  }
+
+  .form input {
+    height: 44px;
+    padding: 0 12px;
+    border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #05090d;
+    color: #eef7ff;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  .form input:focus {
+    outline: none;
+    border-color: rgba(21,153,255,0.5);
+  }
+
+  .errorBox {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,107,107,0.3);
+    background: rgba(255,107,107,0.08);
+    color: #ff9b9b;
+    font-size: 12px;
+  }
+
+  .successBox {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(48,224,139,0.3);
+    background: rgba(48,224,139,0.08);
+    color: #76eeb0;
+    font-size: 13px;
+  }
+
+  button {
+    height: 46px;
+    border-radius: 10px;
+    border: 1px solid rgba(21,153,255,0.4);
+    background: #1599ff;
+    color: #04101c;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`
