@@ -13,6 +13,8 @@ type Location = {
   parent_code: string | null;
 };
 
+const PKC_LOGO = "data:image/png;base64,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";
+
 export default function SignupPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -219,9 +221,16 @@ export default function SignupPage() {
           "Account created. Please check your email to confirm your account, then sign in.",
         );
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to create your account.",
-      );
+      const rawMessage =
+        err instanceof Error ? err.message.toLowerCase() : "";
+      const friendlyMessage = rawMessage.includes("already registered")
+        ? "An account with this email already exists. Try signing in instead."
+        : rawMessage.includes("password")
+          ? "Please choose a stronger password and try again."
+          : rawMessage.includes("email")
+            ? "Please enter a valid email address."
+            : "We couldn't create your account right now. Please check your details and try again.";
+      setError(friendlyMessage);
     } finally {
       setSubmitting(false);
     }
@@ -238,8 +247,15 @@ export default function SignupPage() {
         <div className="absolute bottom-[-15%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
       </div>
       <nav className="relative z-10 flex h-16 items-center justify-between border-b border-white/10 px-6 md:px-10">
-        <Link href="/login" className="text-xl font-black tracking-tight">
-          PKC <span className="text-sky-400">BIZOFT</span>
+        <Link href="/login" className="flex items-center gap-2.5">
+          <img
+            src={PKC_LOGO}
+            alt="PKC BIZOFT"
+            className="h-8 w-8 drop-shadow-[0_0_10px_rgba(56,189,248,0.35)]"
+          />
+          <span className="text-xl font-black tracking-tight">
+            PKC <span className="text-sky-400">BIZOFT</span>
+          </span>
         </Link>
         <div className="text-sm text-white/50">
           Already have an account?{" "}
@@ -254,8 +270,15 @@ export default function SignupPage() {
       <section className="relative z-10 mx-auto flex w-full max-w-6xl justify-center px-4 py-10 md:px-8 md:py-14">
         <div className="w-full max-w-2xl">
           <div className="mb-7 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-sky-400/20 bg-sky-400/10 text-2xl">
-              ✦
+            <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center">
+              <div className="absolute inset-0 rounded-2xl bg-sky-400/20 blur-xl" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-sky-400/25 bg-white/[0.04] backdrop-blur-sm">
+                <img
+                  src={PKC_LOGO}
+                  alt=""
+                  className="h-10 w-10 drop-shadow-[0_0_12px_rgba(56,189,248,0.45)]"
+                />
+              </div>
             </div>
             <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
               Create your account
