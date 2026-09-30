@@ -178,6 +178,15 @@ export default function WhoWeArePage() {
 
   return (
     <main className="whoPage">
+      <div className="globalProgress" aria-hidden="true">
+        <span style={{ transform: `scaleX(${scrollProgress})` }} />
+      </div>
+      <div className="cursorAura" aria-hidden="true" />
+      <div className="pageStatus" aria-hidden="true">
+        <span>PKC / PEOPLE</span>
+        <i />
+        <b>{String(Math.round(scrollProgress * 100)).padStart(2, "0")}%</b>
+      </div>
       {introVisible && (
         <div
           className={`whoIntro phase-${phase} ${exiting ? "isExiting" : ""}`}
@@ -302,6 +311,22 @@ export default function WhoWeArePage() {
       </nav>
 
       <section className="hero" data-reveal>
+        <div className="heroField" aria-hidden="true">
+          <div className="heroFieldGrid" />
+          <div className="heroFieldGlow" />
+          <div className="heroFieldNumber">01</div>
+          <div className="heroFieldLine lineTop" />
+          <div className="heroFieldLine lineMid" />
+          <div className="heroFieldLine lineBottom" />
+          <div className="heroFieldDot dotA" />
+          <div className="heroFieldDot dotB" />
+          <div className="heroFieldDot dotC" />
+          <div className="heroFieldCross">
+            <i />
+            <b />
+          </div>
+        </div>
+
         <div className="heroCopy">
           <div className="eyebrow">
             <i /> COMPANY / WHO WE ARE
@@ -329,29 +354,34 @@ export default function WhoWeArePage() {
               BACK TO NETWORK
             </a>
           </div>
+
+          <div className="heroPrinciples">
+            <div>
+              <span>01</span>
+              <b>DIRECTION</b>
+            </div>
+            <div>
+              <span>02</span>
+              <b>COLLABORATION</b>
+            </div>
+            <div>
+              <span>03</span>
+              <b>TECHNICAL THINKING</b>
+            </div>
+          </div>
+
+          <a className="heroScrollCue" href="#founder" aria-label="Scroll to the founder section">
+            <span className="heroScrollLine" />
+            <span>
+              SCROLL TO MEET THE TEAM
+              <b>↓</b>
+            </span>
+          </a>
         </div>
-        <div className="heroVisual">
-          <div className="visualGrid" />
-          <div className="visualGlow" />
-          <div className="orbit orbit1" />
-          <div className="orbit orbit2" />
-          <div className="orbit orbit3" />
-          <span className="node n1" />
-          <span className="node n2" />
-          <span className="node n3" />
-          <span className="node n4" />
-          <div className="heroAvatar">
-            <StickAvatar accent="cyan" />
-          </div>
-          <div className="visualLabel labelTL">
-            <small>CORE PERSON</small>
-            <b>FOUNDING NODE</b>
-          </div>
-          <div className="visualLabel labelBR">
-            <small>STATUS</small>
-            <b>CONNECTED / 01</b>
-          </div>
-          <div className="verticalCode">PKC / PEOPLE / 2026</div>
+
+        <div className="heroSideCode" aria-hidden="true">
+          <span>PKC / PEOPLE</span>
+          <b>2026</b>
         </div>
       </section>
 
@@ -495,6 +525,35 @@ export default function WhoWeArePage() {
             </button>
           ))}
         </div>
+
+        <div className="memberSpotlight" aria-live="polite">
+          <div className="spotlightPulse" />
+          <div className="spotlightIndex">
+            <span>SELECTED NODE</span>
+            <strong>{String(activeMember + 1).padStart(2, "0")}</strong>
+          </div>
+          <div className="spotlightMain">
+            <span>ACTIVE CO-FOUNDER PROFILE</span>
+            <h4>{coFounders[activeMember]}</h4>
+            <p>
+              Founding team member connected to the PKC BIZOFT people network.
+              Select another node above to switch the active profile.
+            </p>
+          </div>
+          <div className="spotlightStatus">
+            <i />
+            <span>NETWORK NODE</span>
+            <b>CONNECTED</b>
+          </div>
+          <div className="spotlightRail" aria-hidden="true">
+            {coFounders.map((_, index) => (
+              <span
+                key={index}
+                className={activeMember === index ? "active" : ""}
+              />
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="teamSection leadSection" data-reveal>
@@ -634,6 +693,16 @@ export default function WhoWeArePage() {
         </div>
         <span className="copyright">© 2026 PKC</span>
       </footer>
+
+      <button
+        className="backTop"
+        type="button"
+        aria-label="Back to top"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      >
+        <span>↑</span>
+        TOP
+      </button>
 
       <style jsx>{`
         :global(*) {
@@ -860,17 +929,16 @@ export default function WhoWeArePage() {
           box-shadow: 0 12px 32px rgba(40, 222, 255, 0.16);
         }
         .hero {
-          width: min(1400px, calc(100% - 64px));
+          width: min(1120px, calc(100% - 64px));
           min-height: 700px;
           margin: auto;
-          display: grid;
-          grid-template-columns: 0.86fr 1.14fr;
+          display: flex;
           align-items: center;
-          gap: 30px;
           position: relative;
           z-index: 3;
         }
         .heroCopy {
+          width: min(780px, 100%);
           padding: 85px 0 95px;
         }
         .eyebrow {
@@ -2543,6 +2611,1907 @@ export default function WhoWeArePage() {
             filter: none;
           }
         }
+        /* =========================
+           ENHANCED UI LAYER
+           ========================= */
+        .teamSection,
+        .constellation {
+          position: relative;
+        }
+
+        .teamSection::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: -1px;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(91, 232, 255, 0.2),
+            transparent
+          );
+          opacity: 0.55;
+        }
+
+        .sectionHeader {
+          align-items: end;
+          padding-bottom: 34px;
+        }
+
+        .sectionHeader > div:first-child > span,
+        .constellationCopy > span {
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 7px 10px;
+          border: 1px solid rgba(104, 232, 255, 0.12);
+          border-radius: 999px;
+          background: rgba(6, 24, 31, 0.48);
+          box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+        }
+
+        .sectionHeader > div:first-child > span::before,
+        .constellationCopy > span::before {
+          content: "";
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #54eaff;
+          box-shadow: 0 0 10px rgba(84, 234, 255, 0.8);
+        }
+
+        .founderCard,
+        .leadCard {
+          box-shadow:
+            0 24px 90px rgba(0, 0, 0, 0.18),
+            inset 0 1px rgba(255, 255, 255, 0.035);
+          transition:
+            transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+            border-color 0.35s ease,
+            box-shadow 0.35s ease;
+        }
+
+        .founderCard:hover,
+        .leadCard:hover {
+          transform: translateY(-5px);
+          border-color: rgba(101, 232, 255, 0.23);
+          box-shadow:
+            0 35px 100px rgba(0, 0, 0, 0.26),
+            0 0 55px rgba(45, 215, 255, 0.045),
+            inset 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .founderVisual,
+        .leadVisual {
+          isolation: isolate;
+        }
+
+        .founderVisual::after,
+        .leadVisual::after,
+        .coVisual::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            linear-gradient(
+              115deg,
+              transparent 0 42%,
+              rgba(98, 235, 255, 0.045) 48%,
+              transparent 54%
+            );
+          transform: translateX(-110%);
+          transition: transform 0.9s ease;
+        }
+
+        .founderCard:hover .founderVisual::after,
+        .leadCard:hover .leadVisual::after,
+        .coCard:hover .coVisual::after {
+          transform: translateX(110%);
+        }
+
+        .coGrid {
+          align-items: stretch;
+          gap: 14px;
+        }
+
+        .coCard {
+          border-color: rgba(104, 232, 255, 0.1);
+          background:
+            radial-gradient(
+              circle at 50% 0%,
+              rgba(68, 224, 255, 0.045),
+              transparent 42%
+            ),
+            rgba(3, 14, 20, 0.7);
+          box-shadow:
+            0 15px 45px rgba(0, 0, 0, 0.16),
+            inset 0 1px rgba(255, 255, 255, 0.025);
+          transition:
+            transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+            border-color 0.3s ease,
+            background 0.3s ease,
+            box-shadow 0.3s ease;
+        }
+
+        .coCard:hover {
+          transform: translateY(-7px);
+          border-color: rgba(104, 232, 255, 0.3);
+          background:
+            radial-gradient(
+              circle at 50% 0%,
+              rgba(68, 224, 255, 0.08),
+              transparent 48%
+            ),
+            rgba(4, 18, 25, 0.86);
+          box-shadow:
+            0 25px 60px rgba(0, 0, 0, 0.25),
+            0 0 35px rgba(56, 220, 255, 0.04);
+        }
+
+        .coCard.active {
+          transform: translateY(-4px);
+          border-color: rgba(89, 236, 255, 0.44);
+          box-shadow:
+            0 24px 65px rgba(0, 0, 0, 0.25),
+            0 0 38px rgba(63, 224, 255, 0.08),
+            inset 0 0 0 1px rgba(100, 235, 255, 0.045);
+        }
+
+        .coCard:focus-visible,
+        .enter:focus-visible,
+        .primary:focus-visible,
+        .secondary:focus-visible,
+        .ctaButton:focus-visible,
+        .menuButton:focus-visible,
+        .skip:focus-visible,
+        .backTop:focus-visible {
+          outline: 2px solid rgba(113, 238, 255, 0.9);
+          outline-offset: 4px;
+        }
+
+        .coVisual {
+          position: relative;
+          overflow: hidden;
+          min-height: 205px;
+          display: grid;
+          place-items: center;
+          border-top: 1px solid rgba(105, 232, 255, 0.07);
+          border-bottom: 1px solid rgba(105, 232, 255, 0.07);
+          background:
+            radial-gradient(
+              circle,
+              rgba(54, 226, 255, 0.08),
+              transparent 52%
+            ),
+            rgba(1, 9, 13, 0.72);
+        }
+
+        .coCard.active .coVisual {
+          background:
+            radial-gradient(
+              circle,
+              rgba(54, 226, 255, 0.14),
+              transparent 55%
+            ),
+            rgba(1, 9, 13, 0.72);
+        }
+
+        .coInfo {
+          min-height: 78px;
+          gap: 12px;
+        }
+
+        .coInfo strong {
+          display: block;
+          line-height: 1.25;
+        }
+
+        .coInfo small {
+          display: block;
+          margin-top: 5px;
+          color: rgba(210, 247, 255, 0.32);
+          letter-spacing: 0.09em;
+        }
+
+        .coFooter {
+          border-top: 1px solid rgba(104, 232, 255, 0.07);
+        }
+
+        .memberSpotlight {
+          position: relative;
+          margin-top: 18px;
+          min-height: 126px;
+          padding: 24px 26px;
+          display: grid;
+          grid-template-columns: 100px minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 24px;
+          overflow: hidden;
+          border: 1px solid rgba(105, 232, 255, 0.13);
+          border-radius: 12px;
+          background:
+            radial-gradient(
+              circle at 18% 50%,
+              rgba(45, 225, 255, 0.08),
+              transparent 25%
+            ),
+            linear-gradient(
+              120deg,
+              rgba(5, 23, 30, 0.84),
+              rgba(3, 12, 18, 0.72)
+            );
+          box-shadow:
+            0 20px 65px rgba(0, 0, 0, 0.16),
+            inset 0 1px rgba(255, 255, 255, 0.025);
+        }
+
+        .spotlightPulse {
+          position: absolute;
+          width: 170px;
+          height: 170px;
+          left: -60px;
+          top: 50%;
+          transform: translateY(-50%);
+          border-radius: 50%;
+          border: 1px solid rgba(72, 232, 255, 0.08);
+          box-shadow:
+            0 0 0 25px rgba(72, 232, 255, 0.025),
+            0 0 0 50px rgba(72, 232, 255, 0.015);
+          pointer-events: none;
+        }
+
+        .spotlightIndex {
+          position: relative;
+          z-index: 2;
+          display: grid;
+          gap: 5px;
+          padding-right: 20px;
+          border-right: 1px solid rgba(104, 232, 255, 0.1);
+        }
+
+        .spotlightIndex span,
+        .spotlightMain > span,
+        .spotlightStatus span {
+          color: rgba(183, 246, 255, 0.34);
+          font-size: 8px;
+          letter-spacing: 0.16em;
+        }
+
+        .spotlightIndex strong {
+          font-size: 38px;
+          line-height: 0.9;
+          letter-spacing: -0.05em;
+          color: rgba(133, 240, 255, 0.88);
+        }
+
+        .spotlightMain {
+          position: relative;
+          z-index: 2;
+          min-width: 0;
+        }
+
+        .spotlightMain h4 {
+          margin: 7px 0 5px;
+          font-size: clamp(19px, 2vw, 25px);
+          letter-spacing: -0.03em;
+          overflow-wrap: anywhere;
+        }
+
+        .spotlightMain p {
+          margin: 0;
+          max-width: 680px;
+          color: rgba(215, 247, 255, 0.42);
+          font-size: 11px;
+          line-height: 1.6;
+        }
+
+        .spotlightStatus {
+          position: relative;
+          z-index: 2;
+          display: grid;
+          justify-items: end;
+          gap: 5px;
+          text-align: right;
+          min-width: 130px;
+        }
+
+        .spotlightStatus i {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #50efc1;
+          box-shadow: 0 0 14px rgba(80, 239, 193, 0.75);
+          margin-bottom: 1px;
+        }
+
+        .spotlightStatus b {
+          font-size: 9px;
+          letter-spacing: 0.12em;
+          color: #82f4d2;
+        }
+
+        .leadCard {
+          background:
+            radial-gradient(
+              circle at 76% 35%,
+              rgba(129, 82, 255, 0.055),
+              transparent 32%
+            ),
+            rgba(3, 13, 19, 0.78);
+        }
+
+        .selection,
+        .signal {
+          border-radius: 7px;
+          background: rgba(6, 23, 29, 0.72);
+          box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+        }
+
+        .textLink {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          position: relative;
+        }
+
+        .textLink::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: -6px;
+          width: 100%;
+          height: 1px;
+          transform: scaleX(0.25);
+          transform-origin: left;
+          background: #55eaff;
+          transition: transform 0.3s ease;
+        }
+
+        .textLink:hover::after {
+          transform: scaleX(1);
+        }
+
+        .map {
+          border-color: rgba(105, 232, 255, 0.16);
+          box-shadow:
+            0 25px 80px rgba(0, 0, 0, 0.2),
+            inset 0 1px rgba(255, 255, 255, 0.025);
+        }
+
+        .mapCore {
+          box-shadow:
+            0 0 0 12px rgba(63, 225, 255, 0.025),
+            0 0 45px rgba(63, 225, 255, 0.11);
+          animation: coreFloat 5s ease-in-out infinite;
+        }
+
+        @keyframes coreFloat {
+          50% {
+            transform: translate(-50%, -50%) scale(1.035);
+          }
+        }
+
+        .peopleCta {
+          box-shadow:
+            0 25px 90px rgba(0, 0, 0, 0.2),
+            inset 0 1px rgba(255, 255, 255, 0.035);
+        }
+
+        .ctaButton {
+          border-radius: 7px;
+          box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        .backTop {
+          position: fixed;
+          z-index: 70;
+          right: 24px;
+          bottom: 24px;
+          width: 48px;
+          height: 48px;
+          display: grid;
+          place-items: center;
+          gap: 1px;
+          padding: 5px;
+          border: 1px solid rgba(105, 232, 255, 0.16);
+          border-radius: 8px;
+          background: rgba(3, 15, 21, 0.76);
+          color: rgba(216, 251, 255, 0.58);
+          backdrop-filter: blur(15px);
+          cursor: pointer;
+          font-size: 7px;
+          letter-spacing: 0.14em;
+          transition:
+            transform 0.25s ease,
+            border-color 0.25s ease,
+            color 0.25s ease;
+        }
+
+        .backTop span {
+          font-size: 16px;
+          line-height: 12px;
+          color: #7feeff;
+        }
+
+        .backTop:hover {
+          transform: translateY(-4px);
+          border-color: rgba(105, 232, 255, 0.45);
+          color: #dfffff;
+        }
+
+        @media (max-width: 760px) {
+          .memberSpotlight {
+            grid-template-columns: 72px minmax(0, 1fr);
+            gap: 16px;
+            padding: 20px;
+          }
+
+          .spotlightIndex {
+            padding-right: 14px;
+          }
+
+          .spotlightIndex strong {
+            font-size: 31px;
+          }
+
+          .spotlightStatus {
+            grid-column: 2;
+            justify-items: start;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 7px;
+            min-width: 0;
+          }
+
+          .backTop {
+            right: 14px;
+            bottom: 14px;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .memberSpotlight {
+            grid-template-columns: 1fr;
+          }
+
+          .spotlightIndex {
+            display: flex;
+            align-items: baseline;
+            gap: 9px;
+            padding: 0 0 12px;
+            border-right: 0;
+            border-bottom: 1px solid rgba(104, 232, 255, 0.1);
+          }
+
+          .spotlightIndex strong {
+            font-size: 26px;
+          }
+
+          .spotlightStatus {
+            grid-column: auto;
+          }
+
+          .sectionHeader {
+            padding-bottom: 24px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .founderCard:hover,
+          .leadCard:hover,
+          .coCard:hover,
+          .coCard.active,
+          .backTop:hover {
+            transform: none;
+          }
+
+          .mapCore {
+            animation: none;
+          }
+        }
+
+
+
+        /* ==============================
+           HERO EXPERIENCE — EDITORIAL FIELD
+           ============================== */
+        .hero {
+          min-height: min(760px, calc(100vh - 88px));
+          overflow: hidden;
+          isolation: isolate;
+        }
+
+        .hero::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(circle at 72% 45%, rgba(35, 213, 240, 0.055), transparent 28%),
+            radial-gradient(circle at 12% 68%, rgba(48, 239, 193, 0.035), transparent 24%);
+          pointer-events: none;
+          z-index: -4;
+        }
+
+        .heroField {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          pointer-events: none;
+          z-index: -3;
+        }
+
+        .heroFieldGrid {
+          position: absolute;
+          inset: 0;
+          opacity: 0.58;
+          background-image:
+            linear-gradient(rgba(66, 229, 255, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(66, 229, 255, 0.035) 1px, transparent 1px);
+          background-size: 42px 42px;
+          mask-image: linear-gradient(90deg, black 0%, black 50%, transparent 94%);
+        }
+
+        .heroFieldGlow {
+          position: absolute;
+          width: 480px;
+          height: 480px;
+          right: 4%;
+          top: 50%;
+          transform: translateY(-50%);
+          border-radius: 50%;
+          background: rgba(35, 219, 250, 0.07);
+          filter: blur(75px);
+          animation: heroFieldGlow 6s ease-in-out infinite;
+        }
+
+        @keyframes heroFieldGlow {
+          50% {
+            transform: translateY(-50%) scale(1.1);
+            opacity: 0.62;
+          }
+        }
+
+        .heroFieldNumber {
+          position: absolute;
+          right: 2%;
+          top: 47%;
+          transform: translateY(-50%);
+          font-size: clamp(220px, 30vw, 430px);
+          line-height: 0.7;
+          font-weight: 900;
+          letter-spacing: -0.1em;
+          color: rgba(112, 236, 255, 0.022);
+          -webkit-text-stroke: 1px rgba(112, 236, 255, 0.045);
+          user-select: none;
+        }
+
+        .heroFieldLine {
+          position: absolute;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(85, 230, 255, 0.14), transparent);
+          transform-origin: left center;
+        }
+
+        .lineTop {
+          width: 62%;
+          right: -4%;
+          top: 23%;
+          transform: rotate(-8deg);
+        }
+
+        .lineMid {
+          width: 48%;
+          right: 3%;
+          top: 54%;
+          transform: rotate(17deg);
+          opacity: 0.65;
+        }
+
+        .lineBottom {
+          width: 55%;
+          right: -2%;
+          bottom: 18%;
+          transform: rotate(-12deg);
+          opacity: 0.45;
+        }
+
+        .heroFieldDot {
+          position: absolute;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #53e8ff;
+          box-shadow: 0 0 16px rgba(83, 232, 255, 0.9);
+          animation: heroDotPulse 3.8s ease-in-out infinite;
+        }
+
+        .dotA {
+          right: 27%;
+          top: 26%;
+        }
+
+        .dotB {
+          right: 13%;
+          top: 61%;
+          animation-delay: -1.4s;
+        }
+
+        .dotC {
+          right: 37%;
+          bottom: 21%;
+          animation-delay: -2.6s;
+        }
+
+        @keyframes heroDotPulse {
+          50% {
+            transform: scale(1.8);
+            opacity: 0.4;
+          }
+        }
+
+        .heroFieldCross {
+          position: absolute;
+          right: 24%;
+          top: 51%;
+          width: 96px;
+          height: 96px;
+          border: 1px solid rgba(83, 232, 255, 0.09);
+          border-radius: 50%;
+          box-shadow: 0 0 45px rgba(35, 219, 250, 0.04);
+          transform: translate(50%, -50%);
+        }
+
+        .heroFieldCross::before,
+        .heroFieldCross::after {
+          content: "";
+          position: absolute;
+          background: rgba(83, 232, 255, 0.1);
+        }
+
+        .heroFieldCross::before {
+          width: 150px;
+          height: 1px;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+        }
+
+        .heroFieldCross::after {
+          width: 1px;
+          height: 150px;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+        }
+
+        .heroFieldCross i,
+        .heroFieldCross b {
+          position: absolute;
+          width: 5px;
+          height: 5px;
+          border: 1px solid rgba(83, 232, 255, 0.45);
+        }
+
+        .heroFieldCross i {
+          left: -3px;
+          top: -3px;
+        }
+
+        .heroFieldCross b {
+          right: -3px;
+          bottom: -3px;
+        }
+
+        .heroCopy {
+          position: relative;
+          z-index: 5;
+        }
+
+        .heroMeta {
+          display: flex;
+          align-items: center;
+        }
+
+        .hero h2 {
+          position: relative;
+          text-shadow: 0 12px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero h2::after {
+          content: "";
+          display: block;
+          width: 64px;
+          height: 2px;
+          margin-top: 26px;
+          background: linear-gradient(90deg, #53e8ff, transparent);
+          box-shadow: 0 0 16px rgba(83, 232, 255, 0.35);
+        }
+
+        .heroCopy > p {
+          margin-top: 26px;
+          border-left: 1px solid rgba(83, 232, 255, 0.2);
+          padding-left: 18px;
+        }
+
+        .heroActions {
+          display: flex;
+        }
+
+        .heroScrollCue {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: fit-content;
+          margin-top: 54px;
+          color: rgba(215, 249, 255, 0.32);
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          transition: color 0.25s;
+        }
+
+        .heroScrollCue:hover {
+          color: rgba(215, 249, 255, 0.72);
+        }
+
+        .heroScrollCue > span:last-child {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .heroScrollCue b {
+          color: #53e8ff;
+          font-size: 11px;
+          font-weight: 400;
+        }
+
+        .heroScrollLine {
+          position: relative;
+          width: 42px;
+          height: 1px;
+          overflow: hidden;
+          background: rgba(83, 232, 255, 0.14);
+        }
+
+        .heroScrollLine::after {
+          content: "";
+          position: absolute;
+          left: -20px;
+          top: 0;
+          width: 20px;
+          height: 1px;
+          background: #53e8ff;
+          box-shadow: 0 0 10px #53e8ff;
+          animation: heroScroll 2.4s ease-in-out infinite;
+        }
+
+        @keyframes heroScroll {
+          0% { transform: translateX(0); opacity: 0; }
+          25% { opacity: 1; }
+          75% { opacity: 1; }
+          100% { transform: translateX(62px); opacity: 0; }
+        }
+
+        .heroSideCode {
+          position: absolute;
+          right: 0;
+          top: 50%;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          align-items: flex-end;
+          transform: translateY(-50%);
+          color: rgba(157, 242, 255, 0.2);
+          font-size: 8px;
+          letter-spacing: 0.2em;
+          writing-mode: vertical-rl;
+        }
+
+        .heroSideCode b {
+          color: rgba(83, 232, 255, 0.5);
+          font-weight: 700;
+        }
+
+        @media (max-width: 760px) {
+          .hero {
+            width: min(100% - 40px, 1120px);
+            min-height: 680px;
+          }
+
+          .heroCopy {
+            padding: 78px 0 70px;
+          }
+
+          .heroFieldNumber {
+            right: -5%;
+            top: 43%;
+          }
+
+          .heroFieldCross {
+            right: 13%;
+          }
+
+          .heroSideCode {
+            display: none;
+          }
+
+          .heroScrollCue {
+            margin-top: 42px;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .hero {
+            width: min(100% - 30px, 1120px);
+            min-height: 650px;
+          }
+
+          .heroCopy {
+            padding: 70px 0 60px;
+          }
+
+          .hero h2 {
+            font-size: clamp(45px, 14vw, 66px);
+          }
+
+          .heroFieldNumber {
+            right: -13%;
+            top: 35%;
+            font-size: 220px;
+          }
+
+          .heroFieldCross {
+            right: 8%;
+            width: 68px;
+            height: 68px;
+          }
+
+          .heroFieldCross::before {
+            width: 100px;
+          }
+
+          .heroFieldCross::after {
+            height: 100px;
+          }
+
+          .heroFieldLine {
+            opacity: 0.45;
+          }
+
+          .heroScrollCue {
+            margin-top: 34px;
+            font-size: 7px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .heroFieldGlow,
+          .heroFieldDot,
+          .heroScrollLine::after {
+            animation: none;
+          }
+        }
+
+
+        /* =========================================================
+           ULTRA ENHANCEMENT — EDITORIAL / PREMIUM SYSTEM LAYER
+           ========================================================= */
+
+        .hero {
+          width: min(1180px, calc(100% - 72px));
+          min-height: min(790px, calc(100vh - 88px));
+          margin: 0 auto;
+          align-items: center;
+        }
+
+        .hero::after {
+          content: "";
+          position: absolute;
+          inset: 28px -18px 28px -18px;
+          border: 1px solid rgba(92, 231, 255, 0.045);
+          clip-path: polygon(
+            0 0,
+            76% 0,
+            100% 18%,
+            100% 82%,
+            76% 100%,
+            0 100%
+          );
+          pointer-events: none;
+          z-index: -2;
+        }
+
+        .heroField {
+          inset: -10%;
+        }
+
+        .heroField::before {
+          content: "PEOPLE";
+          position: absolute;
+          right: -1.5%;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: clamp(170px, 23vw, 360px);
+          line-height: 0.72;
+          font-weight: 900;
+          letter-spacing: -0.095em;
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(107, 237, 255, 0.035);
+          white-space: nowrap;
+          user-select: none;
+        }
+
+        .heroField::after {
+          content: "HUMAN LAYER  /  FOUNDING NETWORK  /  SYSTEM 01";
+          position: absolute;
+          right: 4%;
+          bottom: 10%;
+          color: rgba(158, 239, 255, 0.17);
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: 0.24em;
+          white-space: nowrap;
+        }
+
+        .heroFieldGrid {
+          opacity: 0.72;
+          background-size: 36px 36px;
+          mask-image: linear-gradient(
+            90deg,
+            black 0%,
+            black 38%,
+            rgba(0, 0, 0, 0.7) 58%,
+            transparent 94%
+          );
+        }
+
+        .heroFieldGlow {
+          width: 560px;
+          height: 560px;
+          right: 0;
+          top: 51%;
+          background:
+            radial-gradient(
+              circle,
+              rgba(37, 222, 255, 0.09) 0%,
+              rgba(37, 222, 255, 0.035) 38%,
+              transparent 70%
+            );
+          filter: blur(20px);
+        }
+
+        .heroFieldNumber {
+          right: 6%;
+          top: 45%;
+          font-size: clamp(250px, 34vw, 500px);
+          color: rgba(112, 236, 255, 0.018);
+          -webkit-text-stroke: 1px rgba(112, 236, 255, 0.035);
+        }
+
+        .heroFieldLine {
+          opacity: 0.75;
+        }
+
+        .lineTop {
+          width: 72%;
+          top: 19%;
+          transform: rotate(-10deg);
+        }
+
+        .lineMid {
+          width: 58%;
+          right: 1%;
+          top: 51%;
+          transform: rotate(13deg);
+        }
+
+        .lineBottom {
+          width: 68%;
+          bottom: 15%;
+          transform: rotate(-9deg);
+        }
+
+        .heroFieldCross {
+          right: 23%;
+          top: 50%;
+          width: 112px;
+          height: 112px;
+          border-color: rgba(83, 232, 255, 0.13);
+        }
+
+        .heroFieldCross::before {
+          width: 190px;
+        }
+
+        .heroFieldCross::after {
+          height: 190px;
+        }
+
+        .heroFieldCross::before,
+        .heroFieldCross::after {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(83, 232, 255, 0.13),
+            transparent
+          );
+        }
+
+        .heroCopy {
+          width: min(850px, 100%);
+          padding-top: 104px;
+          padding-bottom: 104px;
+        }
+
+        .eyebrow {
+          position: relative;
+          width: fit-content;
+          padding: 8px 12px 8px 0;
+          font-size: 9px;
+          letter-spacing: 0.26em;
+        }
+
+        .eyebrow::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: -22px;
+          bottom: 0;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            rgba(83, 232, 255, 0.4),
+            transparent
+          );
+        }
+
+        .heroMeta {
+          width: min(660px, 100%);
+          margin-top: 25px;
+          padding: 10px 0;
+          border-top: 1px solid rgba(126, 235, 255, 0.07);
+          border-bottom: 1px solid rgba(126, 235, 255, 0.07);
+        }
+
+        .heroMeta span {
+          position: relative;
+          padding-right: 15px;
+        }
+
+        .heroMeta span + span::before {
+          content: "";
+          position: absolute;
+          left: -8px;
+          top: 50%;
+          width: 2px;
+          height: 2px;
+          border-radius: 50%;
+          background: rgba(83, 232, 255, 0.55);
+          box-shadow: 0 0 6px rgba(83, 232, 255, 0.5);
+        }
+
+        .hero h2 {
+          max-width: 820px;
+          margin-top: 30px;
+          margin-bottom: 0;
+          font-size: clamp(62px, 8vw, 112px);
+          line-height: 0.84;
+          letter-spacing: -0.075em;
+          text-wrap: balance;
+        }
+
+        .hero h2 em {
+          -webkit-text-stroke: 1.35px rgba(150, 244, 255, 0.7);
+          text-shadow: 0 0 35px rgba(83, 232, 255, 0.06);
+        }
+
+        .hero h2::after {
+          width: 92px;
+          height: 2px;
+          margin-top: 34px;
+        }
+
+        .heroCopy > p {
+          max-width: 600px;
+          margin-top: 28px;
+          margin-bottom: 30px;
+          padding-left: 20px;
+          font-size: 14px;
+          line-height: 1.95;
+          color: rgba(224, 250, 255, 0.67);
+        }
+
+        .heroActions {
+          gap: 12px;
+        }
+
+        .heroActions .primary,
+        .heroActions .secondary {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .heroActions .primary::before,
+        .heroActions .secondary::before {
+          content: "";
+          position: absolute;
+          left: -80%;
+          top: 0;
+          width: 55%;
+          height: 100%;
+          transform: skewX(-22deg);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.16),
+            transparent
+          );
+          transition: left 0.6s ease;
+        }
+
+        .heroActions .primary:hover::before,
+        .heroActions .secondary:hover::before {
+          left: 135%;
+        }
+
+        .heroActions .primary {
+          box-shadow:
+            0 12px 34px rgba(44, 224, 247, 0.08),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+
+        .heroActions .secondary {
+          background: rgba(4, 18, 24, 0.42);
+          backdrop-filter: blur(8px);
+        }
+
+        .heroScrollCue {
+          margin-top: 64px;
+        }
+
+        .heroScrollCue > span:last-child {
+          transition: transform 0.25s ease;
+        }
+
+        .heroScrollCue:hover > span:last-child {
+          transform: translateX(5px);
+        }
+
+        .heroSideCode {
+          right: -6px;
+          opacity: 0.9;
+        }
+
+        .heroSideCode::before {
+          content: "";
+          width: 1px;
+          height: 70px;
+          margin-bottom: 10px;
+          background: linear-gradient(
+            180deg,
+            transparent,
+            rgba(83, 232, 255, 0.32)
+          );
+        }
+
+        /* Make the transition into the team content feel intentional. */
+        .peopleTicker {
+          position: relative;
+          margin-top: 0;
+          border-top: 1px solid rgba(93, 232, 255, 0.08);
+          border-bottom: 1px solid rgba(93, 232, 255, 0.08);
+          background:
+            linear-gradient(
+              90deg,
+              rgba(4, 18, 24, 0.88),
+              rgba(3, 12, 17, 0.52),
+              rgba(4, 18, 24, 0.88)
+            );
+          box-shadow:
+            inset 0 1px rgba(255, 255, 255, 0.02),
+            0 18px 60px rgba(0, 0, 0, 0.14);
+        }
+
+        .peopleTicker::before,
+        .peopleTicker::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 90px;
+          z-index: 2;
+          pointer-events: none;
+        }
+
+        .peopleTicker::before {
+          left: 0;
+          background: linear-gradient(90deg, #02080c, transparent);
+        }
+
+        .peopleTicker::after {
+          right: 0;
+          background: linear-gradient(270deg, #02080c, transparent);
+        }
+
+        .peopleTickerTrack {
+          min-height: 52px;
+          align-items: center;
+        }
+
+        .peopleTickerTrack span {
+          transition: color 0.25s ease;
+        }
+
+        .peopleTickerTrack:hover span {
+          color: rgba(224, 250, 255, 0.32);
+        }
+
+        .peopleTickerTrack:hover span:hover {
+          color: #9defff;
+        }
+
+        /* Stronger section transitions and cards below the hero. */
+        .teamSection,
+        .constellation,
+        .peopleCta {
+          position: relative;
+        }
+
+        .teamSection::after,
+        .constellation::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 180px;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(83, 232, 255, 0.18)
+          );
+        }
+
+        .sectionHeader h3,
+        .constellation h3 {
+          letter-spacing: -0.055em;
+        }
+
+        .founderCard {
+          overflow: hidden;
+          box-shadow:
+            0 28px 90px rgba(0, 0, 0, 0.18),
+            inset 0 1px rgba(255, 255, 255, 0.025);
+        }
+
+        .founderCard:hover {
+          transform: translateY(-4px);
+          box-shadow:
+            0 34px 100px rgba(0, 0, 0, 0.24),
+            0 0 55px rgba(44, 224, 247, 0.035),
+            inset 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        .founderCopy h4,
+        .leadCopy h4 {
+          letter-spacing: -0.04em;
+        }
+
+        .coCard {
+          overflow: hidden;
+          box-shadow:
+            0 18px 60px rgba(0, 0, 0, 0.12),
+            inset 0 1px rgba(255, 255, 255, 0.025);
+        }
+
+        .coCard:hover {
+          transform: translateY(-7px);
+        }
+
+        .coCard::after {
+          content: "";
+          position: absolute;
+          left: 12%;
+          right: 12%;
+          bottom: 0;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(83, 232, 255, 0.35),
+            transparent
+          );
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .coCard:hover::after,
+        .coCard.active::after {
+          opacity: 1;
+        }
+
+        .memberSpotlight {
+          backdrop-filter: blur(10px);
+          box-shadow:
+            0 22px 70px rgba(0, 0, 0, 0.18),
+            inset 0 1px rgba(255, 255, 255, 0.025);
+        }
+
+        .peopleCta {
+          overflow: hidden;
+        }
+
+        .peopleCta::after {
+          content: "NEXT";
+          position: absolute;
+          right: 4%;
+          bottom: -15%;
+          font-size: clamp(140px, 20vw, 300px);
+          line-height: 0.7;
+          font-weight: 900;
+          letter-spacing: -0.08em;
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(113, 237, 255, 0.035);
+          pointer-events: none;
+        }
+
+        .ctaButton {
+          position: relative;
+          z-index: 2;
+          box-shadow:
+            0 15px 40px rgba(44, 224, 247, 0.07),
+            inset 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 900px) {
+          .hero {
+            width: min(100% - 52px, 1180px);
+          }
+
+          .heroCopy {
+            width: min(780px, 100%);
+          }
+
+          .heroField::before {
+            right: -7%;
+          }
+
+          .heroFieldCross {
+            right: 15%;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .hero {
+            width: min(100% - 40px, 1180px);
+            min-height: 700px;
+          }
+
+          .hero::after {
+            inset: 20px -8px 20px -8px;
+          }
+
+          .heroCopy {
+            padding-top: 84px;
+            padding-bottom: 84px;
+          }
+
+          .hero h2 {
+            font-size: clamp(58px, 12vw, 86px);
+          }
+
+          .heroField::before {
+            top: 58%;
+            right: -18%;
+            font-size: 190px;
+          }
+
+          .heroField::after {
+            right: 5%;
+            bottom: 7%;
+            font-size: 6px;
+          }
+
+          .heroFieldCross {
+            right: 10%;
+            top: 56%;
+          }
+
+          .heroScrollCue {
+            margin-top: 50px;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .hero {
+            width: min(100% - 28px, 1180px);
+            min-height: 680px;
+          }
+
+          .hero::after {
+            inset: 12px -4px 12px -4px;
+          }
+
+          .heroCopy {
+            padding-top: 72px;
+            padding-bottom: 72px;
+          }
+
+          .heroMeta {
+            gap: 10px;
+            flex-wrap: wrap;
+          }
+
+          .heroMeta b {
+            width: 100%;
+            margin-left: 0;
+          }
+
+          .hero h2 {
+            font-size: clamp(48px, 15vw, 68px);
+            line-height: 0.86;
+          }
+
+          .hero h2::after {
+            margin-top: 26px;
+          }
+
+          .heroCopy > p {
+            font-size: 13px;
+            line-height: 1.8;
+            padding-left: 14px;
+          }
+
+          .heroField::before {
+            right: -26%;
+            top: 55%;
+            font-size: 145px;
+          }
+
+          .heroFieldCross {
+            right: 7%;
+            top: 55%;
+            width: 68px;
+            height: 68px;
+          }
+
+          .heroFieldCross::before {
+            width: 110px;
+          }
+
+          .heroFieldCross::after {
+            height: 110px;
+          }
+
+          .heroFieldLine {
+            opacity: 0.35;
+          }
+
+          .heroScrollCue {
+            margin-top: 42px;
+          }
+
+          .heroScrollLine {
+            width: 28px;
+          }
+
+          .peopleCta::after {
+            right: -10%;
+            bottom: -5%;
+            font-size: 150px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .heroFieldGlow,
+          .heroFieldDot,
+          .heroScrollLine::after {
+            animation: none;
+          }
+
+          .founderCard:hover,
+          .coCard:hover {
+            transform: none;
+          }
+        }
+
+
+        /* =========================================================
+           FINAL POLISH — HUD / DEPTH / INTERACTION
+           ========================================================= */
+
+        .globalProgress {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          z-index: 9999;
+          background: rgba(83, 232, 255, 0.04);
+          pointer-events: none;
+        }
+
+        .globalProgress span {
+          display: block;
+          width: 100%;
+          height: 100%;
+          transform-origin: left center;
+          background: linear-gradient(
+            90deg,
+            #1bcfe9,
+            #74f2ff 55%,
+            rgba(116, 242, 255, 0.15)
+          );
+          box-shadow: 0 0 14px rgba(83, 232, 255, 0.55);
+        }
+
+        .cursorAura {
+          position: fixed;
+          z-index: 1;
+          left: var(--who-mx, 50vw);
+          top: var(--who-my, 50vh);
+          width: 280px;
+          height: 280px;
+          border-radius: 50%;
+          pointer-events: none;
+          transform: translate(-50%, -50%);
+          background: radial-gradient(
+            circle,
+            rgba(61, 225, 255, 0.055) 0%,
+            rgba(61, 225, 255, 0.018) 28%,
+            transparent 68%
+          );
+          filter: blur(8px);
+          mix-blend-mode: screen;
+          opacity: 0.7;
+        }
+
+        .pageStatus {
+          position: fixed;
+          left: 18px;
+          bottom: 18px;
+          z-index: 90;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 7px 9px;
+          border: 1px solid rgba(91, 231, 255, 0.09);
+          background: rgba(2, 9, 13, 0.56);
+          backdrop-filter: blur(12px);
+          color: rgba(190, 245, 255, 0.28);
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+        }
+
+        .pageStatus i {
+          width: 3px;
+          height: 3px;
+          border-radius: 50%;
+          background: #53e8ff;
+          box-shadow: 0 0 8px rgba(83, 232, 255, 0.7);
+        }
+
+        .pageStatus b {
+          color: rgba(115, 239, 255, 0.62);
+          font-weight: 700;
+        }
+
+        .heroPrinciples {
+          display: flex;
+          align-items: stretch;
+          width: min(690px, 100%);
+          margin-top: 34px;
+          border-top: 1px solid rgba(91, 231, 255, 0.08);
+          border-bottom: 1px solid rgba(91, 231, 255, 0.08);
+        }
+
+        .heroPrinciples > div {
+          flex: 1;
+          min-height: 58px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 7px;
+          padding: 10px 18px;
+          border-right: 1px solid rgba(91, 231, 255, 0.07);
+          transition:
+            background 0.25s ease,
+            transform 0.25s ease;
+        }
+
+        .heroPrinciples > div:first-child {
+          padding-left: 0;
+        }
+
+        .heroPrinciples > div:last-child {
+          border-right: 0;
+        }
+
+        .heroPrinciples > div:hover {
+          background: rgba(83, 232, 255, 0.025);
+          transform: translateY(-2px);
+        }
+
+        .heroPrinciples span {
+          color: rgba(83, 232, 255, 0.42);
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+        }
+
+        .heroPrinciples b {
+          color: rgba(225, 251, 255, 0.54);
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.13em;
+          white-space: nowrap;
+        }
+
+        .memberSpotlight {
+          position: relative;
+        }
+
+        .spotlightRail {
+          position: absolute;
+          left: 28px;
+          right: 28px;
+          bottom: 0;
+          height: 2px;
+          display: flex;
+          gap: 4px;
+          overflow: hidden;
+        }
+
+        .spotlightRail span {
+          flex: 1;
+          height: 100%;
+          background: rgba(83, 232, 255, 0.08);
+          transition:
+            background 0.3s ease,
+            box-shadow 0.3s ease;
+        }
+
+        .spotlightRail span.active {
+          background: #53e8ff;
+          box-shadow: 0 0 12px rgba(83, 232, 255, 0.65);
+        }
+
+        .coCard {
+          transform-style: preserve-3d;
+          transition:
+            transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+            border-color 0.3s ease,
+            box-shadow 0.35s ease;
+        }
+
+        .coCard:hover {
+          transform: translateY(-8px) perspective(900px) rotateX(1.2deg);
+        }
+
+        .coCard.active {
+          box-shadow:
+            0 22px 70px rgba(0, 0, 0, 0.18),
+            0 0 0 1px rgba(83, 232, 255, 0.06),
+            0 0 45px rgba(83, 232, 255, 0.035);
+        }
+
+        .coCard .coVisual {
+          transition:
+            transform 0.4s ease,
+            filter 0.4s ease;
+        }
+
+        .coCard:hover .coVisual {
+          transform: scale(1.018);
+          filter: saturate(1.08);
+        }
+
+        .founderVisual,
+        .leadVisual,
+        .map {
+          isolation: isolate;
+        }
+
+        .founderVisual::before,
+        .leadVisual::before,
+        .map::before {
+          content: "";
+          position: absolute;
+          inset: 12px;
+          border: 1px solid rgba(83, 232, 255, 0.055);
+          pointer-events: none;
+          z-index: 4;
+        }
+
+        .founderVisual::after,
+        .leadVisual::after,
+        .map::after {
+          content: "";
+          position: absolute;
+          width: 42px;
+          height: 42px;
+          right: 18px;
+          top: 18px;
+          border-top: 1px solid rgba(83, 232, 255, 0.28);
+          border-right: 1px solid rgba(83, 232, 255, 0.28);
+          pointer-events: none;
+          z-index: 5;
+        }
+
+        .founderBadge,
+        .codeReadout,
+        .cornerCode {
+          backdrop-filter: blur(8px);
+        }
+
+        .signal,
+        .selection {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .signal::after,
+        .selection::after {
+          content: "";
+          position: absolute;
+          left: -30%;
+          top: 0;
+          width: 24%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(83, 232, 255, 0.16),
+            transparent
+          );
+          animation: signalSweep 4s ease-in-out infinite;
+        }
+
+        @keyframes signalSweep {
+          0%,
+          45% {
+            transform: translateX(0);
+          }
+          70%,
+          100% {
+            transform: translateX(520%);
+          }
+        }
+
+        .textLink {
+          position: relative;
+        }
+
+        .textLink::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 22px;
+          bottom: -5px;
+          height: 1px;
+          transform: scaleX(0);
+          transform-origin: left;
+          background: rgba(83, 232, 255, 0.55);
+          transition: transform 0.3s ease;
+        }
+
+        .textLink:hover::after {
+          transform: scaleX(1);
+        }
+
+        .mapCore {
+          box-shadow:
+            0 0 0 1px rgba(83, 232, 255, 0.07),
+            0 0 50px rgba(83, 232, 255, 0.08);
+        }
+
+        .mapNode {
+          transition:
+            transform 0.3s ease,
+            border-color 0.3s ease,
+            box-shadow 0.3s ease;
+        }
+
+        .mapNode:hover {
+          transform: translateY(-4px);
+          border-color: rgba(83, 232, 255, 0.35);
+          box-shadow:
+            0 12px 35px rgba(0, 0, 0, 0.18),
+            0 0 28px rgba(83, 232, 255, 0.06);
+        }
+
+        .backTop {
+          transition:
+            transform 0.25s ease,
+            border-color 0.25s ease,
+            background 0.25s ease;
+        }
+
+        .backTop:hover {
+          transform: translateY(-4px);
+          border-color: rgba(83, 232, 255, 0.28);
+          background: rgba(7, 27, 34, 0.8);
+        }
+
+        @media (max-width: 760px) {
+          .cursorAura {
+            display: none;
+          }
+
+          .pageStatus {
+            left: 12px;
+            bottom: 12px;
+          }
+
+          .heroPrinciples {
+            width: 100%;
+            overflow-x: auto;
+          }
+
+          .heroPrinciples > div {
+            min-width: 145px;
+          }
+
+          .heroPrinciples > div:first-child {
+            padding-left: 12px;
+          }
+
+          .heroPrinciples b {
+            font-size: 7px;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .pageStatus {
+            display: none;
+          }
+
+          .heroPrinciples {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .heroPrinciples > div {
+            min-width: 0;
+          }
+
+          .heroPrinciples > div:nth-child(2) {
+            border-right: 0;
+          }
+
+          .heroPrinciples > div:nth-child(3) {
+            grid-column: 1 / -1;
+            border-top: 1px solid rgba(91, 231, 255, 0.07);
+            border-right: 0;
+          }
+
+          .spotlightRail {
+            left: 18px;
+            right: 18px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .signal::after,
+          .selection::after {
+            animation: none;
+          }
+
+          .coCard:hover,
+          .mapNode:hover,
+          .backTop:hover,
+          .heroPrinciples > div:hover {
+            transform: none;
+          }
+        }
+
       `}</style>
     </main>
   );

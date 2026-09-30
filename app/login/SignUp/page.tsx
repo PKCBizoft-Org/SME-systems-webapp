@@ -172,6 +172,19 @@ export default function SignupPage() {
     .filter(Boolean)
     .join(", ");
 
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const passwordChecks = {
+    length: password.length >= 8,
+    mixed: /[a-z]/.test(password) && /[A-Z]/.test(password),
+    number: /\d/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  };
+  const securityComplete = Object.values(passwordChecks).every(Boolean) && password === confirmPassword;
+  const accountComplete = fullName.trim().length > 1 && emailLooksValid;
+  const locationComplete = Boolean(purok.trim() && regionCode && provinceCode && cityCode && barangayCode);
+  const completedSteps = [accountComplete, securityComplete, locationComplete].filter(Boolean).length;
+  const progress = Math.round((completedSteps / 3) * 100);
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -239,173 +252,304 @@ export default function SignupPage() {
   const input =
     "w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-sky-400/60 focus:bg-white/[0.07]";
   const select =
-    "w-full appearance-none rounded-2xl border border-white/10 bg-[#101722] px-4 py-3.5 text-sm text-white outline-none transition focus:border-sky-400/60 disabled:cursor-not-allowed disabled:opacity-40";
-  return (
-    <main className="min-h-screen bg-[#06090f] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[-10%] top-[-15%] h-[500px] w-[500px] rounded-full bg-sky-500/10 blur-[120px]" />
-        <div className="absolute bottom-[-15%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
-      </div>
-      <nav className="relative z-10 flex h-16 items-center justify-between border-b border-white/10 px-6 md:px-10">
-        <Link href="/login" className="flex items-center gap-2.5">
-          <img
-            src={PKC_LOGO}
-            alt="PKC BIZOFT"
-            className="h-8 w-8 drop-shadow-[0_0_10px_rgba(56,189,248,0.35)]"
-          />
-          <span className="text-xl font-black tracking-tight">
-            PKC <span className="text-sky-400">BIZOFT</span>
+    "w-full appearance-none rounded-2xl border border-white/10 bg-[#101722] px-4 py-3.5 text-sm text-white outline-none transition focus:border-sky-400/60 disabled:cursor-not-allowed disabled:opacity-40";return (
+    <main className="signupPage">
+      <div className="ambient ambientOne" />
+      <div className="ambient ambientTwo" />
+      <div className="pageGrid" />
+
+      <nav className="topbar">
+        <Link href="/login" className="brand" aria-label="PKC BIZOFT">
+          <span className="brandIcon">
+            <img src={PKC_LOGO} alt="" />
+          </span>
+          <span className="brandText">
+            <strong>PKC <em>BIZOFT</em></strong>
+            <small>BUSINESS OPERATIONS PLATFORM</small>
           </span>
         </Link>
-        <div className="text-sm text-white/50">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-sky-400 hover:text-sky-300"
-          >
-            Sign in
-          </Link>
+
+        <div className="topbarRight">
+          <span className="securePill"><i /> SECURE REGISTRATION</span>
+          <span className="already">Already have an account?</span>
+          <Link href="/login" className="signIn">Sign in <b>→</b></Link>
         </div>
       </nav>
-      <section className="relative z-10 mx-auto flex w-full max-w-6xl justify-center px-4 py-10 md:px-8 md:py-14">
-        <div className="w-full max-w-2xl">
-          <div className="mb-7 text-center">
-            <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center">
-              <div className="absolute inset-0 rounded-2xl bg-sky-400/20 blur-xl" />
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-sky-400/25 bg-white/[0.04] backdrop-blur-sm">
-                <img
-                  src={PKC_LOGO}
-                  alt=""
-                  className="h-10 w-10 drop-shadow-[0_0_12px_rgba(56,189,248,0.45)]"
-                />
+
+      <section className="registrationLayout">
+        <aside className="overview">
+          <div className="eyebrow"><i /> ACCOUNT PROVISIONING</div>
+
+          <h1>
+            Build your
+            <br />
+            <span>BIZOFT</span> account.
+          </h1>
+
+          <p className="overviewCopy">
+            Create your secure business profile and register the service
+            location that will be associated with your account.
+          </p>
+
+          <div className="progressPanel">
+            <div className="progressHeader">
+              <div>
+                <span>REGISTRATION STATUS</span>
+                <strong>{progress}% COMPLETE</strong>
+              </div>
+              <b>{completedSteps}/3</b>
+            </div>
+
+            <div className="progressTrack">
+              <i style={{ width: `${progress}%` }} />
+            </div>
+
+            <div className="steps">
+              <div className={accountComplete ? "step complete" : "step"}>
+                <span>{accountComplete ? "✓" : "01"}</span>
+                <div>
+                  <b>Account identity</b>
+                  <small>Name and email</small>
+                </div>
+              </div>
+
+              <div className={securityComplete ? "step complete" : "step"}>
+                <span>{securityComplete ? "✓" : "02"}</span>
+                <div>
+                  <b>Account security</b>
+                  <small>Password protection</small>
+                </div>
+              </div>
+
+              <div className={locationComplete ? "step complete" : "step"}>
+                <span>{locationComplete ? "✓" : "03"}</span>
+                <div>
+                  <b>Service location</b>
+                  <small>Philippine PSGC hierarchy</small>
+                </div>
               </div>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Create your account
-            </h1>
-            <p className="mt-2 text-sm text-white/50">
-              Set up your PKC BIZOFT account and service location.
-            </p>
           </div>
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-[28px] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/30 backdrop-blur-xl md:p-8"
-          >
-            <div className="space-y-6">
-              <section>
-                <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">
-                  Account
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="md:col-span-2">
-                    <span className="mb-2 block text-sm font-medium text-white/75">
-                      Full name
-                    </span>
-                    <input
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className={input}
-                      placeholder="Juan Dela Cruz"
-                      autoComplete="name"
-                    />
-                  </label>
-                  <label className="md:col-span-2">
-                    <span className="mb-2 block text-sm font-medium text-white/75">
-                      Email address
-                    </span>
+
+          <div className="overviewStats">
+            <div>
+              <b>01</b>
+              <span>Secure<br />authentication</span>
+            </div>
+            <div>
+              <b>02</b>
+              <span>Verified<br />location data</span>
+            </div>
+            <div>
+              <b>03</b>
+              <span>Workspace<br />ready</span>
+            </div>
+          </div>
+        </aside>
+
+        <section className="registrationCard">
+          <header className="cardHeader">
+            <div>
+              <span className="cardKicker">NEW BUSINESS PROFILE</span>
+              <h2>Create your account</h2>
+              <p>Enter your details below to provision your PKC BIZOFT account.</p>
+            </div>
+            <div className="online">
+              <i />
+              ONLINE
+            </div>
+          </header>
+
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="formColumns">
+              <section className="column">
+                <div className="sectionTitle">
+                  <span>01</span>
+                  <div>
+                    <h3>Account identity</h3>
+                    <p>How BIZOFT will identify you.</p>
+                  </div>
+                </div>
+
+                <label className="field">
+                  <span>Full name <b>*</b></span>
+                  <input
+                    value={fullName}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      setError("");
+                    }}
+                    className="fieldInput"
+                    placeholder="Juan Dela Cruz"
+                    autoComplete="name"
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Email address <b>*</b></span>
+                  <div className="statusInput">
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={input}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setError("");
+                      }}
+                      className="fieldInput"
                       placeholder="you@example.com"
                       autoComplete="email"
+                      inputMode="email"
                     />
-                  </label>
-                  <label>
-                    <span className="mb-2 block text-sm font-medium text-white/75">
-                      Password
-                    </span>
-                    <div className="relative">
+                    {email && (
+                      <i className={emailLooksValid ? "valid" : "invalid"}>
+                        {emailLooksValid ? "✓" : "!"}
+                      </i>
+                    )}
+                  </div>
+                  <small className={!email || emailLooksValid ? "hint" : "hint danger"}>
+                    {!email || emailLooksValid
+                      ? "Used for account confirmation and sign in."
+                      : "Enter a valid email address."}
+                  </small>
+                </label>
+
+                <div className="securityTitle">
+                  <div className="sectionTitle">
+                    <span>02</span>
+                    <div>
+                      <h3>Account security</h3>
+                      <p>Protect access with a strong password.</p>
+                    </div>
+                  </div>
+                  {securityComplete && <b className="ready">✓ READY</b>}
+                </div>
+
+                <div className="twoFields">
+                  <label className="field">
+                    <span>Password <b>*</b></span>
+                    <div className="passwordInput">
                       <input
                         type={showPassword ? "text" : "password"}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className={`${input} pr-12`}
-                        placeholder="At least 8 characters"
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setError("");
+                        }}
+                        className="fieldInput"
+                        placeholder="Create a password"
                         autoComplete="new-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/45 hover:text-white"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                       >
-                        {showPassword ? "Hide" : "Show"}
+                        {showPassword ? "HIDE" : "SHOW"}
                       </button>
                     </div>
                   </label>
-                  <label>
-                    <span className="mb-2 block text-sm font-medium text-white/75">
-                      Confirm password
-                    </span>
-                    <div className="relative">
+
+                  <label className="field">
+                    <span>Confirm password <b>*</b></span>
+                    <div className="passwordInput">
                       <input
                         type={showConfirmPassword ? "text" : "password"}
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className={`${input} pr-12`}
-                        placeholder="Repeat your password"
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setError("");
+                        }}
+                        className="fieldInput"
+                        placeholder="Repeat password"
                         autoComplete="new-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/45 hover:text-white"
+                        aria-label={
+                          showConfirmPassword
+                            ? "Hide confirmation password"
+                            : "Show confirmation password"
+                        }
                       >
-                        {showConfirmPassword ? "Hide" : "Show"}
+                        {showConfirmPassword ? "HIDE" : "SHOW"}
                       </button>
                     </div>
                   </label>
                 </div>
-              </section>
-              <div className="h-px bg-white/10" />
-              <section>
-                <div className="mb-4">
-                  <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-400">
-                    Service location
-                  </h2>
-                  <p className="mt-1 text-xs text-white/40">
-                    Purok/street is free text. Region, province,
-                    city/municipality, and barangay are filtered from the
-                    complete Philippine PSGC hierarchy.
-                  </p>
+
+                <div className="requirements">
+                  <span className={passwordChecks.length ? "good" : ""}>
+                    {passwordChecks.length ? "✓" : "○"} 8+ characters
+                  </span>
+                  <span className={passwordChecks.mixed ? "good" : ""}>
+                    {passwordChecks.mixed ? "✓" : "○"} Upper + lowercase
+                  </span>
+                  <span className={passwordChecks.number ? "good" : ""}>
+                    {passwordChecks.number ? "✓" : "○"} Number
+                  </span>
+                  <span className={passwordChecks.special ? "good" : ""}>
+                    {passwordChecks.special ? "✓" : "○"} Special character
+                  </span>
+                  <span
+                    className={
+                      password && confirmPassword
+                        ? password === confirmPassword
+                          ? "good"
+                          : "bad"
+                        : ""
+                    }
+                  >
+                    {password && confirmPassword
+                      ? password === confirmPassword
+                        ? "✓"
+                        : "!"
+                      : "○"}{" "}
+                    Passwords match
+                  </span>
                 </div>
-                <div className="grid gap-4">
-                  <label>
-                    <span className="mb-2 block text-sm font-medium text-white/75">
-                      Purok / Street
-                    </span>
-                    <input
-                      value={purok}
-                      onChange={(e) => setPurok(e.target.value)}
-                      className={input}
-                      placeholder="Purok 5, Rizal Street, etc."
-                    />
-                  </label>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label>
-                      <span className="mb-2 block text-sm font-medium text-white/75">
-                        Region
-                      </span>
+              </section>
+
+              <section className="column locationColumn">
+                <div className="sectionTitle">
+                  <span>03</span>
+                  <div>
+                    <h3>Service location</h3>
+                    <p>Establish the geographic service area.</p>
+                  </div>
+                  {locationComplete && <b className="ready">✓ VERIFIED</b>}
+                </div>
+
+                <label className="field">
+                  <span>Purok / Street <b>*</b></span>
+                  <input
+                    value={purok}
+                    onChange={(e) => {
+                      setPurok(e.target.value);
+                      setError("");
+                    }}
+                    className="fieldInput"
+                    placeholder="Purok 5, Rizal Street, etc."
+                    autoComplete="street-address"
+                  />
+                </label>
+
+                <div className="locationGrid">
+                  <label className="field">
+                    <span>Region <b>*</b></span>
+                    <div className="selectWrap">
                       <select
                         value={regionCode}
-                        onChange={(e) => setRegionCode(e.target.value)}
-                        className={select}
+                        onChange={(e) => {
+                          setRegionCode(e.target.value);
+                          setError("");
+                        }}
+                        className="fieldInput selectInput"
                         disabled={loadingLocations}
                       >
                         <option value="">
                           {loadingLocations
-                            ? "Loading Philippine regions..."
+                            ? "Loading regions..."
                             : regions.length
                               ? "Select region"
                               : "No regions loaded"}
@@ -416,15 +560,19 @@ export default function SignupPage() {
                           </option>
                         ))}
                       </select>
-                    </label>
-                    <label>
-                      <span className="mb-2 block text-sm font-medium text-white/75">
-                        Province
-                      </span>
+                    </div>
+                  </label>
+
+                  <label className="field">
+                    <span>Province <b>*</b></span>
+                    <div className="selectWrap">
                       <select
                         value={provinceCode}
-                        onChange={(e) => setProvinceCode(e.target.value)}
-                        className={select}
+                        onChange={(e) => {
+                          setProvinceCode(e.target.value);
+                          setError("");
+                        }}
+                        className="fieldInput selectInput"
                         disabled={!regionCode}
                       >
                         <option value="">
@@ -440,15 +588,19 @@ export default function SignupPage() {
                           </option>
                         ))}
                       </select>
-                    </label>
-                    <label>
-                      <span className="mb-2 block text-sm font-medium text-white/75">
-                        City / Municipality
-                      </span>
+                    </div>
+                  </label>
+
+                  <label className="field">
+                    <span>City / Municipality <b>*</b></span>
+                    <div className="selectWrap">
                       <select
                         value={cityCode}
-                        onChange={(e) => setCityCode(e.target.value)}
-                        className={select}
+                        onChange={(e) => {
+                          setCityCode(e.target.value);
+                          setError("");
+                        }}
+                        className="fieldInput selectInput"
                         disabled={!provinceCode}
                       >
                         <option value="">
@@ -464,15 +616,19 @@ export default function SignupPage() {
                           </option>
                         ))}
                       </select>
-                    </label>
-                    <label>
-                      <span className="mb-2 block text-sm font-medium text-white/75">
-                        Barangay
-                      </span>
+                    </div>
+                  </label>
+
+                  <label className="field">
+                    <span>Barangay <b>*</b></span>
+                    <div className="selectWrap">
                       <select
                         value={barangayCode}
-                        onChange={(e) => setBarangayCode(e.target.value)}
-                        className={select}
+                        onChange={(e) => {
+                          setBarangayCode(e.target.value);
+                          setError("");
+                        }}
+                        className="fieldInput selectInput"
                         disabled={!cityCode}
                       >
                         <option value="">
@@ -488,47 +644,1037 @@ export default function SignupPage() {
                           </option>
                         ))}
                       </select>
-                    </label>
-                  </div>
+                    </div>
+                  </label>
                 </div>
-                {addressPreview && (
-                  <div className="mt-5 rounded-2xl border border-sky-400/15 bg-sky-400/[0.045] p-4">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-400">
-                      Address preview
-                    </div>
-                    <div className="mt-1 text-sm leading-6 text-white/75">
-                      {addressPreview}
-                    </div>
+
+                <div className={addressPreview ? "addressPreview active" : "addressPreview"}>
+                  <div className="addressTop">
+                    <span>ADDRESS PREVIEW</span>
+                    <b>{locationComplete ? "VERIFIED" : "PENDING"}</b>
                   </div>
-                )}
+                  <div className="addressBody">
+                    <strong>⌖</strong>
+                    <p>
+                      {addressPreview ||
+                        "Complete your location selections to preview the service address."}
+                    </p>
+                  </div>
+                  <small>Region → Province → City/Municipality → Barangay</small>
+                </div>
+
+                <div className="locationInfo">
+                  <span>i</span>
+                  <p>
+                    Location data is loaded from the Philippine PSGC hierarchy
+                    in <b>public.ph_locations</b>.
+                  </p>
+                </div>
               </section>
-              {error && (
-                <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
-                  {error}
+            </div>
+
+            {error && (
+              <div className="message error" role="alert">
+                <span>!</span>
+                <p>{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="message success" role="status">
+                <span>✓</span>
+                <p>{success}</p>
+              </div>
+            )}
+
+            <div className="submitBar">
+              <div className="submitTrust">
+                <span>🔒</span>
+                <div>
+                  <b>Secure account creation</b>
+                  <small>Authentication is handled through Supabase.</small>
                 </div>
-              )}
-              {success && (
-                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
-                  {success}
-                </div>
-              )}
+              </div>
+
               <button
                 type="submit"
                 disabled={submitting || loadingLocations}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 text-sm font-bold text-[#071019] transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="submitButton"
               >
-                {submitting ? "Creating account..." : "Create account"}
-                {!submitting && <span>→</span>}
+                {submitting ? "Creating account..." : "Create BIZOFT account"}
+                {submitting ? (
+                  <i className="spinner" />
+                ) : (
+                  <b>→</b>
+                )}
               </button>
-              <p className="text-center text-xs leading-5 text-white/35">
-                Creating an account does not automatically grant
-                organization/tenant access. Tenant membership is assigned
-                separately.
-              </p>
             </div>
+
+            <p className="tenantNote">
+              Creating an account does not automatically grant organization or
+              tenant access. Tenant membership is assigned separately.
+            </p>
           </form>
-        </div>
+        </section>
       </section>
+
+      <footer className="footer">
+        <span>PKC BIZOFT • BUSINESS OPERATIONS PLATFORM</span>
+        <span>ACCOUNT REGISTRATION • v1.0</span>
+      </footer>
+
+      <style jsx>{`
+        :global(*) { box-sizing: border-box; }
+        :global(html), :global(body) { min-height: 100%; }
+        :global(body) { margin: 0; background: #03070c; }
+        :global(button), :global(input), :global(select) { font: inherit; }
+
+        .signupPage {
+          min-height: 100vh;
+          position: relative;
+          overflow-x: hidden;
+          background:
+            radial-gradient(circle at 75% 20%, rgba(23, 206, 255, .07), transparent 29%),
+            radial-gradient(circle at 12% 82%, rgba(45, 104, 255, .06), transparent 27%),
+            #03070c;
+          color: #fff;
+          padding-bottom: 18px;
+        }
+
+        .pageGrid {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          opacity: .16;
+          background-image:
+            linear-gradient(rgba(75, 215, 255, .035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(75, 215, 255, .035) 1px, transparent 1px);
+          background-size: 44px 44px;
+          mask-image: linear-gradient(to bottom, black, transparent 88%);
+        }
+
+        .ambient {
+          position: fixed;
+          width: 420px;
+          height: 420px;
+          border-radius: 50%;
+          filter: blur(125px);
+          opacity: .08;
+          pointer-events: none;
+        }
+        .ambientOne { top: -180px; right: -80px; background: #19d9ff; }
+        .ambientTwo { bottom: -240px; left: -130px; background: #2d68ff; }
+
+        .topbar {
+          position: relative;
+          z-index: 5;
+          width: min(1480px, calc(100% - 48px));
+          height: 68px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          border-bottom: 1px solid rgba(120, 230, 255, .09);
+        }
+
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: #fff;
+          text-decoration: none;
+        }
+
+        .brandIcon {
+          width: 35px;
+          height: 35px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(83, 229, 255, .18);
+          border-radius: 10px;
+          background: rgba(255,255,255,.035);
+        }
+        .brandIcon img { width: 24px; height: 24px; object-fit: contain; }
+
+        .brandText strong {
+          display: block;
+          font-size: 15px;
+          letter-spacing: .08em;
+        }
+        .brandText em { color: #58e7ff; font-style: normal; }
+        .brandText small {
+          display: block;
+          margin-top: 3px;
+          color: rgba(215,246,253,.28);
+          font-size: 6px;
+          letter-spacing: .18em;
+        }
+
+        .topbarRight {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          color: rgba(220,248,255,.38);
+          font-size: 10px;
+        }
+        .securePill {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 9px;
+          border: 1px solid rgba(83,234,199,.14);
+          border-radius: 999px;
+          color: rgba(142,244,211,.62);
+          font-size: 7px;
+          letter-spacing: .13em;
+        }
+        .securePill i,
+        .online i {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #57e7bd;
+          box-shadow: 0 0 9px #57e7bd;
+        }
+        .signIn {
+          color: #6eeaff;
+          text-decoration: none;
+          font-weight: 700;
+        }
+        .signIn b {
+          display: inline-block;
+          margin-left: 3px;
+          transition: transform .2s;
+        }
+        .signIn:hover b { transform: translateX(3px); }
+
+        .registrationLayout {
+          position: relative;
+          z-index: 2;
+          width: min(1480px, calc(100% - 48px));
+          min-height: calc(100vh - 99px);
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: minmax(280px, .68fr) minmax(720px, 1.85fr);
+          align-items: center;
+          gap: 30px;
+          padding: 28px 0 18px;
+        }
+
+        .overview { padding: 4px 8px 4px 2px; }
+
+        .eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: rgba(93,229,255,.62);
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: .2em;
+        }
+        .eyebrow i {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #55e7ff;
+          box-shadow: 0 0 12px #55e7ff;
+        }
+
+        .overview h1 {
+          margin: 17px 0 0;
+          font-size: clamp(39px, 4vw, 60px);
+          line-height: .98;
+          letter-spacing: -.05em;
+          font-weight: 750;
+        }
+        .overview h1 span {
+          color: #55e7ff;
+          text-shadow: 0 0 32px rgba(70,225,255,.18);
+        }
+        .overviewCopy {
+          max-width: 420px;
+          margin: 17px 0 22px;
+          color: rgba(218,244,250,.42);
+          font-size: 12px;
+          line-height: 1.7;
+        }
+
+        .progressPanel {
+          max-width: 430px;
+          padding: 16px;
+          border: 1px solid rgba(114,229,255,.1);
+          border-radius: 17px;
+          background: linear-gradient(145deg, rgba(10,27,35,.68), rgba(4,12,18,.72));
+          box-shadow: 0 22px 65px rgba(0,0,0,.2);
+          backdrop-filter: blur(12px);
+        }
+        .progressHeader {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .progressHeader span {
+          display: block;
+          color: rgba(205,242,250,.27);
+          font-size: 6px;
+          letter-spacing: .16em;
+        }
+        .progressHeader strong {
+          display: block;
+          margin-top: 4px;
+          color: rgba(226,253,255,.72);
+          font-size: 9px;
+          letter-spacing: .1em;
+        }
+        .progressHeader > b { color: #55e7ff; font-size: 12px; }
+        .progressTrack {
+          height: 3px;
+          margin: 13px 0 14px;
+          overflow: hidden;
+          border-radius: 99px;
+          background: rgba(89,225,255,.07);
+        }
+        .progressTrack i {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #3cdfff, #77f3c6);
+          box-shadow: 0 0 12px rgba(55,222,255,.65);
+          transition: width .35s ease;
+        }
+        .steps { display: grid; gap: 9px; }
+        .step {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          opacity: .43;
+          transition: opacity .2s;
+        }
+        .step.complete { opacity: 1; }
+        .step > span {
+          width: 26px;
+          height: 26px;
+          flex: 0 0 26px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(109,229,255,.13);
+          border-radius: 8px;
+          color: rgba(215,248,255,.38);
+          font-size: 7px;
+        }
+        .step.complete > span {
+          color: #7af3d0;
+          border-color: rgba(92,239,198,.28);
+          background: rgba(80,239,199,.06);
+        }
+        .step b, .step small { display: block; }
+        .step b { color: rgba(236,252,255,.68); font-size: 9px; }
+        .step small {
+          margin-top: 2px;
+          color: rgba(209,241,249,.27);
+          font-size: 7px;
+        }
+
+        .overviewStats {
+          display: flex;
+          gap: 22px;
+          margin-top: 19px;
+        }
+        .overviewStats div {
+          display: flex;
+          gap: 6px;
+          align-items: flex-start;
+        }
+        .overviewStats b {
+          color: rgba(80,226,255,.45);
+          font-size: 7px;
+        }
+        .overviewStats span {
+          color: rgba(214,244,250,.28);
+          font-size: 7px;
+          line-height: 1.35;
+        }
+
+        .registrationCard {
+          min-width: 0;
+          overflow: hidden;
+          border: 1px solid rgba(117,229,255,.13);
+          border-radius: 23px;
+          background: linear-gradient(145deg, rgba(8,24,32,.93), rgba(3,10,16,.97));
+          box-shadow: 0 28px 90px rgba(0,0,0,.42), 0 0 55px rgba(40,205,255,.04);
+          backdrop-filter: blur(18px);
+        }
+
+        .cardHeader {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 20px 23px;
+          border-bottom: 1px solid rgba(120,229,255,.07);
+          background: linear-gradient(180deg, rgba(255,255,255,.025), transparent);
+        }
+        .cardKicker {
+          color: rgba(91,229,255,.62);
+          font-size: 6px;
+          letter-spacing: .2em;
+          font-weight: 700;
+        }
+        .cardHeader h2 {
+          margin: 5px 0 0;
+          font-size: 22px;
+          letter-spacing: -.02em;
+        }
+        .cardHeader p {
+          margin: 5px 0 0;
+          color: rgba(216,244,250,.32);
+          font-size: 9px;
+        }
+        .online {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: rgba(120,240,207,.58);
+          font-size: 6px;
+          letter-spacing: .16em;
+        }
+
+        form { padding: 20px 23px 17px; }
+
+        .formColumns {
+          display: grid;
+          grid-template-columns: 1fr 1.04fr;
+          gap: 24px;
+        }
+        .column { min-width: 0; }
+        .locationColumn {
+          padding-left: 24px;
+          border-left: 1px solid rgba(118,229,255,.075);
+        }
+
+        .sectionTitle {
+          position: relative;
+          display: flex;
+          align-items: flex-start;
+          gap: 9px;
+          margin-bottom: 15px;
+        }
+        .sectionTitle > span {
+          width: 27px;
+          height: 27px;
+          flex: 0 0 27px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(83,228,255,.15);
+          border-radius: 8px;
+          color: #59e7ff;
+          font-size: 7px;
+          background: rgba(76,226,255,.035);
+        }
+        .sectionTitle h3 {
+          margin: 1px 0 2px;
+          color: rgba(238,253,255,.8);
+          font-size: 10px;
+          letter-spacing: .03em;
+        }
+        .sectionTitle p {
+          margin: 0;
+          color: rgba(207,240,248,.3);
+          font-size: 7px;
+        }
+        .sectionTitle .ready {
+          margin-left: auto;
+        }
+
+        .field { display: block; min-width: 0; margin-bottom: 10px; }
+        .field > span {
+          display: block;
+          margin-bottom: 5px;
+          color: rgba(229,249,253,.6);
+          font-size: 8px;
+          font-weight: 600;
+        }
+        .field > span b { color: #59e7ff; }
+
+        .fieldInput {
+          width: 100%;
+          height: 38px;
+          border: 1px solid rgba(136,229,250,.1);
+          border-radius: 10px;
+          outline: none;
+          color: #fff;
+          background: rgba(255,255,255,.035);
+          padding: 0 11px;
+          font-size: 10px;
+          transition: border-color .2s, background .2s, box-shadow .2s;
+        }
+        .fieldInput::placeholder { color: rgba(224,247,252,.21); }
+        .fieldInput:focus {
+          border-color: rgba(82,224,255,.43);
+          background: rgba(255,255,255,.05);
+          box-shadow: 0 0 0 3px rgba(60,218,255,.04);
+        }
+        .fieldInput:disabled { cursor: not-allowed; opacity: .38; }
+
+        .statusInput, .passwordInput, .selectWrap { position: relative; }
+        .statusInput .fieldInput { padding-right: 34px; }
+        .statusInput > i {
+          position: absolute;
+          top: 50%;
+          right: 11px;
+          transform: translateY(-50%);
+          font-style: normal;
+          font-size: 10px;
+        }
+        .statusInput .valid { color: #65edc5; }
+        .statusInput .invalid { color: #ff8585; }
+
+        .hint {
+          display: block;
+          margin-top: 4px;
+          color: rgba(206,239,247,.22);
+          font-size: 6px;
+        }
+        .hint.danger { color: rgba(255,135,135,.7); }
+
+        .securityTitle {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin: 17px 0 11px;
+        }
+        .securityTitle .sectionTitle { margin: 0; }
+        .ready {
+          white-space: nowrap;
+          padding: 5px 7px;
+          border: 1px solid rgba(86,239,198,.18);
+          border-radius: 999px;
+          background: rgba(76,238,193,.045);
+          color: #6ef0ca;
+          font-size: 6px;
+          letter-spacing: .12em;
+        }
+
+        .twoFields {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 9px;
+        }
+        .passwordInput .fieldInput { padding-right: 51px; }
+        .passwordInput button {
+          position: absolute;
+          top: 50%;
+          right: 7px;
+          transform: translateY(-50%);
+          border: 0;
+          background: none;
+          color: rgba(218,248,255,.32);
+          cursor: pointer;
+          font-size: 6px;
+          letter-spacing: .08em;
+        }
+        .passwordInput button:hover { color: #6ceaff; }
+
+        .requirements {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px 10px;
+          margin-top: 1px;
+        }
+        .requirements span {
+          color: rgba(202,234,242,.28);
+          font-size: 6px;
+        }
+        .requirements .good { color: rgba(110,239,202,.72); }
+        .requirements .bad { color: rgba(255,135,135,.72); }
+
+        .locationGrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0 9px;
+        }
+        .selectInput {
+          appearance: none;
+          -webkit-appearance: none;
+          padding-right: 29px;
+          background: #0a151d;
+        }
+        .selectWrap::after {
+          content: "⌄";
+          position: absolute;
+          top: 50%;
+          right: 11px;
+          transform: translateY(-55%);
+          color: rgba(104,226,255,.42);
+          pointer-events: none;
+          font-size: 10px;
+        }
+
+        .addressPreview {
+          min-height: 82px;
+          margin-top: 2px;
+          padding: 10px 12px;
+          border: 1px solid rgba(119,227,250,.08);
+          border-radius: 12px;
+          background: rgba(255,255,255,.02);
+        }
+        .addressPreview.active {
+          border-color: rgba(78,230,255,.17);
+          background: rgba(54,216,255,.03);
+        }
+        .addressTop {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        .addressTop span {
+          color: rgba(209,244,251,.27);
+          font-size: 6px;
+          letter-spacing: .15em;
+        }
+        .addressTop b {
+          color: rgba(103,239,202,.62);
+          font-size: 6px;
+          letter-spacing: .11em;
+        }
+        .addressBody {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin-top: 7px;
+        }
+        .addressBody strong {
+          color: #59e7ff;
+          font-size: 17px;
+          text-shadow: 0 0 14px rgba(78,225,255,.35);
+        }
+        .addressBody p {
+          margin: 0;
+          color: rgba(232,251,255,.66);
+          font-size: 9px;
+          line-height: 1.4;
+        }
+        .addressPreview > small {
+          display: block;
+          margin-top: 4px;
+          color: rgba(202,236,245,.22);
+          font-size: 6px;
+        }
+
+        .locationInfo {
+          display: flex;
+          align-items: flex-start;
+          gap: 6px;
+          margin-top: 8px;
+        }
+        .locationInfo > span {
+          width: 14px;
+          height: 14px;
+          flex: 0 0 14px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(85,224,255,.14);
+          border-radius: 50%;
+          color: rgba(90,227,255,.5);
+          font-size: 6px;
+        }
+        .locationInfo p {
+          margin: 0;
+          color: rgba(204,237,245,.23);
+          font-size: 6px;
+          line-height: 1.45;
+        }
+        .locationInfo b {
+          color: rgba(213,246,253,.4);
+          font-weight: 500;
+        }
+
+        .message {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin-top: 12px;
+          padding: 9px 11px;
+          border-radius: 10px;
+          font-size: 8px;
+          line-height: 1.5;
+        }
+        .message > span {
+          width: 16px;
+          height: 16px;
+          flex: 0 0 16px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          font-weight: 800;
+        }
+        .message p { margin: 1px 0 0; }
+        .message.error {
+          border: 1px solid rgba(255,102,102,.16);
+          background: rgba(255,70,70,.05);
+          color: rgba(255,193,193,.78);
+        }
+        .message.error > span { color: #ff8585; background: rgba(255,82,82,.12); }
+        .message.success {
+          border: 1px solid rgba(81,235,186,.16);
+          background: rgba(62,230,176,.045);
+          color: rgba(181,255,229,.75);
+        }
+        .message.success > span { color: #69edc5; background: rgba(69,233,182,.1); }
+
+        .submitBar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          margin-top: 15px;
+          padding-top: 14px;
+          border-top: 1px solid rgba(118,229,255,.07);
+        }
+        .submitTrust {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+        .submitTrust > span { font-size: 13px; opacity: .62; }
+        .submitTrust b,
+        .submitTrust small { display: block; }
+        .submitTrust b { color: rgba(225,249,254,.58); font-size: 7px; }
+        .submitTrust small {
+          margin-top: 2px;
+          color: rgba(202,235,244,.22);
+          font-size: 6px;
+        }
+
+        .submitButton {
+          min-width: 205px;
+          height: 41px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          border: 1px solid rgba(112,237,255,.15);
+          border-radius: 10px;
+          color: #031016;
+          background: linear-gradient(135deg, #e9fcff, #a6efff);
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: .05em;
+          cursor: pointer;
+          box-shadow: 0 10px 35px rgba(41,211,255,.11);
+          transition: transform .2s, box-shadow .2s, filter .2s;
+        }
+        .submitButton:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 40px rgba(41,211,255,.19);
+          filter: brightness(1.03);
+        }
+        .submitButton:disabled {
+          cursor: not-allowed;
+          opacity: .5;
+        }
+        .submitButton > b { font-size: 14px; }
+
+        .spinner {
+          width: 12px;
+          height: 12px;
+          border: 2px solid rgba(3,16,22,.25);
+          border-top-color: #031016;
+          border-radius: 50%;
+          animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tenantNote {
+          margin: 10px 0 0;
+          color: rgba(199,233,242,.18);
+          text-align: right;
+          font-size: 6px;
+          line-height: 1.4;
+        }
+
+        .footer {
+          position: relative;
+          z-index: 2;
+          width: min(1480px, calc(100% - 48px));
+          margin: 0 auto;
+          display: flex;
+          justify-content: space-between;
+          color: rgba(194,229,238,.18);
+          font-size: 6px;
+          letter-spacing: .13em;
+        }
+
+        @media (max-width: 1180px) {
+          .registrationLayout {
+            grid-template-columns: 1fr;
+            max-width: 900px;
+          }
+          .overview { display: none; }
+          .registrationCard { width: 100%; }
+        }
+
+        @media (max-width: 760px) {
+          .topbar,
+          .registrationLayout,
+          .footer {
+            width: min(100% - 28px, 620px);
+          }
+          .topbar { height: 62px; }
+          .already,
+          .securePill { display: none; }
+          .registrationLayout {
+            min-height: auto;
+            padding: 18px 0;
+          }
+          .cardHeader { padding: 17px; }
+          form { padding: 17px; }
+          .formColumns { grid-template-columns: 1fr; gap: 19px; }
+          .locationColumn {
+            padding-left: 0;
+            padding-top: 19px;
+            border-left: 0;
+            border-top: 1px solid rgba(118,229,255,.075);
+          }
+          .twoFields,
+          .locationGrid { grid-template-columns: 1fr; }
+          .submitBar {
+            align-items: stretch;
+            flex-direction: column;
+          }
+          .submitButton { width: 100%; }
+          .tenantNote { text-align: center; }
+          .footer {
+            flex-direction: column;
+            gap: 5px;
+            padding-bottom: 12px;
+          }
+        }
+
+        @media (max-height: 820px) and (min-width: 1181px) {
+          .topbar { height: 60px; }
+          .registrationLayout {
+            min-height: calc(100vh - 91px);
+            padding: 15px 0 10px;
+            gap: 24px;
+          }
+          .overview h1 { font-size: 45px; }
+          .overviewCopy { margin: 12px 0 16px; }
+          .progressPanel { padding: 13px; }
+          .cardHeader { padding: 16px 20px; }
+          form { padding: 16px 20px 13px; }
+          .field { margin-bottom: 8px; }
+          .fieldInput { height: 35px; }
+          .sectionTitle { margin-bottom: 11px; }
+          .securityTitle { margin: 13px 0 8px; }
+          .addressPreview { min-height: 76px; }
+        }
+
+
+        /* Readability pass — desktop enterprise scale */
+        @media (min-width: 1181px) {
+          .topbar { height: 76px; }
+          .brandIcon { width: 42px; height: 42px; border-radius: 11px; }
+          .brandIcon img { width: 29px; height: 29px; }
+          .brandText strong { font-size: 18px; }
+          .brandText small { font-size: 7px; }
+          .topbarRight { font-size: 12px; }
+          .securePill { padding: 8px 12px; font-size: 8px; }
+
+          .registrationLayout {
+            min-height: calc(100vh - 108px);
+            grid-template-columns: minmax(340px, .72fr) minmax(780px, 1.9fr);
+            gap: 42px;
+            padding: 34px 0 24px;
+          }
+
+          .eyebrow { font-size: 9px; }
+          .eyebrow i { width: 7px; height: 7px; }
+          .overview h1 {
+            font-size: clamp(52px, 4.5vw, 72px);
+            line-height: .99;
+          }
+          .overviewCopy {
+            max-width: 500px;
+            margin: 20px 0 27px;
+            font-size: 15px;
+            line-height: 1.65;
+          }
+
+          .progressPanel {
+            max-width: 500px;
+            padding: 20px;
+            border-radius: 19px;
+          }
+          .progressHeader span { font-size: 8px; }
+          .progressHeader strong { font-size: 11px; }
+          .progressHeader > b { font-size: 15px; }
+          .progressTrack { height: 4px; margin: 15px 0 17px; }
+          .steps { gap: 12px; }
+          .step { gap: 11px; }
+          .step > span {
+            width: 32px;
+            height: 32px;
+            flex-basis: 32px;
+            border-radius: 9px;
+            font-size: 9px;
+          }
+          .step b { font-size: 12px; }
+          .step small { font-size: 9px; }
+          .overviewStats { gap: 28px; margin-top: 23px; }
+          .overviewStats b { font-size: 9px; }
+          .overviewStats span { font-size: 9px; }
+
+          .registrationCard { border-radius: 25px; }
+          .cardHeader { padding: 25px 29px; }
+          .cardKicker { font-size: 8px; }
+          .cardHeader h2 { font-size: 30px; }
+          .cardHeader p { font-size: 12px; }
+          .online { font-size: 8px; }
+
+          form { padding: 27px 29px 22px; }
+          .formColumns { gap: 34px; }
+          .locationColumn { padding-left: 34px; }
+
+          .sectionTitle { gap: 12px; margin-bottom: 18px; }
+          .sectionTitle > span {
+            width: 34px;
+            height: 34px;
+            flex-basis: 34px;
+            border-radius: 9px;
+            font-size: 9px;
+          }
+          .sectionTitle h3 { font-size: 14px; }
+          .sectionTitle p { font-size: 9px; }
+          .ready { font-size: 8px; padding: 6px 9px; }
+
+          .field { margin-bottom: 14px; }
+          .field > span { margin-bottom: 7px; font-size: 11px; }
+          .fieldInput {
+            height: 48px;
+            border-radius: 11px;
+            padding: 0 14px;
+            font-size: 14px;
+          }
+          .statusInput .fieldInput { padding-right: 40px; }
+          .statusInput > i { right: 14px; font-size: 13px; }
+          .hint { margin-top: 5px; font-size: 8px; }
+
+          .securityTitle { margin: 23px 0 14px; }
+          .twoFields { gap: 12px; }
+          .passwordInput .fieldInput { padding-right: 63px; }
+          .passwordInput button { right: 10px; font-size: 8px; }
+          .requirements { gap: 7px 14px; }
+          .requirements span { font-size: 8px; }
+
+          .locationGrid { gap: 0 12px; }
+          .selectInput { padding-right: 36px; }
+          .selectWrap::after { right: 14px; font-size: 13px; }
+
+          .addressPreview {
+            min-height: 100px;
+            margin-top: 5px;
+            padding: 13px 15px;
+            border-radius: 13px;
+          }
+          .addressTop span,
+          .addressTop b { font-size: 8px; }
+          .addressBody { gap: 11px; margin-top: 9px; }
+          .addressBody strong { font-size: 21px; }
+          .addressBody p { font-size: 12px; }
+          .addressPreview > small { margin-top: 7px; font-size: 8px; }
+
+          .locationInfo { gap: 8px; margin-top: 10px; }
+          .locationInfo > span {
+            width: 18px;
+            height: 18px;
+            flex-basis: 18px;
+            font-size: 8px;
+          }
+          .locationInfo p { font-size: 8px; }
+
+          .submitBar {
+            gap: 24px;
+            margin-top: 21px;
+            padding-top: 18px;
+          }
+          .submitTrust { gap: 10px; }
+          .submitTrust > span { font-size: 16px; }
+          .submitTrust b { font-size: 10px; }
+          .submitTrust small { font-size: 8px; }
+          .submitButton {
+            min-width: 260px;
+            height: 50px;
+            border-radius: 11px;
+            font-size: 12px;
+          }
+          .submitButton > b { font-size: 17px; }
+          .tenantNote { margin-top: 12px; font-size: 8px; }
+
+          .footer { font-size: 8px; }
+        }
+
+        @media (min-width: 1181px) and (max-height: 820px) {
+          .topbar { height: 68px; }
+          .registrationLayout {
+            min-height: calc(100vh - 99px);
+            padding-top: 20px;
+            padding-bottom: 14px;
+            gap: 30px;
+          }
+          .overview h1 { font-size: 54px; }
+          .overviewCopy { font-size: 13px; margin: 15px 0 19px; }
+          .progressPanel { padding: 16px; }
+          .step > span { width: 29px; height: 29px; flex-basis: 29px; }
+          .step b { font-size: 10px; }
+          .step small { font-size: 8px; }
+          .cardHeader { padding: 20px 24px; }
+          .cardHeader h2 { font-size: 27px; }
+          .cardHeader p { font-size: 10px; }
+          form { padding: 20px 24px 16px; }
+          .formColumns { gap: 27px; }
+          .locationColumn { padding-left: 27px; }
+          .sectionTitle h3 { font-size: 12px; }
+          .field > span { font-size: 10px; }
+          .fieldInput { height: 42px; font-size: 12px; }
+          .field { margin-bottom: 10px; }
+          .requirements span { font-size: 7px; }
+          .addressPreview { min-height: 86px; padding: 11px 13px; }
+          .addressBody p { font-size: 10px; }
+          .submitButton { height: 45px; min-width: 235px; font-size: 10px; }
+        }
+
+        @media (max-width: 1180px) {
+          .cardHeader h2 { font-size: 27px; }
+          .cardHeader p { font-size: 11px; }
+          .sectionTitle h3 { font-size: 13px; }
+          .sectionTitle p { font-size: 9px; }
+          .field > span { font-size: 10px; }
+          .fieldInput { height: 45px; font-size: 13px; }
+          .requirements span { font-size: 8px; }
+          .addressBody p { font-size: 11px; }
+          .submitButton { height: 48px; font-size: 11px; }
+        }
+
+        @media (max-width: 760px) {
+          .cardHeader h2 { font-size: 24px; }
+          .cardHeader p { font-size: 10px; line-height: 1.5; }
+          .sectionTitle h3 { font-size: 12px; }
+          .field > span { font-size: 10px; }
+          .fieldInput { height: 46px; font-size: 13px; }
+          .requirements span { font-size: 8px; }
+          .addressBody p { font-size: 10px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .progressTrack i,
+          .submitButton,
+          .spinner { animation: none; transition: none; }
+        }
+      `}</style>
     </main>
   );
 }
