@@ -14,30 +14,50 @@ export default function SetPasswordPage() {
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    let settled = false
+
+    function settle(sessionFound: boolean, userEmail?: string) {
+      if (cancelled || settled) return
+      settled = true
+      setHasSession(sessionFound)
+      if (userEmail) setEmail(userEmail)
+      setChecking(false)
+    }
+
+    /*
+      If the URL still has an unprocessed access_token in it, Supabase
+      is in the middle of turning that into a session — a getSession()
+      call that races ahead of that process will come back empty even
+      though a real session is about to land. In that case we wait for
+      the auth-state event (or a short fallback timeout) instead of
+      declaring the link invalid on the first empty result.
+    */
+    const hasPendingAuthTokens =
+      typeof window !== 'undefined' &&
+      window.location.hash.includes('access_token')
 
     async function check() {
-      /*
-        The invite link's tokens are in the URL when this page first
-        loads. The Supabase client (with detectSessionInUrl enabled,
-        which is the default) reads them and creates a session
-        automatically — we just need to wait a moment and check.
-      */
       const { data } = await supabase.auth.getSession()
 
       if (cancelled) return
 
       if (data.session) {
-        setHasSession(true)
-        setEmail(data.session.user.email || '')
+        settle(true, data.session.user.email || '')
+        return
       }
 
-      setChecking(false)
+      if (!hasPendingAuthTokens) {
+        settle(false)
+      }
+      // else: still waiting on onAuthStateChange or the fallback below.
     }
 
     check()
@@ -46,15 +66,18 @@ export default function SetPasswordPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        setHasSession(true)
-        setEmail(session.user.email || '')
-        setChecking(false)
+        settle(true, session.user.email || '')
       }
     })
+
+    const fallback = hasPendingAuthTokens
+      ? window.setTimeout(() => settle(false), 5000)
+      : null
 
     return () => {
       cancelled = true
       subscription.unsubscribe()
+      if (fallback) window.clearTimeout(fallback)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -132,24 +155,53 @@ export default function SetPasswordPage() {
           <form onSubmit={handleSubmit} className="form">
             <label>
               <span>New password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-              />
+              <div className="inputRow">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="toggleVisibility"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={
+                    showPassword ? 'Hide password' : 'Show password'
+                  }
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <span className="fieldHint">At least 8 characters.</span>
             </label>
 
             <label>
               <span>Confirm password</span>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-              />
+              <div className="inputRow">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="toggleVisibility"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={
+                    showConfirmPassword
+                      ? 'Hide password'
+                      : 'Show password'
+                  }
+                >
+                  {showConfirmPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </label>
 
             {error && <div className="errorBox">{error}</div>}
@@ -224,20 +276,52 @@ const styles = `
     color: #9bb0c0;
   }
 
+  .inputRow {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
   .form input {
     height: 44px;
-    padding: 0 12px;
+    padding: 0 60px 0 12px;
     border-radius: 9px;
     border: 1px solid rgba(255,255,255,0.1);
     background: #05090d;
     color: #eef7ff;
     font: inherit;
     font-size: 14px;
+    width: 100%;
   }
 
   .form input:focus {
     outline: none;
     border-color: rgba(21,153,255,0.5);
+  }
+
+  .toggleVisibility {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #1599ff;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 6px;
+    height: auto;
+  }
+
+  .toggleVisibility:hover {
+    color: #4cb6ff;
+  }
+
+  .fieldHint {
+    font-size: 11px;
+    font-weight: 400;
+    color: #6c8195;
   }
 
   .errorBox {

@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
 
     if (!ALLOWED_ROLES.includes(role as TenantRole)) {
       return NextResponse.json(
-        { error: "Role must be admin, technician, or customer." },
+        {
+          error:
+            "Role must be admin, technician, accounting, or customer.",
+        },
         { status: 400 },
       );
     }
@@ -131,8 +134,22 @@ export async function POST(request: NextRequest) {
 
     let invitedUserId: string | null = null;
 
+    /*
+      Without this, Supabase falls back to its default Site URL for
+      the invite link — which is how we previously ended up with
+      invite emails pointing at localhost. Using the request's own
+      origin means this works correctly whether called from
+      localhost during development or the live production domain,
+      with no manual URL configuration needed.
+    */
+    const redirectTo = new URL(
+      "/set-password",
+      request.nextUrl.origin,
+    ).toString();
+
     const { data: inviteData, error: inviteError } =
       await adminClient.auth.admin.inviteUserByEmail(email, {
+        redirectTo,
         data: {
           invited_by_email: userData.user.email,
           invited_by_id: userData.user.id,
@@ -155,9 +172,14 @@ export async function POST(request: NextRequest) {
         The person already has an account (maybe from another tenant
         or a prior invite). Look them up instead of failing, so an
         admin can still grant them access to this tenant.
+
+        perPage is set to match the list-users route — without it,
+        Supabase's default page size could miss this user entirely
+        once the project has more than a handful of accounts, even
+        though they genuinely exist.
       */
       const { data: existingUsers, error: listError } =
-        await adminClient.auth.admin.listUsers();
+        await adminClient.auth.admin.listUsers({ perPage: 200 });
 
       if (listError) {
         return NextResponse.json(

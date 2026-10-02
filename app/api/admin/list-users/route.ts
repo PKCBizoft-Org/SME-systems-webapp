@@ -66,7 +66,14 @@ export async function GET(request: NextRequest) {
         .eq("tenant_id", tenantId)
         .maybeSingle();
 
-    if (callerMembershipError || !callerMembership || callerMembership.role !== "admin") {
+    if (callerMembershipError) {
+      return NextResponse.json(
+        { error: "Unable to verify your admin access." },
+        { status: 500 },
+      );
+    }
+
+    if (!callerMembership || callerMembership.role !== "admin") {
       return NextResponse.json(
         { error: "Only tenant admins can view this list." },
         { status: 403 },
