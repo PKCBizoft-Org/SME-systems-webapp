@@ -203,6 +203,13 @@ export default function ClientDetailPage() {
     oldLongitude: number | null;
   } | null>(null);
 
+  // Tracks the true last-saved (or edit-sequence-start) value per field,
+  // separate from the optimistically-displayed `client[field]`. Without
+  // this, editing a field twice within the 5-second confirm window would
+  // show (and restore, on Cancel) an intermediate unsaved value instead
+  // of what's actually in the database.
+  const fieldBaselines = useRef<Record<string, string | number | null>>({});
+
   const openLightbox = useCallback((photo: {
     url?: string;
     alt: string;
@@ -384,6 +391,11 @@ export default function ClientDetailPage() {
         return;
       }
 
+      // The save succeeded, so this is now the true baseline for this
+      // field — clear the tracked baseline so the next edit sequence
+      // starts fresh from the just-saved value.
+      delete fieldBaselines.current[String(field)];
+
       if (isStatusField) {
         if (field === "installation_status") {
           setInstallationSaveStatus("saved");
@@ -401,8 +413,7 @@ export default function ClientDetailPage() {
       }
 
       // Prefer the database audit trigger. If the project does not have one,
-      // create a client-side fallback record with the currently signed-in email
-      // (HISTORY LOG(edit) AHHAHAHA).
+      // create a client-side fallback record with the currently signed-in email.
       if (actorEmail) {
         const { data: recentAudit } = await supabase
           .from("audit_log")
@@ -444,20 +455,38 @@ export default function ClientDetailPage() {
     ) => {
       if (!client) return;
 
-      const previousValue = client[field] as string | number | null | undefined;
-      if (Object.is(previousValue ?? null, value ?? null)) return;
+      const key = String(field);
+      const currentDisplayedValue = client[field] as
+        | string
+        | number
+        | null
+        | undefined;
 
-      const existingTimer = saveTimers.current[String(field)];
+      if (Object.is(currentDisplayedValue ?? null, value ?? null)) return;
+
+      // Only capture a baseline the FIRST time in an edit sequence —
+      // i.e. when there's no pending timer already running for this
+      // field. If the user edits again before the confirm dialog
+      // fires, we keep the original baseline rather than the
+      // intermediate (still-unsaved) value.
+      const hasPendingEdit = Boolean(saveTimers.current[key]);
+      if (!hasPendingEdit) {
+        fieldBaselines.current[key] = currentDisplayedValue ?? null;
+      }
+      const baselineValue = fieldBaselines.current[key] ?? null;
+
+      const existingTimer = saveTimers.current[key];
       if (existingTimer) clearTimeout(existingTimer);
 
       setClient((current) =>
         current ? { ...current, [field]: value } : current,
       );
 
-      saveTimers.current[String(field)] = setTimeout(() => {
+      saveTimers.current[key] = setTimeout(() => {
+        delete saveTimers.current[key];
         setPendingChange({
           field,
-          oldValue: previousValue ?? null,
+          oldValue: baselineValue,
           newValue: value,
           label: label || String(field).replaceAll("_", " "),
         });
@@ -482,8 +511,11 @@ export default function ClientDetailPage() {
   const cancelPendingChange = useCallback(() => {
     if (!pendingChange) return;
     const change = pendingChange;
-    const existingTimer = saveTimers.current[String(change.field)];
+    const key = String(change.field);
+    const existingTimer = saveTimers.current[key];
     if (existingTimer) clearTimeout(existingTimer);
+    delete saveTimers.current[key];
+    delete fieldBaselines.current[key];
 
     setClient((current) =>
       current ? { ...current, [change.field]: change.oldValue } : current,
@@ -698,7 +730,17 @@ export default function ClientDetailPage() {
       return;
     }
 
-    void locateServiceArea();
+    // Debounced on purpose: `area` is updated optimistically on every
+    // keystroke while typing (see EditableField -> saveClientField),
+    // and this effect depends on it. Without a debounce, typing a
+    // service area would fire one geocoding request per keystroke —
+    // hammering the rate-limited /api/geocode route (and the Nominatim
+    // service behind it) far beyond what it was built to handle.
+    const timer = window.setTimeout(() => {
+      void locateServiceArea();
+    }, 900);
+
+    return () => window.clearTimeout(timer);
   }, [client?.area, locateServiceArea]);
 
   const updateLocationField = (
@@ -877,7 +919,7 @@ export default function ClientDetailPage() {
 
   // Keep this memoized value before every conditional return.
   // Hooks must execute in the exact same order on every render, including
-  // loading, error, and not-found renders(TECHNICIAN ADD FORM AHHAHA).
+  // loading, error, and not-found renders.
   const technicianOptions = useMemo(() => {
     const values = new Set<string>();
 
@@ -2100,7 +2142,7 @@ function EditableSelect({
           onChange={(e) => onChange(e.target.value)}
           aria-label={label}
         >
-          <option value="">Select technician</option>
+          <option value="">Select {label.toLowerCase()}</option>
           {value && !options.includes(value) && (
             <option value={value}>{value}</option>
           )}
