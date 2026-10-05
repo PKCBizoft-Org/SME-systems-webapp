@@ -218,15 +218,35 @@ export async function POST(request: NextRequest) {
       Mirror the two-table setup this project already uses:
       profiles.role is the app-wide role, tenant_users links the
       person to this specific tenant with a role scoped to it.
+
+      The app-wide role is only set when the profile is first
+      created. An existing user may already hold a different role
+      (and belong to other tenants), and one tenant's admin must not
+      be able to overwrite that — tenant-scoped access is granted
+      through tenant_users below.
     */
-    const { error: profileError } = await adminClient.from("profiles").upsert(
-      {
-        id: invitedUserId,
-        email,
-        role,
-      },
-      { onConflict: "id" },
-    );
+    const { data: existingProfile, error: profileLookupError } =
+      await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("id", invitedUserId)
+        .maybeSingle();
+
+    if (profileLookupError) {
+      return NextResponse.json(
+        { error: `Unable to check the user's profile: ${profileLookupError.message}` },
+        { status: 500 },
+      );
+    }
+
+    const { error: profileError } = existingProfile
+      ? await adminClient
+          .from("profiles")
+          .update({ email })
+          .eq("id", invitedUserId)
+      : await adminClient
+          .from("profiles")
+          .insert({ id: invitedUserId, email, role });
 
     if (profileError) {
       return NextResponse.json(

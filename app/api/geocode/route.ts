@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 type GeocodeResult = {
   latitude: number;
@@ -219,6 +220,43 @@ async function searchNominatim(
 export async function GET(
   request: NextRequest,
 ) {
+  /*
+   * This route spends a shared, rate-limited Nominatim quota, so it is
+   * limited to signed-in users. Without this, anyone on the internet
+   * could drain the quota or get the server IP blocked.
+   */
+  const authorization = request.headers.get("authorization");
+
+  if (!authorization?.startsWith("Bearer ")) {
+    return NextResponse.json(
+      { error: "Authentication is required." },
+      { status: 401 },
+    );
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { error: "Supabase server configuration is missing." },
+      { status: 500 },
+    );
+  }
+
+  const { data: userData, error: userError } = await createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  ).auth.getUser(authorization.slice(7).trim());
+
+  if (userError || !userData.user) {
+    return NextResponse.json(
+      { error: "Your session is invalid or expired." },
+      { status: 401 },
+    );
+  }
+
   const query =
     request.nextUrl.searchParams
       .get("q")

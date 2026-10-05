@@ -1,6 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+/* The navigation links here are plain <a> on purpose: this page is styled with
+   styled-jsx, which only scopes DOM elements. next/link renders without the
+   scope class, so none of the .brand / .headerNavLink styles would apply. */
+/* eslint-disable @next/next/no-html-link-for-pages */
+
+import { type CSSProperties, FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 
 type RobotExpression =
@@ -29,10 +34,9 @@ function RobotAvatar({
   const [blink, setBlink] = useState(false);
 
   useEffect(() => {
-    if (!trackCursor) {
-      setCursor({ x: 0, y: 0 });
-      return;
-    }
+    // When tracking is off the pupils are pinned to center at render time
+    // (see pupilX/pupilY), so there is no state to reset here.
+    if (!trackCursor) return;
 
     const handlePointerMove = (event: PointerEvent) => {
       const x = Math.max(
@@ -94,7 +98,7 @@ function RobotAvatar({
           width: size,
           height: size,
           "--head-tilt": `${headTilt}deg`,
-        } as any
+        } as CSSProperties
       }
       role="img"
       aria-label={`PKC assistant: ${expression}`}
@@ -919,7 +923,7 @@ export default function LoginPage() {
           </form>
 
           <div className="signupPrompt">
-            <span>Don't have an account?</span>
+            <span>Don&apos;t have an account?</span>
             <a
               href="/login/SignUp"
               className="signupLink"
@@ -1701,7 +1705,7 @@ export default function LoginPage() {
         }
 
         .field input::placeholder {
-          color: #55727d;
+          color: #637d87;
         }
 
         .passwordToggle {
@@ -1942,7 +1946,7 @@ export default function LoginPage() {
           flex-wrap: wrap;
           gap: 7px;
           margin-top: 16px;
-          color: #647f8a;
+          color: #6a848f;
           font-size: 11px;
           line-height: 1.5;
           text-align: center;
@@ -1991,7 +1995,7 @@ export default function LoginPage() {
           margin-top: 14px;
           padding-top: 16px;
           border-top: 1px solid rgba(103, 232, 249, 0.07);
-          color: #5e7984;
+          color: #6e8690;
           font-size: 10px;
         }
 
@@ -2013,8 +2017,8 @@ export default function LoginPage() {
           align-items: center;
           gap: 9px;
           border-top: 1px solid rgba(103, 232, 249, 0.07);
-          color: #49636d;
-          font-size: 8px;
+          color: #71858d;
+          font-size: 9px;
           font-weight: 800;
           letter-spacing: 0.13em;
         }
@@ -2276,8 +2280,8 @@ export default function LoginPage() {
           border: 1px solid rgba(103,232,249,.11);
           border-radius: 999px;
           background: rgba(4, 21, 29, .48);
-          color: rgba(135, 202, 214, .62);
-          font-size: 8px;
+          color: rgba(135, 202, 214, 0.66);
+          font-size: 9px;
           font-weight: 850;
           letter-spacing: .2em;
           white-space: nowrap;
@@ -2377,7 +2381,7 @@ export default function LoginPage() {
           border: 1px solid rgba(103,232,249,.12);
           border-radius: 999px;
           background: rgba(103,232,249,.035);
-          font-size: 8px;
+          font-size: 9px;
           letter-spacing: .18em;
         }
 
@@ -2463,7 +2467,7 @@ export default function LoginPage() {
 
         .footer {
           min-height: 58px;
-          color: #45636e;
+          color: #667f88;
         }
 
         @keyframes orbitPulse {
@@ -2567,7 +2571,7 @@ export default function LoginPage() {
         }
         .bootTitle { color: #eafcff; font-size: 14px; font-weight: 800; letter-spacing: .18em; }
         .bootTitle strong { color: #149eff; }
-        .bootStatus { color: #6e9aa6; font-size: 8px; font-weight: 800; letter-spacing: .16em; }
+        .bootStatus { color: #6e9aa6; font-size: 9px; font-weight: 800; letter-spacing: .16em; }
         .bootStatus span { display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: #67e8f9; box-shadow: 0 0 12px #67e8f9; animation: statusPulse 1s ease-in-out infinite; }
 
         .loginCard {
@@ -2643,11 +2647,11 @@ export default function LoginPage() {
         .grid { opacity: .18; background-image: linear-gradient(rgba(92, 154, 199, .13) 1px, transparent 1px), linear-gradient(90deg, rgba(92, 154, 199, .13) 1px, transparent 1px); background-size: 46px 46px; mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%); }
         .scanline { position: absolute; inset: 0; opacity: .08; background: repeating-linear-gradient(to bottom, transparent 0, transparent 5px, rgba(255,255,255,.03) 6px); }
 
-        .brand { gap: 12px; }
-        .brand > img { width: 58px; height: 58px; object-fit: contain; border-radius: 16px; box-shadow: 0 0 28px rgba(0, 119, 255, .22); }
-        .brandText { color: #f1f6fc; font-size: 18px; font-weight: 500; letter-spacing: -.02em; }
+        .brand { gap: 10px; }
+        .brand > img { width: 42px; height: 42px; flex: none; object-fit: contain; border-radius: 12px; box-shadow: 0 0 22px rgba(0, 119, 255, .22); }
+        .brandText { color: #f1f6fc; font-size: 17px; font-weight: 500; letter-spacing: -.02em; }
         .brandText strong { color: #149eff; }
-        .header { width: calc(100% - 64px); max-width: 1295px; height: 82px; min-height: 82px; padding: 0 18px; border: 1px solid rgba(48, 144, 219, .38); border-top: 0; border-radius: 0 0 28px 28px; background: linear-gradient(105deg, rgba(7, 32, 56, .96), rgba(4, 22, 39, .91) 58%, rgba(8, 38, 66, .95)); box-shadow: 0 16px 35px rgba(0,0,0,.22), 0 1px 0 rgba(24, 173, 255, .75); }
+        .header { width: calc(100% - 64px); max-width: 1295px; height: 70px; min-height: 70px; padding: 0 18px; border: 1px solid rgba(48, 144, 219, .38); border-top: 0; border-radius: 0 0 28px 28px; background: linear-gradient(105deg, rgba(7, 32, 56, .96), rgba(4, 22, 39, .91) 58%, rgba(8, 38, 66, .95)); box-shadow: 0 16px 35px rgba(0,0,0,.22), 0 1px 0 rgba(24, 173, 255, .75); }
         .header::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -2px; height: 3px; border-radius: 50%; background: linear-gradient(90deg, transparent, rgba(0, 176, 255, .9), transparent); filter: blur(2px); }
         .header {
           isolation: isolate;
@@ -2790,6 +2794,12 @@ export default function LoginPage() {
             height: 30px;
           }
 
+          .brand > img {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+          }
+
           .brandText {
             font-size: 13px;
           }
@@ -2915,6 +2925,52 @@ export default function LoginPage() {
             width: min(100% - 24px, 520px);
             min-height: 50px;
           }
+        }
+
+
+        /* ---- card polish: entrance choreography + living border + CTA ring ---- */
+        .loginCard {
+          animation:
+            enterRight 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s both,
+            fxBorderBreathe 5s ease-in-out 1.4s infinite;
+        }
+
+        .field,
+        .loginButton {
+          animation: fxFieldIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        .field:nth-of-type(1) { animation-delay: 0.3s; }
+        .field:nth-of-type(2) { animation-delay: 0.4s; }
+        .loginButton { animation-delay: 0.55s; }
+
+        .loginButton:not(:disabled) {
+          animation:
+            fxFieldIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.55s both,
+            fxCtaRing 3.2s ease-out 1.8s infinite;
+        }
+
+        .field:focus-within .fieldIcon {
+          transform: scale(1.14);
+          filter: drop-shadow(0 0 6px rgba(103, 232, 249, 0.7));
+        }
+
+        .fieldIcon {
+          transition: transform 0.25s ease, filter 0.25s ease;
+        }
+
+        @keyframes fxFieldIn {
+          from { opacity: 0; transform: translateY(14px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fxBorderBreathe {
+          50% { border-color: rgba(103, 232, 249, 0.4); }
+        }
+
+        @keyframes fxCtaRing {
+          0% { outline: 2px solid rgba(34, 211, 238, 0.5); outline-offset: 0; }
+          70%, 100% { outline: 2px solid rgba(34, 211, 238, 0); outline-offset: 14px; }
         }
 
         @media (prefers-reduced-motion: reduce) {

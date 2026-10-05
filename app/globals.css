@@ -22,5 +22,216 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Keyboard focus: pages hide the default outline on custom controls, which
+   leaves keyboard users with no visible position. Text inputs keep their own
+   focus styling, so this only targets buttons, links and similar controls. */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible,
+input[type="file"]:focus-visible {
+  outline: 2px solid #1599ff !important;
+  outline-offset: 2px !important;
+}
+
+/* Respect the operating-system "reduce motion" setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Future layer (see app/components/FutureFX.tsx)
+   Everything below is decoration: pointer-events are off, it sits behind
+   content, and it is disabled for reduced-motion users in the component.
+   ------------------------------------------------------------------ */
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(76, 232, 255, 0.35) transparent;
+}
+
+::selection {
+  background: rgba(76, 232, 255, 0.3);
+  color: #fff;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(76, 232, 255, 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(76, 232, 255, 0.5); background-clip: padding-box; }
+
+.fxProgress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 9999;
+  pointer-events: none;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #1599ff, #4ce8ff, #c8fbff);
+  box-shadow: 0 0 14px rgba(76, 232, 255, 0.7);
+}
+
+.fxGlow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 560px;
+  height: 560px;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(76, 232, 255, 0.11), transparent 62%);
+  mix-blend-mode: screen;
+  transition: opacity 0.6s ease;
+  will-change: transform;
+}
+
+.fxGlow.fxOn { opacity: 1; }
+
+.fxCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 1.2s ease;
+}
+
+.fxCanvas.fxOn { opacity: 0.6; }
+
+/* Scroll reveal. Uses the individual translate/opacity properties and an
+   animation, so it never clashes with a component's own transform or
+   transition (hover lifts, etc.). */
+.fxReveal {
+  opacity: 0;
+  translate: 0 36px;
+}
+
+.fxReveal.fxIn {
+  animation: fxRise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) var(--fx-delay, 0ms) both;
+}
+
+@keyframes fxRise {
+  from { opacity: 0; translate: 0 36px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+/* Card spotlight, click ripple and "open profile" hint (see CardFX.tsx). */
+.fxSpot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(76, 232, 255, 0.16),
+    transparent 60%
+  );
+}
+
+.fxSpot.fxSpotOn { opacity: 1; }
+
+.fxRipple {
+  position: absolute;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  pointer-events: none;
+  border-radius: 50%;
+  background: rgba(76, 232, 255, 0.45);
+  animation: fxRipple 0.75s ease-out forwards;
+}
+
+@keyframes fxRipple {
+  to { transform: scale(26); opacity: 0; }
+}
+
+.fxHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 8px 12px;
+  border: 1px solid rgba(76, 232, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(76, 232, 255, 0.07);
+  color: #7ff0ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.fxHint:hover {
+  background: rgba(76, 232, 255, 0.16);
+  border-color: rgba(76, 232, 255, 0.6);
+  transform: translateY(-2px);
+}
+
+[data-fx-card] { cursor: pointer; }
+
+/* ------------------------------------------------------------------
+   Legibility
+   ------------------------------------------------------------------ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+h1, h2, h3 { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+
+/* Dropdown lists. The closed field is dark with light text, but the browser
+   draws the open list with its own (white) background, which left white text
+   on white. Give the list a dark background and make the highlighted option
+   unmistakable. */
+select {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  background-color: #0b1722;
+  color: #eaf8ff;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #14455a;
+  color: #ffffff;
+}
+
+select option:disabled {
+  color: rgba(234, 248, 255, 0.45);
 }

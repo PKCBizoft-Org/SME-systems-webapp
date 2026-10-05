@@ -75,10 +75,10 @@ export default function UsersPage() {
           return
         }
 
-        const rows: UserRow[] = (result.users || []).map((u: any) => ({
-          id: u.id,
-          email: u.email,
-          profileRole: u.profileRole,
+        const rows: UserRow[] = (result.users || []).map((u: Partial<UserRow> & { status?: string }) => ({
+          id: u.id ?? '',
+          email: u.email ?? '',
+          profileRole: u.profileRole ?? null,
           tenantRole: (u.tenantRole as TenantRole) || 'customer',
           status: u.status === 'active' ? 'active' : 'pending',
           invitedByEmail: u.invitedByEmail || null,
@@ -270,7 +270,7 @@ export default function UsersPage() {
             </div>
             <h1>Users</h1>
             <p className="subtitle">
-              Invite staff and manage who has access to this tenant's data.
+              Invite staff and manage who has access to this tenant&apos;s data.
               Every invite is scoped to this tenant only.
             </p>
           </div>
@@ -290,7 +290,7 @@ export default function UsersPage() {
           </div>
         </div>
 
-        {listError && <div className="errorBanner">{listError}</div>}
+        {listError && <div className="errorBanner" role="alert">{listError}</div>}
 
         <div className="usersTable">
           <div className="tableHead">
@@ -352,7 +352,7 @@ export default function UsersPage() {
 
             <h2>Invite a user</h2>
             <p className="modalSubtitle">
-              They'll get an email invite to set their password. Their
+              They&apos;ll get an email invite to set their password. Their
               account is created with access to this tenant only.
             </p>
 
@@ -602,7 +602,7 @@ const styles = `
   }
 
   .tableHead {
-    color: #6c8195;
+    color: #6f8497;
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.12em;

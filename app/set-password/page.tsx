@@ -128,7 +128,7 @@ export default function SetPasswordPage() {
     return (
       <main className="setPasswordPage">
         <div className="card">
-          <h1>This link isn't valid</h1>
+          <h1>This link isn&apos;t valid</h1>
           <p className="subtitle">
             This invite link may have expired or already been used.
             Ask your admin to send a new invite.
@@ -144,7 +144,7 @@ export default function SetPasswordPage() {
       <div className="card">
         <h1>Set your password</h1>
         <p className="subtitle">
-          You're setting a password for <strong>{email}</strong>.
+          You&apos;re setting a password for <strong>{email}</strong>.
         </p>
 
         {success ? (
@@ -321,7 +321,7 @@ const styles = `
   .fieldHint {
     font-size: 11px;
     font-weight: 400;
-    color: #6c8195;
+    color: #6f8497;
   }
 
   .errorBox {

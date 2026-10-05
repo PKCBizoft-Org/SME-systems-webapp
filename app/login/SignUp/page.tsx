@@ -35,6 +35,12 @@ export default function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Weak-password flow: the warning only appears once the user has left the
+  // password field, and it needs an explicit choice (keep it or strengthen it).
+  const [pwTouched, setPwTouched] = useState(false);
+  const [keepWeak, setKeepWeak] = useState(false);
+  const [generated, setGenerated] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -70,12 +76,6 @@ export default function SignupPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setProvinceCode("");
-    setCityCode("");
-    setBarangayCode("");
-    setProvinces([]);
-    setCities([]);
-    setBarangays([]);
 
     if (!regionCode) return;
     (async () => {
@@ -102,10 +102,6 @@ export default function SignupPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setCityCode("");
-    setBarangayCode("");
-    setCities([]);
-    setBarangays([]);
 
     if (!provinceCode) return;
     (async () => {
@@ -132,8 +128,6 @@ export default function SignupPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setBarangayCode("");
-    setBarangays([]);
 
     if (!cityCode) return;
     (async () => {
@@ -179,10 +173,63 @@ export default function SignupPage() {
     number: /\d/.test(password),
     special: /[^A-Za-z0-9]/.test(password),
   };
-  const securityComplete = Object.values(passwordChecks).every(Boolean) && password === confirmPassword;
+  const allChecksPass = Object.values(passwordChecks).every(Boolean);
+  const passwordWeak = password.length > 0 && !allChecksPass;
+  const missingChecks = [
+    !passwordChecks.length && "at least 8 characters",
+    !passwordChecks.mixed && "upper and lowercase letters",
+    !passwordChecks.number && "a number",
+    !passwordChecks.special && "a special character",
+  ].filter(Boolean) as string[];
+  const showWeakWarning = passwordWeak && pwTouched && !keepWeak;
+  // A weak password the user has chosen to keep still completes the step, as
+  // long as it meets the hard minimum (8+ characters) and the fields match.
+  const securityStrong = allChecksPass && password.length > 0 && password === confirmPassword;
+  // The user chose to keep a password that misses some recommendations: the
+  // step is done, but shown in yellow as "semi-secured" instead of green.
+  const securitySemi = !securityStrong && keepWeak && passwordWeak && passwordChecks.length;
+  const securityDone = securityStrong || securitySemi;
+
+  function suggestStrongPassword() {
+    const sets = [
+      "abcdefghijkmnopqrstuvwxyz",
+      "ABCDEFGHJKLMNPQRSTUVWXYZ",
+      "23456789",
+      "!@#$%^&*-_+=",
+    ];
+    const all = sets.join("");
+    const rand = (max: number) => crypto.getRandomValues(new Uint32Array(1))[0] % max;
+    const pick = (chars: string) => chars[rand(chars.length)];
+    // One of each kind guaranteed, the rest random, then shuffled.
+    const out = sets.map(pick);
+    while (out.length < 14) out.push(pick(all));
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = rand(i + 1);
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    const next = out.join("");
+    setPassword(next);
+    setConfirmPassword(next);
+    setShowPassword(true);
+    setShowConfirmPassword(true);
+    setKeepWeak(false);
+    setPwTouched(true);
+    setGenerated(true);
+    setCopied(false);
+    setError("");
+  }
+
+  async function copyPassword() {
+    try {
+      await navigator.clipboard.writeText(password);
+      setCopied(true);
+    } catch {
+      // Clipboard can be unavailable (insecure context); the password is visible to copy by hand.
+    }
+  }
   const accountComplete = fullName.trim().length > 1 && emailLooksValid;
   const locationComplete = Boolean(purok.trim() && regionCode && provinceCode && cityCode && barangayCode);
-  const completedSteps = [accountComplete, securityComplete, locationComplete].filter(Boolean).length;
+  const completedSteps = [accountComplete, securityDone, locationComplete].filter(Boolean).length;
   const progress = Math.round((completedSteps / 3) * 100);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -198,6 +245,12 @@ export default function SignupPage() {
       return setError("Password must be at least 8 characters.");
     if (password !== confirmPassword)
       return setError("Passwords do not match.");
+    if (passwordWeak && !keepWeak) {
+      setPwTouched(true);
+      return setError(
+        "Your password does not meet all the recommended standards. Choose \"Keep my password\" or \"Make it stronger\" in Registration status.",
+      );
+    }
     if (!regionCode || !provinceCode || !cityCode || !barangayCode)
       return setError(
         "Please complete your Region, Province, City/Municipality, and Barangay.",
@@ -249,10 +302,7 @@ export default function SignupPage() {
     }
   }
 
-  const input =
-    "w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-sky-400/60 focus:bg-white/[0.07]";
-  const select =
-    "w-full appearance-none rounded-2xl border border-white/10 bg-[#101722] px-4 py-3.5 text-sm text-white outline-none transition focus:border-sky-400/60 disabled:cursor-not-allowed disabled:opacity-40";return (
+  return (
     <main className="signupPage">
       <div className="ambient ambientOne" />
       <div className="ambient ambientTwo" />
@@ -313,11 +363,19 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className={securityComplete ? "step complete" : "step"}>
-                <span>{securityComplete ? "✓" : "02"}</span>
+              <div
+                className={securityStrong ? "step complete" : securitySemi ? "step semi" : "step"}
+              >
+                <span>{securityStrong ? "✓" : securitySemi ? "!" : "02"}</span>
                 <div>
                   <b>Account security</b>
-                  <small>Password protection</small>
+                  <small>
+                    {securitySemi
+                      ? password === confirmPassword
+                        ? "Semi-secured password"
+                        : "Semi-secured · repeat it to confirm"
+                      : "Password protection"}
+                  </small>
                 </div>
               </div>
 
@@ -329,6 +387,42 @@ export default function SignupPage() {
                 </div>
               </div>
             </div>
+
+            {showWeakWarning && (
+              <div className="pwWarning" role="alert">
+                <div className="pwWarningHead">
+                  <b aria-hidden="true">!</b>
+                  <strong>Your password is weak</strong>
+                </div>
+                <p>
+                  It is missing {missingChecks.join(", ")}. A stronger password better protects your
+                  account and billing details.
+                </p>
+                <div className="pwWarningActions">
+                  <button type="button" className="pwStrong" onClick={suggestStrongPassword}>
+                    Make it stronger
+                  </button>
+                  <button type="button" className="pwKeep" onClick={() => setKeepWeak(true)}>
+                    Keep my password
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {passwordWeak && keepWeak && (
+              <div className="pwNote" role="status">
+                Keeping your current password. You can reset it any time with &quot;Forgot password&quot;.
+              </div>
+            )}
+
+            {generated && allChecksPass && (
+              <div className="pwNote pwNoteGood" role="status">
+                <span>Strong password filled in. Save it somewhere safe.</span>
+                <button type="button" onClick={copyPassword}>
+                  {copied ? "Copied ✓" : "Copy"}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="overviewStats">
@@ -421,7 +515,8 @@ export default function SignupPage() {
                       <p>Protect access with a strong password.</p>
                     </div>
                   </div>
-                  {securityComplete && <b className="ready">✓ READY</b>}
+                  {securityStrong && <b className="ready">✓ READY</b>}
+                  {securitySemi && <b className="ready semiReady">! SEMI-SECURED</b>}
                 </div>
 
                 <div className="twoFields">
@@ -433,8 +528,12 @@ export default function SignupPage() {
                         value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
+                          setKeepWeak(false);
+                          setGenerated(false);
+                          setCopied(false);
                           setError("");
                         }}
+                        onBlur={() => setPwTouched(true)}
                         className="fieldInput"
                         placeholder="Create a password"
                         autoComplete="new-password"
@@ -542,6 +641,12 @@ export default function SignupPage() {
                         value={regionCode}
                         onChange={(e) => {
                           setRegionCode(e.target.value);
+                          setProvinceCode("");
+                          setCityCode("");
+                          setBarangayCode("");
+                          setProvinces([]);
+                          setCities([]);
+                          setBarangays([]);
                           setError("");
                         }}
                         className="fieldInput selectInput"
@@ -570,6 +675,10 @@ export default function SignupPage() {
                         value={provinceCode}
                         onChange={(e) => {
                           setProvinceCode(e.target.value);
+                          setCityCode("");
+                          setBarangayCode("");
+                          setCities([]);
+                          setBarangays([]);
                           setError("");
                         }}
                         className="fieldInput selectInput"
@@ -598,6 +707,8 @@ export default function SignupPage() {
                         value={cityCode}
                         onChange={(e) => {
                           setCityCode(e.target.value);
+                          setBarangayCode("");
+                          setBarangays([]);
                           setError("");
                         }}
                         className="fieldInput selectInput"
@@ -778,7 +889,9 @@ export default function SignupPage() {
           border-bottom: 1px solid rgba(120, 230, 255, .09);
         }
 
-        .brand {
+        /* next/link renders without styled-jsx's scope class, so selectors that
+           target a <Link> itself must be :global(). Descendants stay scoped. */
+        :global(.brand) {
           display: flex;
           align-items: center;
           gap: 10px;
@@ -806,8 +919,8 @@ export default function SignupPage() {
         .brandText small {
           display: block;
           margin-top: 3px;
-          color: rgba(215,246,253,.28);
-          font-size: 6px;
+          color: rgba(215, 246, 253, 0.52);
+          font-size: 9px;
           letter-spacing: .18em;
         }
 
@@ -815,7 +928,7 @@ export default function SignupPage() {
           display: flex;
           align-items: center;
           gap: 14px;
-          color: rgba(220,248,255,.38);
+          color: rgba(220, 248, 255, 0.52);
           font-size: 10px;
         }
         .securePill {
@@ -826,7 +939,7 @@ export default function SignupPage() {
           border: 1px solid rgba(83,234,199,.14);
           border-radius: 999px;
           color: rgba(142,244,211,.62);
-          font-size: 7px;
+          font-size: 9px;
           letter-spacing: .13em;
         }
         .securePill i,
@@ -837,17 +950,17 @@ export default function SignupPage() {
           background: #57e7bd;
           box-shadow: 0 0 9px #57e7bd;
         }
-        .signIn {
+        :global(.signIn) {
           color: #6eeaff;
           text-decoration: none;
           font-weight: 700;
         }
-        .signIn b {
+        :global(.signIn) b {
           display: inline-block;
           margin-left: 3px;
           transition: transform .2s;
         }
-        .signIn:hover b { transform: translateX(3px); }
+        :global(.signIn):hover b { transform: translateX(3px); }
 
         .registrationLayout {
           position: relative;
@@ -869,7 +982,7 @@ export default function SignupPage() {
           align-items: center;
           gap: 8px;
           color: rgba(93,229,255,.62);
-          font-size: 7px;
+          font-size: 9px;
           font-weight: 700;
           letter-spacing: .2em;
         }
@@ -895,7 +1008,7 @@ export default function SignupPage() {
         .overviewCopy {
           max-width: 420px;
           margin: 17px 0 22px;
-          color: rgba(218,244,250,.42);
+          color: rgba(218, 244, 250, 0.5);
           font-size: 12px;
           line-height: 1.7;
         }
@@ -916,8 +1029,8 @@ export default function SignupPage() {
         }
         .progressHeader span {
           display: block;
-          color: rgba(205,242,250,.27);
-          font-size: 6px;
+          color: rgba(205, 242, 250, 0.53);
+          font-size: 9px;
           letter-spacing: .16em;
         }
         .progressHeader strong {
@@ -960,8 +1073,8 @@ export default function SignupPage() {
           place-items: center;
           border: 1px solid rgba(109,229,255,.13);
           border-radius: 8px;
-          color: rgba(215,248,255,.38);
-          font-size: 7px;
+          color: rgba(215, 248, 255, 0.52);
+          font-size: 9px;
         }
         .step.complete > span {
           color: #7af3d0;
@@ -972,8 +1085,8 @@ export default function SignupPage() {
         .step b { color: rgba(236,252,255,.68); font-size: 9px; }
         .step small {
           margin-top: 2px;
-          color: rgba(209,241,249,.27);
-          font-size: 7px;
+          color: rgba(209, 241, 249, 0.53);
+          font-size: 9px;
         }
 
         .overviewStats {
@@ -987,12 +1100,12 @@ export default function SignupPage() {
           align-items: flex-start;
         }
         .overviewStats b {
-          color: rgba(80,226,255,.45);
-          font-size: 7px;
+          color: rgba(80, 226, 255, 0.61);
+          font-size: 9px;
         }
         .overviewStats span {
-          color: rgba(214,244,250,.28);
-          font-size: 7px;
+          color: rgba(214, 244, 250, 0.52);
+          font-size: 9px;
           line-height: 1.35;
         }
 
@@ -1017,7 +1130,7 @@ export default function SignupPage() {
         }
         .cardKicker {
           color: rgba(91,229,255,.62);
-          font-size: 6px;
+          font-size: 9px;
           letter-spacing: .2em;
           font-weight: 700;
         }
@@ -1028,7 +1141,7 @@ export default function SignupPage() {
         }
         .cardHeader p {
           margin: 5px 0 0;
-          color: rgba(216,244,250,.32);
+          color: rgba(216, 244, 250, 0.52);
           font-size: 9px;
         }
         .online {
@@ -1036,7 +1149,7 @@ export default function SignupPage() {
           align-items: center;
           gap: 6px;
           color: rgba(120,240,207,.58);
-          font-size: 6px;
+          font-size: 9px;
           letter-spacing: .16em;
         }
 
@@ -1069,7 +1182,7 @@ export default function SignupPage() {
           border: 1px solid rgba(83,228,255,.15);
           border-radius: 8px;
           color: #59e7ff;
-          font-size: 7px;
+          font-size: 9px;
           background: rgba(76,226,255,.035);
         }
         .sectionTitle h3 {
@@ -1080,8 +1193,8 @@ export default function SignupPage() {
         }
         .sectionTitle p {
           margin: 0;
-          color: rgba(207,240,248,.3);
-          font-size: 7px;
+          color: rgba(207, 240, 248, 0.54);
+          font-size: 9px;
         }
         .sectionTitle .ready {
           margin-left: auto;
@@ -1092,7 +1205,7 @@ export default function SignupPage() {
           display: block;
           margin-bottom: 5px;
           color: rgba(229,249,253,.6);
-          font-size: 8px;
+          font-size: 9px;
           font-weight: 600;
         }
         .field > span b { color: #59e7ff; }
@@ -1109,7 +1222,7 @@ export default function SignupPage() {
           font-size: 10px;
           transition: border-color .2s, background .2s, box-shadow .2s;
         }
-        .fieldInput::placeholder { color: rgba(224,247,252,.21); }
+        .fieldInput::placeholder { color: rgba(224, 247, 252, 0.49); }
         .fieldInput:focus {
           border-color: rgba(82,224,255,.43);
           background: rgba(255,255,255,.05);
@@ -1133,8 +1246,8 @@ export default function SignupPage() {
         .hint {
           display: block;
           margin-top: 4px;
-          color: rgba(206,239,247,.22);
-          font-size: 6px;
+          color: rgba(206, 239, 247, 0.54);
+          font-size: 9px;
         }
         .hint.danger { color: rgba(255,135,135,.7); }
 
@@ -1152,7 +1265,7 @@ export default function SignupPage() {
           border-radius: 999px;
           background: rgba(76,238,193,.045);
           color: #6ef0ca;
-          font-size: 6px;
+          font-size: 9px;
           letter-spacing: .12em;
         }
 
@@ -1169,9 +1282,9 @@ export default function SignupPage() {
           transform: translateY(-50%);
           border: 0;
           background: none;
-          color: rgba(218,248,255,.32);
+          color: rgba(218, 248, 255, 0.52);
           cursor: pointer;
-          font-size: 6px;
+          font-size: 9px;
           letter-spacing: .08em;
         }
         .passwordInput button:hover { color: #6ceaff; }
@@ -1183,8 +1296,8 @@ export default function SignupPage() {
           margin-top: 1px;
         }
         .requirements span {
-          color: rgba(202,234,242,.28);
-          font-size: 6px;
+          color: rgba(202, 234, 242, 0.54);
+          font-size: 9px;
         }
         .requirements .good { color: rgba(110,239,202,.72); }
         .requirements .bad { color: rgba(255,135,135,.72); }
@@ -1206,7 +1319,7 @@ export default function SignupPage() {
           top: 50%;
           right: 11px;
           transform: translateY(-55%);
-          color: rgba(104,226,255,.42);
+          color: rgba(104, 226, 255, 0.6);
           pointer-events: none;
           font-size: 10px;
         }
@@ -1230,13 +1343,13 @@ export default function SignupPage() {
           gap: 10px;
         }
         .addressTop span {
-          color: rgba(209,244,251,.27);
-          font-size: 6px;
+          color: rgba(209, 244, 251, 0.53);
+          font-size: 9px;
           letter-spacing: .15em;
         }
         .addressTop b {
           color: rgba(103,239,202,.62);
-          font-size: 6px;
+          font-size: 9px;
           letter-spacing: .11em;
         }
         .addressBody {
@@ -1259,8 +1372,8 @@ export default function SignupPage() {
         .addressPreview > small {
           display: block;
           margin-top: 4px;
-          color: rgba(202,236,245,.22);
-          font-size: 6px;
+          color: rgba(202, 236, 245, 0.54);
+          font-size: 9px;
         }
 
         .locationInfo {
@@ -1277,17 +1390,17 @@ export default function SignupPage() {
           place-items: center;
           border: 1px solid rgba(85,224,255,.14);
           border-radius: 50%;
-          color: rgba(90,227,255,.5);
-          font-size: 6px;
+          color: rgba(90, 227, 255, 0.6);
+          font-size: 9px;
         }
         .locationInfo p {
           margin: 0;
-          color: rgba(204,237,245,.23);
-          font-size: 6px;
+          color: rgba(204, 237, 245, 0.55);
+          font-size: 9px;
           line-height: 1.45;
         }
         .locationInfo b {
-          color: rgba(213,246,253,.4);
+          color: rgba(213, 246, 253, 0.48);
           font-weight: 500;
         }
 
@@ -1298,7 +1411,7 @@ export default function SignupPage() {
           margin-top: 12px;
           padding: 9px 11px;
           border-radius: 10px;
-          font-size: 8px;
+          font-size: 9px;
           line-height: 1.5;
         }
         .message > span {
@@ -1342,11 +1455,11 @@ export default function SignupPage() {
         .submitTrust > span { font-size: 13px; opacity: .62; }
         .submitTrust b,
         .submitTrust small { display: block; }
-        .submitTrust b { color: rgba(225,249,254,.58); font-size: 7px; }
+        .submitTrust b { color: rgba(225,249,254,.58); font-size: 9px; }
         .submitTrust small {
           margin-top: 2px;
-          color: rgba(202,235,244,.22);
-          font-size: 6px;
+          color: rgba(202, 235, 244, 0.54);
+          font-size: 9px;
         }
 
         .submitButton {
@@ -1390,9 +1503,9 @@ export default function SignupPage() {
 
         .tenantNote {
           margin: 10px 0 0;
-          color: rgba(199,233,242,.18);
+          color: rgba(199, 233, 242, 0.56);
           text-align: right;
-          font-size: 6px;
+          font-size: 9px;
           line-height: 1.4;
         }
 
@@ -1403,8 +1516,8 @@ export default function SignupPage() {
           margin: 0 auto;
           display: flex;
           justify-content: space-between;
-          color: rgba(194,229,238,.18);
-          font-size: 6px;
+          color: rgba(194, 229, 238, 0.56);
+          font-size: 9px;
           letter-spacing: .13em;
         }
 
@@ -1480,9 +1593,9 @@ export default function SignupPage() {
           .brandIcon { width: 42px; height: 42px; border-radius: 11px; }
           .brandIcon img { width: 29px; height: 29px; }
           .brandText strong { font-size: 18px; }
-          .brandText small { font-size: 7px; }
+          .brandText small { font-size: 9px; }
           .topbarRight { font-size: 12px; }
-          .securePill { padding: 8px 12px; font-size: 8px; }
+          .securePill { padding: 8px 12px; font-size: 9px; }
 
           .registrationLayout {
             min-height: calc(100vh - 108px);
@@ -1509,7 +1622,7 @@ export default function SignupPage() {
             padding: 20px;
             border-radius: 19px;
           }
-          .progressHeader span { font-size: 8px; }
+          .progressHeader span { font-size: 9px; }
           .progressHeader strong { font-size: 11px; }
           .progressHeader > b { font-size: 15px; }
           .progressTrack { height: 4px; margin: 15px 0 17px; }
@@ -1530,10 +1643,10 @@ export default function SignupPage() {
 
           .registrationCard { border-radius: 25px; }
           .cardHeader { padding: 25px 29px; }
-          .cardKicker { font-size: 8px; }
+          .cardKicker { font-size: 9px; }
           .cardHeader h2 { font-size: 30px; }
           .cardHeader p { font-size: 12px; }
-          .online { font-size: 8px; }
+          .online { font-size: 9px; }
 
           form { padding: 27px 29px 22px; }
           .formColumns { gap: 34px; }
@@ -1549,7 +1662,7 @@ export default function SignupPage() {
           }
           .sectionTitle h3 { font-size: 14px; }
           .sectionTitle p { font-size: 9px; }
-          .ready { font-size: 8px; padding: 6px 9px; }
+          .ready { font-size: 9px; padding: 6px 9px; }
 
           .field { margin-bottom: 14px; }
           .field > span { margin-bottom: 7px; font-size: 11px; }
@@ -1561,14 +1674,14 @@ export default function SignupPage() {
           }
           .statusInput .fieldInput { padding-right: 40px; }
           .statusInput > i { right: 14px; font-size: 13px; }
-          .hint { margin-top: 5px; font-size: 8px; }
+          .hint { margin-top: 5px; font-size: 9px; }
 
           .securityTitle { margin: 23px 0 14px; }
           .twoFields { gap: 12px; }
           .passwordInput .fieldInput { padding-right: 63px; }
-          .passwordInput button { right: 10px; font-size: 8px; }
+          .passwordInput button { right: 10px; font-size: 9px; }
           .requirements { gap: 7px 14px; }
-          .requirements span { font-size: 8px; }
+          .requirements span { font-size: 9px; }
 
           .locationGrid { gap: 0 12px; }
           .selectInput { padding-right: 36px; }
@@ -1581,20 +1694,20 @@ export default function SignupPage() {
             border-radius: 13px;
           }
           .addressTop span,
-          .addressTop b { font-size: 8px; }
+          .addressTop b { font-size: 9px; }
           .addressBody { gap: 11px; margin-top: 9px; }
           .addressBody strong { font-size: 21px; }
           .addressBody p { font-size: 12px; }
-          .addressPreview > small { margin-top: 7px; font-size: 8px; }
+          .addressPreview > small { margin-top: 7px; font-size: 9px; }
 
           .locationInfo { gap: 8px; margin-top: 10px; }
           .locationInfo > span {
             width: 18px;
             height: 18px;
             flex-basis: 18px;
-            font-size: 8px;
+            font-size: 9px;
           }
-          .locationInfo p { font-size: 8px; }
+          .locationInfo p { font-size: 9px; }
 
           .submitBar {
             gap: 24px;
@@ -1604,7 +1717,7 @@ export default function SignupPage() {
           .submitTrust { gap: 10px; }
           .submitTrust > span { font-size: 16px; }
           .submitTrust b { font-size: 10px; }
-          .submitTrust small { font-size: 8px; }
+          .submitTrust small { font-size: 9px; }
           .submitButton {
             min-width: 260px;
             height: 50px;
@@ -1612,9 +1725,9 @@ export default function SignupPage() {
             font-size: 12px;
           }
           .submitButton > b { font-size: 17px; }
-          .tenantNote { margin-top: 12px; font-size: 8px; }
+          .tenantNote { margin-top: 12px; font-size: 9px; }
 
-          .footer { font-size: 8px; }
+          .footer { font-size: 9px; }
         }
 
         @media (min-width: 1181px) and (max-height: 820px) {
@@ -1630,7 +1743,7 @@ export default function SignupPage() {
           .progressPanel { padding: 16px; }
           .step > span { width: 29px; height: 29px; flex-basis: 29px; }
           .step b { font-size: 10px; }
-          .step small { font-size: 8px; }
+          .step small { font-size: 9px; }
           .cardHeader { padding: 20px 24px; }
           .cardHeader h2 { font-size: 27px; }
           .cardHeader p { font-size: 10px; }
@@ -1641,7 +1754,7 @@ export default function SignupPage() {
           .field > span { font-size: 10px; }
           .fieldInput { height: 42px; font-size: 12px; }
           .field { margin-bottom: 10px; }
-          .requirements span { font-size: 7px; }
+          .requirements span { font-size: 9px; }
           .addressPreview { min-height: 86px; padding: 11px 13px; }
           .addressBody p { font-size: 10px; }
           .submitButton { height: 45px; min-width: 235px; font-size: 10px; }
@@ -1654,7 +1767,7 @@ export default function SignupPage() {
           .sectionTitle p { font-size: 9px; }
           .field > span { font-size: 10px; }
           .fieldInput { height: 45px; font-size: 13px; }
-          .requirements span { font-size: 8px; }
+          .requirements span { font-size: 9px; }
           .addressBody p { font-size: 11px; }
           .submitButton { height: 48px; font-size: 11px; }
         }
@@ -1665,8 +1778,164 @@ export default function SignupPage() {
           .sectionTitle h3 { font-size: 12px; }
           .field > span { font-size: 10px; }
           .fieldInput { height: 46px; font-size: 13px; }
-          .requirements span { font-size: 8px; }
+          .requirements span { font-size: 9px; }
           .addressBody p { font-size: 10px; }
+        }
+
+
+        /* ---- card polish: rise-in, living border, CTA ring, field focus ---- */
+        .registrationCard {
+          animation:
+            fxCardRise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both,
+            fxBorderBreathe 5s ease-in-out 1.6s infinite;
+        }
+
+        .submitButton:not(:disabled) {
+          animation: fxCtaRing 3.2s ease-out 1.8s infinite;
+        }
+
+        .fieldInput {
+          transition: border-color 0.2s, box-shadow 0.25s, background 0.2s, transform 0.25s;
+        }
+
+        .fieldInput:focus {
+          transform: translateY(-1px);
+        }
+
+        @keyframes fxCardRise {
+          from { opacity: 0; transform: translateY(26px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fxBorderBreathe {
+          50% { border-color: rgba(117, 229, 255, 0.36); }
+        }
+
+        @keyframes fxCtaRing {
+          0% { outline: 2px solid rgba(112, 237, 255, 0.5); outline-offset: 0; }
+          70%, 100% { outline: 2px solid rgba(112, 237, 255, 0); outline-offset: 14px; }
+        }
+
+
+        /* ---- weak password warning (Registration status) ---- */
+        .pwWarning {
+          margin-top: 14px;
+          padding: 14px;
+          border: 1px solid rgba(255, 200, 87, 0.45);
+          border-radius: 14px;
+          background: rgba(255, 200, 87, 0.08);
+          animation: fxCardRise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        .pwWarningHead {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin-bottom: 6px;
+          color: #ffd98a;
+          font-size: 13px;
+        }
+
+        .pwWarningHead b {
+          width: 20px;
+          height: 20px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          background: #ffc857;
+          color: #2a1b00;
+          font-size: 12px;
+        }
+
+        .pwWarning p {
+          margin: 0 0 12px;
+          color: rgba(255, 236, 200, 0.85);
+          font-size: 12px;
+          line-height: 1.55;
+        }
+
+        .pwWarningActions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .pwStrong,
+        .pwKeep,
+        .pwNote button {
+          padding: 8px 12px;
+          border-radius: 9px;
+          font: inherit;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .pwStrong {
+          border: 1px solid rgba(112, 237, 255, 0.5);
+          background: linear-gradient(135deg, #e9fcff, #a6efff);
+          color: #031016;
+        }
+
+        .pwKeep,
+        .pwNote button {
+          border: 1px solid rgba(255, 200, 87, 0.5);
+          background: transparent;
+          color: #ffd98a;
+        }
+
+        .pwStrong:hover,
+        .pwKeep:hover,
+        .pwNote button:hover {
+          transform: translateY(-1px);
+        }
+
+        .pwKeep:hover,
+        .pwNote button:hover {
+          background: rgba(255, 200, 87, 0.12);
+        }
+
+        .pwNote {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-top: 12px;
+          padding: 10px 12px;
+          border: 1px solid rgba(255, 200, 87, 0.3);
+          border-radius: 12px;
+          background: rgba(255, 200, 87, 0.05);
+          color: rgba(255, 236, 200, 0.85);
+          font-size: 11.5px;
+          line-height: 1.5;
+        }
+
+        .pwNoteGood {
+          border-color: rgba(54, 224, 161, 0.4);
+          background: rgba(54, 224, 161, 0.07);
+          color: #b9f5dd;
+        }
+
+        .pwNoteGood button {
+          border-color: rgba(54, 224, 161, 0.5);
+          color: #7df0c0;
+        }
+
+
+        /* ---- semi-secured (kept weak password): yellow, counts as done ---- */
+        .step.semi { opacity: 1; }
+        .step.semi > span {
+          color: #ffd98a;
+          border-color: rgba(255, 200, 87, 0.5);
+          background: rgba(255, 200, 87, 0.1);
+          font-weight: 800;
+        }
+        .step.semi b { color: #ffe7b3; }
+        .step.semi small { color: #ffd98a; }
+        .semiReady {
+          color: #ffd98a;
         }
 
         @media (prefers-reduced-motion: reduce) {
