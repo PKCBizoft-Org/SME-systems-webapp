@@ -53,6 +53,11 @@ function bucketOf(status: string | null): Exclude<Filter, "all"> {
   return "pending";
 }
 
+// PostgREST reports a function that doesn't exist yet with code PGRST202.
+function isMissingFunction(error: { code?: string; message?: string }) {
+  return error.code === "PGRST202" || /could not find the function/i.test(error.message || "");
+}
+
 function newPaymentCode() {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -244,6 +249,20 @@ export default function PaymentVerificationPage() {
     const code = newPaymentCode();
 
     try {
+      // Preferred path: one all-or-nothing database function (staff-only,
+      // audit-logged). Falls back to the step-by-step path below until the
+      // function has been created in Supabase.
+      const atomic = await supabase.rpc("verify_payment_submission", { p_submission_id: submission.id });
+      if (!atomic.error) {
+        const receipt = (atomic.data as { receipt_number?: string } | null)?.receipt_number;
+        setMessage({
+          kind: "ok",
+          text: `Verified ${formatPeso(claimed)} for ${client?.customer_name || "the customer"}${receipt ? ` (${receipt})` : ""}. ${request?.requested_plan || "The plan"} is now scheduled.`,
+        });
+        return;
+      }
+      if (!isMissingFunction(atomic.error)) throw new Error(atomic.error.message);
+
       // 1. record the payment
       const inserted = await supabase
         .from("payments")
@@ -310,6 +329,13 @@ export default function PaymentVerificationPage() {
 
     setBusyId(submission.id);
     try {
+      const atomic = await supabase.rpc("reject_payment_submission", { p_submission_id: submission.id });
+      if (!atomic.error) {
+        setMessage({ kind: "ok", text: "Payment rejected and the plan request cancelled." });
+        return;
+      }
+      if (!isMissingFunction(atomic.error)) throw new Error(atomic.error.message);
+
       const reviewed = await supabase
         .from("payment_submissions")
         .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })

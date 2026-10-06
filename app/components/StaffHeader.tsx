@@ -1,5 +1,6 @@
 import Link from "next/link";
 import styles from "./staff-chrome.module.css";
+import { PendingPaymentsBadge } from "./PendingPaymentsBadge";
 
 export type StaffSection = "clients" | "inventory" | "accounting" | "users";
 
@@ -38,6 +39,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
             aria-current={section.key === current ? "page" : undefined}
           >
             {section.label}
+            {section.key === "accounting" ? <PendingPaymentsBadge /> : null}
           </Link>
         ))}
       </nav>
