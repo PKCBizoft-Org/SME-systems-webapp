@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StaffHeader } from "../components/StaffHeader";
 import { StaffMotion } from "../components/StaffMotion";
 import { PkcLoader } from "../components/PkcLoader";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
@@ -472,9 +473,14 @@ export default function AccountingPage() {
             <h1>Accounting</h1>
             <p>Monitor customer balances, billing, payments, and collection activity from one workspace.</p>
           </div>
-          <button className="refresh" onClick={() => void loadAccountingData(true)} disabled={refreshing}>
-            <span className={refreshing ? "spin" : ""}>↻</span>{refreshing ? "Refreshing…" : "Refresh data"}
-          </button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
+              ✓ Payment verification
+            </Link>
+            <button className="refresh" onClick={() => void loadAccountingData(true)} disabled={refreshing}>
+              <span className={refreshing ? "spin" : ""}>↻</span>{refreshing ? "Refreshing…" : "Refresh data"}
+            </button>
+          </div>
         </section>
 
         {(billingError || paymentsError) && (
