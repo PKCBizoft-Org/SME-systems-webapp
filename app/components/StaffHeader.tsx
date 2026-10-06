@@ -17,7 +17,10 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
   const visible = SECTIONS.filter((section) => section.roles.some((role) => roles.includes(role)));
 
   return (
-    <header className={styles.bar}>
+    <>
+      {/* soft ambient light behind every staff page */}
+      <div className={styles.aurora} aria-hidden="true" />
+      <header className={styles.bar}>
       <Link href="/" className={styles.brand} aria-label="PKC BIZOFT home">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/pkc-logo.webp" alt="" width={34} height={34} />
@@ -43,6 +46,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
         <i aria-hidden="true" />
         Secure session
       </span>
-    </header>
+      </header>
+    </>
   );
 }

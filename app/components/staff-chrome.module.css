@@ -189,3 +189,29 @@
     transition: none;
   }
 }
+
+/* Ambient light: drifting cyan and blue glows, blended on top so they tint the
+   page without ever blocking clicks or hiding content. */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  background:
+    radial-gradient(38% 32% at 12% 8%, rgba(30, 140, 255, 0.13), transparent 70%),
+    radial-gradient(34% 30% at 92% 18%, rgba(76, 232, 255, 0.1), transparent 70%),
+    radial-gradient(40% 34% at 70% 98%, rgba(54, 224, 161, 0.07), transparent 70%);
+  background-size: 140% 140%;
+  animation: auroraDrift 26s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 60%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora { animation: none; }
+}

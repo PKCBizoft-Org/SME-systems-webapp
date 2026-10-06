@@ -7,6 +7,7 @@ import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
 import { StaffHeader } from "../../components/StaffHeader";
 import { StaffMotion } from "../../components/StaffMotion";
+import { PkcLoader } from "../../components/PkcLoader";
 
 type Client = {
   id: string;
@@ -448,13 +449,7 @@ export default function AccountingCustomerPage() {
   }
 
   if (checkingAccess)
-    return (
-      <main className="state">
-        <div className="loader" />
-        <span role="status">Checking accounting access…</span>
-        <style jsx>{styles}</style>
-      </main>
-    );
+    return <PkcLoader label="Checking accounting access" steps={["Verifying your role", "Opening customer account"]} />;
   if (!authorized) return null;
 
   if (loading && !client) {

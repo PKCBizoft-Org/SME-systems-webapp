@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { CardFX } from "./components/CardFX";
+import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import type { GlobeMethods } from "react-globe.gl";
@@ -439,6 +440,7 @@ export default function HomePage() {
           <div className="introOrb introOrbOne" />
           <div className="introOrb introOrbTwo" />
           <div className="introGrid" />
+          <IntroRain />
           <div className="introVignette" />
           <div className="introHud introHudTL">
             <span>PKC-NET // CORE</span><b>SECURE</b>
@@ -463,14 +465,16 @@ export default function HomePage() {
           <div className="introScan introScanTwo" aria-hidden="true" />
           <div className="introCenter">
             <div className="introLogoWrap">
+              <IntroSonar />
               <div className="introRing introRingOuter" />
               <div className="introRing introRingInner" />
+              <IntroOrbit labels={["CLIENTS", "BILLING", "STOCK", "TEAM"]} inset="-10%" />
               <img src={PKC_LOGO} alt="PKC BIZOFT" className="introLogo" />
             </div>
             <div className="introKicker">PKC // BIZOFT</div>
             <div className="introTitle">
-              <span>YOUR BUSINESS.</span>
-              <strong>CONNECTED.</strong>
+              <span><Scramble text="YOUR BUSINESS." delay={450} duration={900} /></span>
+              <strong><Scramble text="CONNECTED." delay={1050} duration={900} /></strong>
             </div>
             <p className="introSubtitle">A living network for people, systems, and operations.</p>
             <div className="introBoot">
@@ -483,13 +487,23 @@ export default function HomePage() {
                 <span>AUTHENTICATING</span>
                 <span>LINKING SYSTEMS</span>
                 <span>SYNCING OPERATIONS</span>
-                <b>100%</b>
+                <b><IntroCounter duration={3900} /></b>
               </div>
               <div className="introSignalRow" aria-hidden="true">
                 <span><i /> CORE</span><span><i /> DATA</span><span><i /> PEOPLE</span><span><i /> READY</span>
               </div>
             </div>
           </div>
+          <IntroLog
+            phase={introPhase}
+            lines={[
+              { at: 1, text: "secure session established" },
+              { at: 2, text: "client records linked" },
+              { at: 3, text: "billing and inventory synced" },
+              { at: 4, text: "workspace ready" },
+            ]}
+          />
+          <IntroFlash active={introExiting} />
           <button
             type="button"
             className="introSkip"
@@ -5044,6 +5058,31 @@ export default function HomePage() {
             width: auto;
             min-height: 28px;
           }
+        }
+
+        /* Intro: the skip button sits above the corner readout instead of on top of it. */
+        .introSkip { right: 34px; bottom: 66px; }
+
+        /* Intro on phones: keep the corner readouts, the status line and the skip button apart. */
+        @media (max-width: 620px) {
+          .introHudBL, .introHudBR { bottom: 64px; }
+          .introSkip {
+            left: 50%;
+            right: auto;
+            bottom: 16px;
+            translate: -50% 0;
+            font-size: 10px;
+            padding: 12px 18px;
+            border: 1px solid rgba(120, 220, 245, 0.18);
+            border-radius: 999px;
+            background: rgba(4, 16, 22, 0.55);
+          }
+          .introSkip:hover { transform: none; }
+          .introBootMeta { grid-template-columns: 1fr auto; }
+          .introBootMeta span:nth-child(2),
+          .introBootMeta span:nth-child(3) { display: none; }
+          .introBootMeta b { text-align: right; }
+          .introBootMeta span:first-child { text-align: left; }
         }
 
       `}

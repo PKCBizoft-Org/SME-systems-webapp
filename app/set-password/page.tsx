@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import { homeForUser } from '@/lib/homeForRole'
+import { PkcLoader } from '../components/PkcLoader'
 
 export default function SetPasswordPage() {
   const router = useRouter()
@@ -121,12 +122,7 @@ export default function SetPasswordPage() {
 
   if (checking) {
     return (
-      <main className="setPasswordPage">
-        <div className="card">
-          <p className="checking">Checking your invite link...</p>
-        </div>
-        <style jsx>{styles}</style>
-      </main>
+      <PkcLoader label="Checking your invite link" steps={['Checking your invite link', 'Preparing your account']} />
     )
   }
 

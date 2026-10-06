@@ -1,0 +1,186 @@
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- sonar: sweep + pings, sized from the logo wrapper ---- */
+.sonar {
+  position: absolute;
+  inset: -62%;
+  border-radius: 50%;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle, #000 28%, transparent 70%);
+  mask-image: radial-gradient(circle, #000 28%, transparent 70%);
+}
+
+.sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(76, 232, 255, 0.28) 38deg, transparent 52deg);
+  animation: fxSpin 3.4s linear infinite;
+}
+
+.ping {
+  position: absolute;
+  inset: 31%;
+  border-radius: 50%;
+  border: 1px solid rgba(76, 232, 255, 0.55);
+  opacity: 0;
+  animation: fxPing 3.6s ease-out infinite;
+}
+
+.pingTwo { animation-delay: 1.2s; }
+.pingThree { animation-delay: 2.4s; }
+
+/* ---- orbiting satellites ---- */
+.orbit {
+  position: absolute;
+  inset: -22%;
+  pointer-events: none;
+  animation: fxSpin 14s linear infinite;
+}
+
+.sat {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--a));
+}
+
+.satBody {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  /* keep the label upright while the whole orbit (and this satellite's own angle) turns */
+  animation: fxUnspin 14s linear infinite;
+}
+
+.satBody i {
+  position: absolute;
+  left: -3.5px;
+  top: -3.5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ce8ff;
+  box-shadow: 0 0 10px 2px rgba(76, 232, 255, 0.75);
+}
+
+.satBody b {
+  position: absolute;
+  left: 10px;
+  top: -6px;
+  color: rgba(190, 240, 252, 0.8);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  line-height: 12px;
+  white-space: nowrap;
+}
+
+/* ---- falling hex ---- */
+.rain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 48%, transparent 14%, #000 72%);
+  mask-image: radial-gradient(ellipse at 50% 48%, transparent 14%, #000 72%);
+}
+
+/* ---- boot log ---- */
+.log {
+  position: absolute;
+  z-index: 3;
+  left: 38px;
+  bottom: 84px;
+  width: min(300px, 40vw);
+  display: grid;
+  gap: 5px;
+  color: rgba(150, 214, 232, 0.72);
+  font: 600 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+.log p {
+  margin: 0;
+  animation: fxLine 0.4s ease both;
+}
+
+.log b {
+  color: #53e1b8;
+  font-weight: 800;
+}
+
+.caret {
+  width: 7px;
+  height: 12px;
+  background: #4ce8ff;
+  animation: fxBlink 0.9s steps(2) infinite;
+}
+
+/* ---- exit shockwave ---- */
+.flash {
+  position: absolute;
+  z-index: 5;
+  top: 46%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  border: 2px solid rgba(160, 245, 255, 0.9);
+  box-shadow: 0 0 60px 10px rgba(76, 232, 255, 0.5), inset 0 0 40px rgba(76, 232, 255, 0.35);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flashOn {
+  animation: fxShock 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes fxSpin { to { transform: rotate(360deg); } }
+@keyframes fxUnspin {
+  from { transform: rotate(calc(-1 * var(--a))); }
+  to { transform: rotate(calc(-1 * var(--a) - 360deg)); }
+}
+
+@keyframes fxPing {
+  0% { transform: scale(0.35); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes fxLine {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fxBlink { 50% { opacity: 0; } }
+
+@keyframes fxShock {
+  0% { opacity: 1; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(48); }
+}
+
+@media (max-width: 900px) {
+  .log { display: none; }
+}
+
+@media (max-width: 620px) {
+  .satBody b { display: none; }
+  .sonar { inset: -80%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep, .ping, .orbit, .satBody, .caret, .log p, .flashOn { animation: none; }
+  .ping, .rain { display: none; }
+}

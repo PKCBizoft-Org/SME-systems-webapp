@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { StaffHeader } from '../components/StaffHeader'
 import { StaffMotion } from '../components/StaffMotion'
+import { PkcLoader } from '../components/PkcLoader'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 
@@ -215,21 +216,7 @@ export default function UsersPage() {
   }
 
   if (checking) {
-    return (
-      <main className="usersPage">
-        <div className="checkingState">Checking access...</div>
-        <style jsx>{`
-          .usersPage {
-            min-height: 100vh;
-            background: #05090d;
-            display: grid;
-            place-items: center;
-            color: #8ca1b1;
-            font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-          }
-        `}</style>
-      </main>
-    )
+    return <PkcLoader label="Checking access" steps={['Verifying your role', 'Opening user management']} />
   }
 
   if (!authorized) {

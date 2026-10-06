@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { CardFX } from "../components/CardFX";
+import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "../components/IntroFX";
 import { ProfileDialog, type ProfileDetails } from "../components/ProfileDialog";
 import { StoryVideo } from "../components/StoryVideo";
 
@@ -249,6 +250,7 @@ export default function WhoWeArePage() {
         >
           <div className="introNoise" />
           <div className="introGrid" />
+          <IntroRain />
           <div className="introVignette" />
           <div className="introOrb orbA" />
           <div className="introOrb orbB" />
@@ -263,6 +265,8 @@ export default function WhoWeArePage() {
           <div className="hud hudBR">NODE 01 / PHILIPPINES</div>
           <div className="introCenter">
             <div className="introLogo">
+              <IntroSonar />
+              <IntroOrbit labels={["FOUNDERS", "TEAM", "VISION", "ROLES"]} inset="-3%" />
               <span className="logoRing ringA" />
               <span className="logoRing ringB" />
               <span className="logoRing ringC" />
@@ -271,8 +275,8 @@ export default function WhoWeArePage() {
             </div>
             <div className="introKicker">PKC BIZOFT / PEOPLE NETWORK</div>
             <h1>
-              <span>THE PEOPLE</span>
-              <strong>BEHIND THE SYSTEM.</strong>
+              <span><Scramble text="THE PEOPLE" delay={450} duration={800} /></span>
+              <strong><Scramble text="BEHIND THE SYSTEM." delay={1000} duration={1100} /></strong>
             </h1>
             <p>
               Founding leadership, shared vision, and the people building PKC
@@ -292,10 +296,20 @@ export default function WhoWeArePage() {
                 <span>IDENTITY</span>
                 <span>FOUNDERS</span>
                 <span>TEAM</span>
-                <strong>100%</strong>
+                <strong><IntroCounter duration={3700} /></strong>
               </div>
             </div>
           </div>
+          <IntroLog
+            phase={phase}
+            lines={[
+              { at: 1, text: "identity verified" },
+              { at: 2, text: "founding team loaded" },
+              { at: 3, text: "profiles secured" },
+              { at: 4, text: "people network online" },
+            ]}
+          />
+          <IntroFlash active={exiting} />
           <button className="skip" type="button" onClick={closeIntro}>
             SKIP INTRO <span>↗</span>
           </button>
@@ -2255,7 +2269,7 @@ export default function WhoWeArePage() {
         .skip {
           position: absolute;
           right: 26px;
-          bottom: 24px;
+          bottom: 62px;
           border: 1px solid rgba(127, 236, 255, 0.16);
           background: rgba(5, 18, 24, 0.6);
           color: rgba(220, 252, 255, 0.58);

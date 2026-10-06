@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StaffHeader } from "../components/StaffHeader";
 import { StaffMotion } from "../components/StaffMotion";
+import { PkcLoader } from "../components/PkcLoader";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
@@ -456,7 +457,7 @@ export default function AccountingPage() {
     }
   }
 
-  if (checkingAccess) return <main className="state-page"><div className="loader" /><span role="status">Checking accounting access…</span><style jsx>{styles}</style></main>;
+  if (checkingAccess) return <PkcLoader label="Checking accounting access" steps={["Verifying your role", "Opening accounting"]} />;
   if (!authorized) return null;
 
   return (
