@@ -155,25 +155,30 @@ export function FutureFX() {
       progress.style.transform = `scaleX(${max > 0 ? Math.min(window.scrollY / max, 1) : 0})`;
     };
 
+    // The glow only animates while it is still catching up with the pointer,
+    // then the frame loop stops so an idle page costs nothing.
+    const loop = () => {
+      raf = 0;
+      if (!glow || !fine) return;
+      const dx = pointer.current.x - gx;
+      const dy = pointer.current.y - gy;
+      gx += dx * 0.14;
+      gy += dy * 0.14;
+      glow.style.transform = `translate3d(${gx - 280}px, ${gy - 280}px, 0)`;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) raf = requestAnimationFrame(loop);
+    };
+
     const onMove = (event: PointerEvent) => {
       pointer.current.x = event.clientX;
       pointer.current.y = event.clientY;
       glow?.classList.add("fxOn");
-    };
-
-    const loop = () => {
-      raf = requestAnimationFrame(loop);
-      if (!glow || !fine) return;
-      gx += (pointer.current.x - gx) * 0.14;
-      gy += (pointer.current.y - gy) * 0.14;
-      glow.style.transform = `translate3d(${gx - 280}px, ${gy - 280}px, 0)`;
+      if (!raf) raf = requestAnimationFrame(loop);
     };
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     if (fine) window.addEventListener("pointermove", onMove, { passive: true });
-    raf = requestAnimationFrame(loop);
 
     return () => {
       cancelAnimationFrame(raf);

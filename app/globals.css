@@ -393,3 +393,47 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .routeFade { animation: none; }
 }
+
+/* ------------------------------------------------------------------
+   Smoothness
+   Element selectors have the lowest specificity, so any component that
+   defines its own transition keeps it; everything else eases instead of
+   snapping.
+   ------------------------------------------------------------------ */
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* No 300ms tap delay or accidental double-tap zoom on controls. */
+button,
+a,
+[role="button"],
+select,
+summary,
+label {
+  touch-action: manipulation;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+img {
+  image-rendering: auto;
+}
