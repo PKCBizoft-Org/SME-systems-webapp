@@ -982,7 +982,7 @@ export default function HomePage() {
           margin: 0;
           background: #02080c;
           color: #eaffff;
-          font-family: Arial, Helvetica, sans-serif;
+          font-family: var(--font-geist-sans), system-ui, sans-serif;
         }
 
         :global(a) {
@@ -5004,6 +5004,47 @@ export default function HomePage() {
     .signal-strip::before { animation: none; }
     .hero-cta, .btn, .node-card, .system-card, .feature-card, .capability-card, .story-card { transition: none !important; }
   }
+
+        /* Phones: the section rail becomes a small dot pill that never covers content. */
+        @media (max-width: 620px) {
+          .whereYouAre {
+            left: 50%;
+            right: auto;
+            width: auto;
+            max-width: calc(100% - 24px);
+            transform: translateX(-50%);
+            padding: 6px 10px;
+            border-radius: 999px;
+          }
+
+          .whereYouAreTop {
+            display: none;
+          }
+
+          .whereYouAreChoices {
+            gap: 2px;
+            justify-content: center;
+          }
+
+          .whereYouAreChoice,
+          .whereYouAreChoice:hover,
+          .whereYouAreChoice:focus-visible {
+            flex: 0 0 auto;
+            min-width: 28px;
+            min-height: 28px;
+            padding: 0 8px;
+            justify-content: center;
+          }
+
+          .whereYouAreChoice:not(.active) .whereYouAreChoiceCollapsed {
+            display: none;
+          }
+
+          .whereYouAreChoice.active {
+            width: auto;
+            min-height: 28px;
+          }
+        }
 
       `}
     </style>

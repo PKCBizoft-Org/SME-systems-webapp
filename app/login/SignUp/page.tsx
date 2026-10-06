@@ -350,8 +350,11 @@ export default function SignupPage() {
               <b>{completedSteps}/3</b>
             </div>
 
-            <div className="progressTrack">
-              <i style={{ width: `${progress}%` }} />
+            {/* One segment per step, so the middle (security) segment can light up amber on its own. */}
+            <div className="progressTrack segmented" aria-hidden="true">
+              <i className={accountComplete ? "on" : ""} />
+              <i className={securityStrong ? "on" : securitySemi ? "on semiSeg" : ""} />
+              <i className={locationComplete ? "on" : ""} />
             </div>
 
             <div className="steps">
@@ -507,7 +510,7 @@ export default function SignupPage() {
                   </small>
                 </label>
 
-                <div className="securityTitle">
+                <div className={securitySemi ? "securityTitle semiGlow" : "securityTitle"}>
                   <div className="sectionTitle">
                     <span>02</span>
                     <div>
@@ -1526,7 +1529,11 @@ export default function SignupPage() {
             grid-template-columns: 1fr;
             max-width: 900px;
           }
-          .overview { display: none; }
+          /* Keep only the progress panel on tablets and phones: it also holds the
+             weak-password choice (Keep / Make it stronger), which must stay reachable. */
+          .overview { display: block; }
+          .overview > *:not(.progressPanel) { display: none; }
+          .overview .progressPanel { max-width: none; margin-bottom: 14px; }
           .registrationCard { width: 100%; }
         }
 
@@ -1936,6 +1943,65 @@ export default function SignupPage() {
         .step.semi small { color: #ffd98a; }
         .semiReady {
           color: #ffd98a;
+        }
+
+
+        /* ---- semi-secured: the security step and its progress segment light up amber ---- */
+        .progressTrack.segmented {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 5px;
+          overflow: visible;
+          background: none;
+        }
+        .progressTrack.segmented i {
+          background: rgba(89, 225, 255, 0.09);
+          box-shadow: none;
+          transition: background .4s ease, box-shadow .4s ease;
+        }
+        .progressTrack.segmented i.on {
+          background: linear-gradient(90deg, #3cdfff, #77f3c6);
+          box-shadow: 0 0 12px rgba(55, 222, 255, 0.65);
+        }
+        .progressTrack.segmented i.semiSeg {
+          background: linear-gradient(90deg, #ffb340, #ffd166);
+          box-shadow: 0 0 14px rgba(255, 170, 51, 0.75);
+          animation: semiPulse 2.4s ease-in-out infinite;
+        }
+        .step.semi {
+          padding: 6px 8px;
+          margin: -6px -8px;
+          border-radius: 12px;
+          background: linear-gradient(90deg, rgba(255, 170, 51, 0.12), transparent 80%);
+        }
+        .step.semi > span {
+          color: #ffc266;
+          border-color: rgba(255, 170, 51, 0.65);
+          background: rgba(255, 170, 51, 0.16);
+          box-shadow: 0 0 16px rgba(255, 170, 51, 0.55), inset 0 0 8px rgba(255, 170, 51, 0.25);
+          animation: semiPulse 2.4s ease-in-out infinite;
+        }
+        .step.semi b { color: #ffe0a8; }
+        .step.semi small { color: #ffbf5c; }
+        .securityTitle.semiGlow .sectionTitle > span {
+          color: #ffc266;
+          border-color: rgba(255, 170, 51, 0.65);
+          background: rgba(255, 170, 51, 0.14);
+          box-shadow: 0 0 18px rgba(255, 170, 51, 0.5);
+        }
+        .securityTitle.semiGlow .sectionTitle h3 { color: #ffe0a8; }
+        .semiReady {
+          color: #ffc266;
+          text-shadow: 0 0 12px rgba(255, 170, 51, 0.6);
+        }
+
+        @keyframes semiPulse {
+          50% { filter: brightness(1.25); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .progressTrack.segmented i.semiSeg,
+          .step.semi > span { animation: none; }
         }
 
         @media (prefers-reduced-motion: reduce) {

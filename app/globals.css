@@ -210,6 +210,68 @@ html {
 }
 
 h1, h2, h3 { text-wrap: balance; }
+
+/* Display typeface for headings. Component classes that set their own
+   font-family still win; everything else picks this up. */
+h1, h2, h3 {
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ------------------------------------------------------------------
+   Interaction polish
+   ------------------------------------------------------------------ */
+
+/* Page fade-in on first paint. */
+body { animation: pageIn 0.5s ease-out both; }
+
+@keyframes pageIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Tactile press feedback and a smooth hover on every button and link-button. */
+:where(button:not(:disabled), [role="button"], a[class]) {
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    opacity 0.25s ease;
+}
+
+:where(button:not(:disabled), [role="button"]):active {
+  transform: scale(0.97);
+}
+
+button:disabled { cursor: not-allowed; }
+
+/* Inputs glow cyan when focused instead of a hard browser outline. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 232, 255, 0.16);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Soft loading shimmer for any element given the .skeleton class. */
+.skeleton {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.04) 20%,
+    rgba(76, 232, 255, 0.12) 40%,
+    rgba(255, 255, 255, 0.04) 60%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s linear infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeletonShimmer {
+  to { background-position: -200% 0; }
+}
 p, li { text-wrap: pretty; }
 
 /* Dropdown lists. The closed field is dark with light text, but the browser
@@ -234,4 +296,51 @@ select option:hover {
 
 select option:disabled {
   color: rgba(234, 248, 255, 0.45);
+}
+
+/* ------------------------------------------------------------------
+   Staff pages: entrance + hover motion (driven by <StaffMotion />).
+   ------------------------------------------------------------------ */
+[data-fx="pre"] {
+  opacity: 0;
+  transform: translateY(18px) scale(0.985);
+}
+
+[data-fx="in"] {
+  animation: staffRise 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--fx-i, 0) * 65ms) backwards;
+}
+
+@keyframes staffRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Small cards (opted in with `lift`) lift and glow under the pointer. */
+@media (hover: hover) and (pointer: fine) {
+  [data-fx]:not(tr):not(tbody) {
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+  }
+
+  [data-fx="in"][data-fx-lift]:hover {
+    transform: translateY(-3px);
+    border-color: rgba(76, 232, 255, 0.32) !important;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(76, 232, 255, 0.1), 0 0 32px rgba(76, 232, 255, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-fx="pre"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  [data-fx="in"] {
+    animation: none;
+  }
 }

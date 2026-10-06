@@ -1,0 +1,100 @@
+.panel {
+  margin: 12px 0;
+  padding: 25px;
+  border: 1px solid rgba(123, 219, 233, 0.11);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(9, 25, 31, 0.86), rgba(4, 12, 17, 0.86));
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+  color: #cde8eb;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.head > div { display: grid; grid-template-columns: 27px 1fr; column-gap: 13px; }
+.head h2 { margin: 1px 0 4px; font-size: 17px; letter-spacing: -0.02em; color: #eafcff; }
+.head p { grid-column: 2; margin: 0; color: #6a878d; font-size: 11px; }
+
+.index {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border: 1px solid rgba(83, 220, 237, 0.16);
+  border-radius: 7px;
+  color: #63c5d2;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  font-weight: 800;
+}
+
+.link {
+  flex: none;
+  padding: 9px 13px;
+  border: 1px solid rgba(118, 221, 234, 0.2);
+  border-radius: 8px;
+  color: #7ff0ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.link:hover { background: rgba(76, 232, 255, 0.1); border-color: rgba(118, 221, 234, 0.5); }
+
+.empty { margin: 0; padding: 18px 0 4px; color: #607f86; font-size: 12px; }
+
+.summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+
+.chip {
+  display: grid;
+  gap: 2px;
+  padding: 11px 14px;
+  border: 1px solid rgba(116, 210, 224, 0.1);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.chip strong { font-size: 18px; color: #eafcff; font-variant-numeric: tabular-nums; }
+.chip span { color: #66868c; font-size: 10px; letter-spacing: 0.04em; }
+.cost strong { color: #59e0b4; }
+
+.list { margin: 0; padding: 0; list-style: none; }
+
+.list li {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(120, 215, 230, 0.07);
+  font-size: 12px;
+}
+
+.list li:last-child { border-bottom: 0; }
+
+.tag {
+  color: #ffc96b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.what { overflow-wrap: anywhere; }
+.when { color: #66868c; font-size: 10px; text-align: right; }
+
+@media (max-width: 640px) {
+  .panel { padding: 18px; }
+  .head { flex-direction: column; }
+  .list li { grid-template-columns: 1fr; gap: 4px; }
+  .when { text-align: left; }
+}

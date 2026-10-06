@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-type TenantRole = "admin" | "technician" | "customer" | "accounting";
+type TenantRole = "admin" | "technician" | "customer" | "accounting" | "inventory";
 
 const ALLOWED_ROLES: TenantRole[] = [
   "admin",
   "technician",
   "customer",
   "accounting",
+  "inventory",
 ];
 
 export async function POST(request: NextRequest) {
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Role must be admin, technician, accounting, or customer.",
+            "Role must be admin, technician, accounting, inventory, or customer.",
         },
         { status: 400 },
       );

@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { FutureFX } from "./components/FutureFX";
 
@@ -13,6 +13,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Display face for headings; Geist stays the body face.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+export const viewport: Viewport = {
+  themeColor: "#02080c",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "PKC BIZOFT",
@@ -25,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

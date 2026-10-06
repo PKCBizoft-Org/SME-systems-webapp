@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { StaffHeader } from '../components/StaffHeader'
+import { StaffMotion } from '../components/StaffMotion'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import { formatDate } from '@/lib/format'
@@ -137,6 +139,7 @@ export default function ClientsPage() {
   const [error, setError] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [staffRoles, setStaffRoles] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(true)
 
   const [sortKey, setSortKey] = useState<SortKey>('install_date')
@@ -210,6 +213,7 @@ export default function ClientsPage() {
           ),
         )
 
+        setStaffRoles((memberships || []).map((membership) => membership.role))
         setIsAdmin(
           (memberships || []).some(
             (membership) => membership.role === 'admin',
@@ -674,39 +678,8 @@ export default function ClientsPage() {
           TOP BAR
       ============================================================ */}
 
-      <header className="topBar">
-        <Link
-          href="/"
-          className="brand"
-          aria-label="PKC BIZOFT home"
-        >
-          <img className="brandLogo" src={PKC_LOGO} alt="PKC BIZOFT" />
-
-          <div className="brandText">
-            <span>PKC</span>{' '}
-            <strong>BIZOFT</strong>
-          </div>
-        </Link>
-
-        <div className="topActions">
-          <nav className="topNav">
-            <Link href="/clients" className="topNavLink active">
-              Clients
-            </Link>
-
-            {isAdmin && (
-              <Link href="/users" className="topNavLink">
-                Users
-              </Link>
-            )}
-          </nav>
-
-          <div className="sessionPill">
-            <span className="sessionDot" />
-            <span>SECURE SESSION</span>
-          </div>
-        </div>
-      </header>
+      <StaffHeader current="clients" roles={staffRoles} />
+      <StaffMotion targets={['.filterPanel', '.tablePanel']} />
 
       {/* ============================================================
           CONTENT
@@ -1315,7 +1288,7 @@ const styles = `
     background: #05090d;
     color: #eef7ff;
     font-family:
-      Inter,
+      var(--font-geist-sans),
       ui-sans-serif,
       system-ui,
       -apple-system,
@@ -2375,5 +2348,81 @@ const styles = `
   @keyframes rowIn {
     from { opacity: 0; transform: translateY(14px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  /* ---- readability + tablet/phone layouts ---- */
+  th { font-size: 10px; }
+  .customerMeta { font-size: 11px; }
+  .normalText { font-size: 13px; }
+  .planBadge { font-size: 11px; }
+
+  @media (max-width: 1100px) {
+    table { min-width: 820px; }
+  }
+
+  /* Phones and small tablets: each client becomes a card instead of a clipped table row. */
+  @media (max-width: 820px) {
+    table { min-width: 0; }
+    thead { display: none; }
+    tbody, tbody tr, tbody td { display: block; }
+
+    tbody tr {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 14px;
+      margin: 0 12px 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    tbody tr:hover { background: rgba(21,153,255,0.05); }
+
+    tbody td {
+      padding: 0;
+      border-bottom: 0 !important;
+      min-width: 0;
+    }
+
+    tbody td.checkColumn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: auto;
+    }
+
+    tbody td:nth-child(2) { grid-column: 1 / -1; padding-right: 34px; }
+    tbody td:nth-child(3) { grid-column: 1 / -1; }
+
+    tbody td:nth-child(n + 3):nth-child(-n + 7)::before {
+      display: block;
+      margin-bottom: 5px;
+      color: #718593;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    tbody td:nth-child(3)::before { content: 'Area'; }
+    tbody td:nth-child(4)::before { content: 'Plan'; }
+    tbody td:nth-child(5)::before { content: 'Install date'; }
+    tbody td:nth-child(6)::before { content: 'Installation'; }
+    tbody td:nth-child(7)::before { content: 'Account'; }
+
+    tbody td.actionCell {
+      grid-column: 1 / -1;
+      text-align: stretch;
+    }
+
+    tbody td.actionCell :global(a),
+    tbody td.actionCell .viewButton {
+      display: flex;
+      width: 100%;
+      justify-content: center;
+      padding-top: 11px;
+      padding-bottom: 11px;
+    }
   }
 `

@@ -7,6 +7,7 @@
 
 import { type CSSProperties, FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import { homeForUser } from "@/lib/homeForRole";
 
 type RobotExpression =
   | "idle"
@@ -523,7 +524,7 @@ export default function LoginPage() {
     setLoginErrorMessage("");
     setRobotStatus("loading");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
@@ -548,9 +549,13 @@ export default function LoginPage() {
       return;
     }
 
+    const destination = signInData.user
+      ? await homeForUser(supabase, signInData.user.id)
+      : "/clients";
+
     setRobotStatus("success");
     window.setTimeout(() => {
-      window.location.href = "/clients";
+      window.location.href = destination;
     }, 850);
   };
 
@@ -600,8 +605,8 @@ export default function LoginPage() {
             </svg>
             <span>Home</span>
           </a>
-          <a href="#login" className="headerNavLink active" aria-current="page">
-            <span>Sign in</span>
+          <a href="/login/SignUp" className="headerNavLink active">
+            <span>Sign up</span>
             <i aria-hidden="true">→</i>
           </a>
         </nav>
@@ -982,7 +987,7 @@ export default function LoginPage() {
 
         :global(body) {
           font-family:
-            Inter,
+            var(--font-geist-sans),
             ui-sans-serif,
             system-ui,
             -apple-system,
@@ -2971,6 +2976,49 @@ export default function LoginPage() {
         @keyframes fxCtaRing {
           0% { outline: 2px solid rgba(34, 211, 238, 0.5); outline-offset: 0; }
           70%, 100% { outline: 2px solid rgba(34, 211, 238, 0); outline-offset: 14px; }
+        }
+
+        /* ---- small screens: never let the robot or card push past the viewport ---- */
+        @media (max-width: 820px) {
+          .hero {
+            grid-template-columns: minmax(0, 1fr);
+          }
+
+          .hero > * {
+            min-width: 0;
+          }
+
+          .robotArea {
+            overflow: hidden;
+            border-radius: 28px;
+          }
+
+          .loginCard {
+            width: 100%;
+            box-sizing: border-box;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .robotArea {
+            min-height: 300px;
+          }
+
+          .robotArea :global(.robotAvatar) {
+            width: 100% !important;
+            max-width: 100%;
+            margin: -24px 0;
+          }
+
+          .robotArea :global(.robotAvatar > *) {
+            max-width: 100%;
+          }
+
+          .robotArea :global(.robotAvatar .robotSvg) {
+            width: min(100%, 340px);
+            height: auto;
+            margin: 0 auto;
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {

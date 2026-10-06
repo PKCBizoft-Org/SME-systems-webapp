@@ -785,7 +785,7 @@ export default function WhoWeArePage() {
           margin: 0;
           background: #02080c;
           color: #eaffff;
-          font-family: Arial, Helvetica, sans-serif;
+          font-family: var(--font-geist-sans), system-ui, sans-serif;
         }
         :global(a) {
           color: inherit;

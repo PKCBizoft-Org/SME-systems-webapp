@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
+import { homeForUser } from '@/lib/homeForRole'
 
 export default function SetPasswordPage() {
   const router = useRouter()
@@ -109,8 +110,13 @@ export default function SetPasswordPage() {
       return
     }
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const destination = user ? await homeForUser(supabase, user.id) : '/clients'
+
     setSuccess(true)
-    window.setTimeout(() => router.replace('/clients'), 1500)
+    window.setTimeout(() => router.replace(destination), 1500)
   }
 
   if (checking) {
@@ -225,7 +231,7 @@ const styles = `
     place-items: center;
     background: #05090d;
     color: #eef7ff;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
       BlinkMacSystemFont, "Segoe UI", sans-serif;
     padding: 20px;
   }
