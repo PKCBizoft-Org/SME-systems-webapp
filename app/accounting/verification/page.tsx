@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
 import { StaffHeader } from "../../components/StaffHeader";
+import { notifyBadgesChanged } from "../../components/PendingPaymentsBadge";
 import { PkcLoader } from "../../components/PkcLoader";
 import styles from "./verification.module.css";
 
@@ -85,6 +86,7 @@ export default function PaymentVerificationPage() {
   const [secondaryPassword, setSecondaryPassword] = useState("");
   const [secondaryError, setSecondaryError] = useState("");
 
+  const [receiptUrls, setReceiptUrls] = useState<Record<string, string>>({});
   const [proofFor, setProofFor] = useState<string | null>(null);
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [proofError, setProofError] = useState<string | null>(null);
@@ -124,6 +126,7 @@ export default function PaymentVerificationPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      notifyBadgesChanged();
     }
   }, []);
 
@@ -161,6 +164,27 @@ export default function PaymentVerificationPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (authorized) void load();
   }, [authorized, load]);
+
+  // Pending payments show their receipt straight away so Accounting can
+  // compare it with the details without opening anything.
+  useEffect(() => {
+    const wanted = submissions.filter(
+      (s) => s.proof_path && bucketOf(s.status) === "pending" && !receiptUrls[s.id],
+    );
+    if (wanted.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const found: Record<string, string> = {};
+      for (const s of wanted) {
+        const { data } = await supabase.storage.from("payment-proofs").createSignedUrl(s.proof_path as string, 3600);
+        if (data?.signedUrl) found[s.id] = data.signedUrl;
+      }
+      if (!cancelled && Object.keys(found).length) setReceiptUrls((prev) => ({ ...prev, ...found }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [submissions, receiptUrls]);
 
   const counts = useMemo(() => {
     const c = { pending: 0, verified: 0, rejected: 0, all: submissions.length };
@@ -453,6 +477,16 @@ export default function PaymentVerificationPage() {
                       <dd>{formatDate(s.created_at)}</dd>
                     </div>
                   </dl>
+
+                  {bucket === "pending" && receiptUrls[s.id] && proofFor !== s.id && (
+                    <a href={receiptUrls[s.id]} target="_blank" rel="noreferrer" className={styles.proof} style={{ display: "block" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={receiptUrls[s.id]} alt="Customer payment receipt" />
+                    </a>
+                  )}
+                  {bucket === "pending" && !s.proof_path && (
+                    <p className={styles.reason}>No receipt was attached to this payment.</p>
+                  )}
 
                   {bucket === "rejected" && s.reject_reason && (
                     <p className={styles.reason}>
