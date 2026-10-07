@@ -20,7 +20,6 @@ const OWNER = {
   phoneDisplay: '0905 740 4840',
   phoneHref: 'tel:+639057404840',
   facebook: 'https://www.facebook.com/Underrated.Prince.AJ',
-  messenger: 'https://m.me/Underrated.Prince.AJ',
 }
 
 export function StaffVerification({ email, mode, onVerified, onCancel }: Props) {
@@ -239,19 +238,14 @@ export function StaffVerification({ email, mode, onVerified, onCancel }: Props) 
                 <strong>Contact the system owner to reset it</strong>
                 <p>
                   A secondary password can only be reset by {OWNER.name}. Call or message
-                   them and confirm who you are.
+                  them and confirm who you are.
                 </p>
                 <a className={styles.callButton} href={OWNER.phoneHref}>
                   Call {OWNER.phoneDisplay}
                 </a>
-                <div className={styles.helpRow}>
-                  <a className={styles.helpButton} href={OWNER.messenger} target="_blank" rel="noopener noreferrer">
-                    Messenger
-                  </a>
-                  <a className={styles.helpButton} href={OWNER.facebook} target="_blank" rel="noopener noreferrer">
-                    Facebook
-                  </a>
-                </div>
+                <a className={styles.helpButton} href={OWNER.facebook} target="_blank" rel="noopener noreferrer">
+                  Message on Facebook
+                </a>
               </div>
             ) : null}
           </form>
