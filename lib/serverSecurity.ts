@@ -98,3 +98,71 @@ export function checkSecondary(password: string, stored: string) {
   const actual = scryptSync(password, Buffer.from(saltHex, 'hex'), expected.length)
   return timingSafeEqual(actual, expected)
 }
+
+// ---- Money-action helpers (approve / reject payments) ----
+
+const SECONDARY_MAX_ATTEMPTS = 5
+const SECONDARY_LOCK_MINUTES = 15
+
+// True when this session finished the full staff sign-in (email code + secondary password).
+export async function isSessionVerified(caller: Caller) {
+  if (!caller.sessionId) return false
+  const { data } = await caller.admin
+    .from('staff_verified_sessions')
+    .select('session_id')
+    .eq('session_id', caller.sessionId)
+    .eq('user_id', caller.user.id)
+    .maybeSingle()
+  return Boolean(data)
+}
+
+export async function hasTenantRole(caller: Caller, tenantId: string | null, roles: string[]) {
+  if (!tenantId) return false
+  const { data } = await caller.admin
+    .from('tenant_users')
+    .select('role')
+    .eq('user_id', caller.user.id)
+    .eq('tenant_id', tenantId)
+  return (data || []).some((row) => row.role && roles.includes(row.role))
+}
+
+export type SecondaryResult = { ok: true } | { ok: false; status: number; error: string }
+
+// Checks the caller's secondary password with the same lockout as sign-in.
+export async function verifySecondaryPassword(caller: Caller, password: string): Promise<SecondaryResult> {
+  if (!password) return { ok: false, status: 400, error: 'Enter your secondary password.' }
+
+  const { data: security } = await caller.admin
+    .from('staff_security')
+    .select('secondary_hash, failed_attempts, locked_until')
+    .eq('user_id', caller.user.id)
+    .maybeSingle()
+
+  if (!security) {
+    return { ok: false, status: 403, error: 'You have no secondary password yet. Sign out and sign in again to create one.' }
+  }
+
+  if (security.locked_until && new Date(security.locked_until).getTime() > Date.now()) {
+    return { ok: false, status: 429, error: `Too many wrong attempts. Try again in ${SECONDARY_LOCK_MINUTES} minutes.` }
+  }
+
+  if (!checkSecondary(password, security.secondary_hash)) {
+    const attempts = (security.failed_attempts || 0) + 1
+    const lock = attempts >= SECONDARY_MAX_ATTEMPTS
+    await caller.admin
+      .from('staff_security')
+      .update({
+        failed_attempts: lock ? 0 : attempts,
+        locked_until: lock ? new Date(Date.now() + SECONDARY_LOCK_MINUTES * 60_000).toISOString() : null,
+      })
+      .eq('user_id', caller.user.id)
+    return {
+      ok: false,
+      status: 401,
+      error: lock ? `Too many wrong attempts. Locked for ${SECONDARY_LOCK_MINUTES} minutes.` : 'Incorrect secondary password.',
+    }
+  }
+
+  await caller.admin.from('staff_security').update({ failed_attempts: 0, locked_until: null }).eq('user_id', caller.user.id)
+  return { ok: true }
+}

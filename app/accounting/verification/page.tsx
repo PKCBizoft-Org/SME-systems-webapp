@@ -25,6 +25,8 @@ type Submission = {
   reviewed_at: string | null;
   reviewed_by: string | null;
   payment_id: string | null;
+  reject_reason: string | null;
+  reject_note: string | null;
   created_at: string;
 };
 
@@ -53,16 +55,7 @@ function bucketOf(status: string | null): Exclude<Filter, "all"> {
   return "pending";
 }
 
-// PostgREST reports a function that doesn't exist yet with code PGRST202.
-function isMissingFunction(error: { code?: string; message?: string }) {
-  return error.code === "PGRST202" || /could not find the function/i.test(error.message || "");
-}
-
-function newPaymentCode() {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `${date}-${rand}`;
-}
+const REJECT_REASONS = ["Wrong amount", "Reference not found", "Blurry receipt", "Reference already used", "Other"];
 
 export default function PaymentVerificationPage() {
   const router = useRouter();
@@ -70,7 +63,6 @@ export default function PaymentVerificationPage() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [staffRoles, setStaffRoles] = useState<string[]>([]);
-  const [reviewerId, setReviewerId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,6 +75,15 @@ export default function PaymentVerificationPage() {
   const [filter, setFilter] = useState<Filter>("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+
+  const [rejecting, setRejecting] = useState<Submission | null>(null);
+  const [rejectReason, setRejectReason] = useState(REJECT_REASONS[0]);
+  const [rejectNote, setRejectNote] = useState("");
+  const [rejectError, setRejectError] = useState("");
+
+  const [needsSecondary, setNeedsSecondary] = useState<Submission | null>(null);
+  const [secondaryPassword, setSecondaryPassword] = useState("");
+  const [secondaryError, setSecondaryError] = useState("");
 
   const [proofFor, setProofFor] = useState<string | null>(null);
   const [proofUrl, setProofUrl] = useState<string | null>(null);
@@ -145,7 +146,6 @@ export default function PaymentVerificationPage() {
         router.replace("/clients");
         return;
       }
-      setReviewerId(data.session.user.id);
       setStaffRoles(roles.filter((role): role is string => Boolean(role)));
       setAuthorized(true);
       setCheckingAccess(false);
@@ -195,7 +195,64 @@ export default function PaymentVerificationPage() {
     setProofUrl(data.signedUrl);
   }
 
-  async function verify(submission: Submission) {
+  async function authHeader() {
+    const { data } = await supabase.auth.getSession();
+    return data.session ? { Authorization: `Bearer ${data.session.access_token}` } : null;
+  }
+
+  // Approving goes through the server, which also asks for the secondary
+  // password on large amounts and emails the customer.
+  async function runVerify(submission: Submission, secondary?: string) {
+    const client = submission.client_id ? clients.get(submission.client_id) : undefined;
+    const claimed = Number(submission.amount_claimed || 0);
+
+    const headers = await authHeader();
+    if (!headers) {
+      setMessage({ kind: "error", text: "Your session expired. Please sign in again." });
+      return;
+    }
+
+    setBusyId(submission.id);
+    try {
+      const response = await fetch("/api/accounting/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify({ submissionId: submission.id, secondary }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (response.status === 428 || result?.code === "secondary_wrong") {
+        setSecondaryError(result?.code === "secondary_wrong" ? result.error : "");
+        setNeedsSecondary(submission);
+        return;
+      }
+
+      if (!response.ok) throw new Error(result?.error || "Verification failed.");
+
+      setNeedsSecondary(null);
+      setSecondaryPassword("");
+      setSecondaryError("");
+
+      const receipt = result?.result?.receipt_number as string | undefined;
+      const toInstall = Boolean(result?.result?.new_customer);
+      setMessage({
+        kind: "ok",
+        text:
+          `Verified ${formatPeso(claimed)} for ${client?.customer_name || "the customer"}${receipt ? ` (${receipt})` : ""}. ` +
+          (toInstall
+            ? "Their account is now For installation and the job is in the technicians' list."
+            : "Their plan is now set up.") +
+          (result?.emailed ? " The customer was emailed." : " (No email was sent.)"),
+      });
+    } catch (error) {
+      setMessage({ kind: "error", text: error instanceof Error ? error.message : "Verification failed." });
+    } finally {
+      setBusyId(null);
+      void load(true);
+    }
+  }
+
+  function verify(submission: Submission) {
     if (busyId) return;
     setMessage(null);
 
@@ -209,7 +266,7 @@ export default function PaymentVerificationPage() {
       return;
     }
     if (!submission.service_request_id) {
-      setMessage({ kind: "error", text: "This submission is not linked to a plan request." });
+      setMessage({ kind: "error", text: "This submission is not linked to a plan application." });
       return;
     }
     if (expected > 0 && claimed !== expected) {
@@ -220,7 +277,6 @@ export default function PaymentVerificationPage() {
       return;
     }
 
-    // The same GCash/bank reference must never be accepted twice.
     const reference = (submission.reference_number || "").trim();
     if (reference) {
       const dup = submissions.find(
@@ -241,119 +297,54 @@ export default function PaymentVerificationPage() {
     const ok = window.confirm(
       `Confirm you received ${formatPeso(claimed)} by ${submission.payment_method || "payment"}` +
         `${reference ? ` (ref ${reference})` : ""} from ${client?.customer_name || "this customer"}?\n\n` +
-        `This records the payment and schedules ${request?.requested_plan || "the plan"}.`,
+        `This records the payment, emails the customer, and ${request?.requested_plan || "the plan"} is set up.`,
     );
     if (!ok) return;
 
-    setBusyId(submission.id);
-    const code = newPaymentCode();
-
-    try {
-      // Preferred path: one all-or-nothing database function (staff-only,
-      // audit-logged). Falls back to the step-by-step path below until the
-      // function has been created in Supabase.
-      const atomic = await supabase.rpc("verify_payment_submission", { p_submission_id: submission.id });
-      if (!atomic.error) {
-        const receipt = (atomic.data as { receipt_number?: string } | null)?.receipt_number;
-        setMessage({
-          kind: "ok",
-          text: `Verified ${formatPeso(claimed)} for ${client?.customer_name || "the customer"}${receipt ? ` (${receipt})` : ""}. ${request?.requested_plan || "The plan"} is now scheduled.`,
-        });
-        return;
-      }
-      if (!isMissingFunction(atomic.error)) throw new Error(atomic.error.message);
-
-      // 1. record the payment
-      const inserted = await supabase
-        .from("payments")
-        .insert({
-          tenant_id: submission.tenant_id,
-          client_id: submission.client_id,
-          payment_id: `PAY-${code}`,
-          receipt_number: `REC-${code}`,
-          amount_paid: claimed,
-          payment_date: submission.payment_date || new Date().toISOString().slice(0, 10),
-          payment_method: submission.payment_method || "GCash",
-          service_request_id: submission.service_request_id,
-        })
-        .select("id")
-        .single();
-      if (inserted.error) throw new Error(`Could not record the payment: ${inserted.error.message}`);
-
-      // 2. mark the submission verified
-      const reviewed = await supabase
-        .from("payment_submissions")
-        .update({
-          status: "verified",
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: reviewerId,
-          payment_id: inserted.data.id,
-        })
-        .eq("id", submission.id);
-      if (reviewed.error) {
-        throw new Error(
-          `The payment was recorded (PAY-${code}) but the submission could not be marked verified: ${reviewed.error.message}`,
-        );
-      }
-
-      // 3. let the database schedule / activate the plan
-      const activation = await supabase.rpc("try_activate_plan_from_payment_request", {
-        p_service_request_id: submission.service_request_id,
-      });
-      if (activation.error) {
-        throw new Error(
-          `The payment was recorded (PAY-${code}) and verified, but the plan could not be scheduled: ${activation.error.message}`,
-        );
-      }
-
-      setMessage({
-        kind: "ok",
-        text: `Verified ${formatPeso(claimed)} for ${client?.customer_name || "the customer"} as PAY-${code}. ${request?.requested_plan || "The plan"} is now scheduled.`,
-      });
-    } catch (error) {
-      setMessage({ kind: "error", text: error instanceof Error ? error.message : "Verification failed." });
-    } finally {
-      setBusyId(null);
-      void load(true);
-    }
+    void runVerify(submission);
   }
 
-  async function reject(submission: Submission) {
+  function openReject(submission: Submission) {
     if (busyId) return;
     setMessage(null);
-    const client = submission.client_id ? clients.get(submission.client_id) : undefined;
-    const ok = window.confirm(
-      `Reject this payment from ${client?.customer_name || "the customer"}? Their plan request will be cancelled and they will need to submit again.`,
-    );
-    if (!ok) return;
+    setRejectReason(REJECT_REASONS[0]);
+    setRejectNote("");
+    setRejectError("");
+    setRejecting(submission);
+  }
 
-    setBusyId(submission.id);
+  async function confirmReject() {
+    if (!rejecting) return;
+    if (rejectReason === "Other" && !rejectNote.trim()) {
+      setRejectError("Add a short note explaining the reason.");
+      return;
+    }
+
+    const headers = await authHeader();
+    if (!headers) {
+      setRejectError("Your session expired. Please sign in again.");
+      return;
+    }
+
+    const target = rejecting;
+    setBusyId(target.id);
+    setRejectError("");
     try {
-      const atomic = await supabase.rpc("reject_payment_submission", { p_submission_id: submission.id });
-      if (!atomic.error) {
-        setMessage({ kind: "ok", text: "Payment rejected and the plan request cancelled." });
-        return;
-      }
-      if (!isMissingFunction(atomic.error)) throw new Error(atomic.error.message);
+      const response = await fetch("/api/accounting/reject-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify({ submissionId: target.id, reason: rejectReason, note: rejectNote.trim() }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result?.error || "Rejection failed.");
 
-      const reviewed = await supabase
-        .from("payment_submissions")
-        .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
-        .eq("id", submission.id);
-      if (reviewed.error) throw new Error(reviewed.error.message);
-
-      if (submission.service_request_id) {
-        const cancelled = await supabase
-          .from("service_requests")
-          .update({ status: "Cancelled" })
-          .eq("id", submission.service_request_id);
-        if (cancelled.error) {
-          throw new Error(`Submission rejected, but the plan request could not be cancelled: ${cancelled.error.message}`);
-        }
-      }
-      setMessage({ kind: "ok", text: "Payment rejected and the plan request cancelled." });
+      setRejecting(null);
+      setMessage({
+        kind: "ok",
+        text: `Payment rejected (${rejectReason}). The application was cancelled${result?.emailed ? " and the customer was emailed." : "."}`,
+      });
     } catch (error) {
-      setMessage({ kind: "error", text: error instanceof Error ? error.message : "Rejection failed." });
+      setRejectError(error instanceof Error ? error.message : "Rejection failed.");
     } finally {
       setBusyId(null);
       void load(true);
@@ -376,7 +367,7 @@ export default function PaymentVerificationPage() {
             <h1>Payment verification</h1>
             <p>
               Check each GCash or bank payment against your own transaction history, then verify it. Verifying records the
-              payment and schedules the customer&apos;s plan.
+              payment, emails the customer, and sets up their plan (new customers go to installation).
             </p>
           </div>
           <button className={styles.refresh} onClick={() => void load(true)} disabled={refreshing}>
@@ -463,16 +454,23 @@ export default function PaymentVerificationPage() {
                     </div>
                   </dl>
 
+                  {bucket === "rejected" && s.reject_reason && (
+                    <p className={styles.reason}>
+                      <strong>Reason:</strong> {s.reject_reason}
+                      {s.reject_note ? ` - ${s.reject_note}` : ""}
+                    </p>
+                  )}
+
                   <div className={styles.actions}>
                     <button className={styles.ghost} onClick={() => void viewProof(s)}>
                       {proofFor === s.id ? "Hide receipt" : "View receipt"}
                     </button>
                     {bucket === "pending" && (
                       <>
-                        <button className={styles.reject} disabled={busy} onClick={() => void reject(s)}>
+                        <button className={styles.reject} disabled={busy} onClick={() => openReject(s)}>
                           Reject
                         </button>
-                        <button className={styles.verify} disabled={busy} onClick={() => void verify(s)}>
+                        <button className={styles.verify} disabled={busy} onClick={() => verify(s)}>
                           {busy ? "Working…" : "Verify payment"}
                         </button>
                       </>
@@ -497,6 +495,89 @@ export default function PaymentVerificationPage() {
           </div>
         )}
       </div>
+
+      {rejecting && (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => setRejecting(null)}>
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Reject payment" onClick={(e) => e.stopPropagation()}>
+            <h2>Reject this payment?</h2>
+            <p className={styles.modalLead}>
+              {clients.get(rejecting.client_id || "")?.customer_name || "The customer"} will see the reason and can apply again.
+            </p>
+
+            <div className={styles.reasons}>
+              {REJECT_REASONS.map((reason) => (
+                <label key={reason} className={rejectReason === reason ? styles.reasonOn : styles.reasonOff}>
+                  <input type="radio" name="reason" checked={rejectReason === reason} onChange={() => setRejectReason(reason)} />
+                  {reason}
+                </label>
+              ))}
+            </div>
+
+            <textarea
+              className={styles.noteBox}
+              placeholder={rejectReason === "Other" ? "Explain the reason (required)" : "Optional note for the customer"}
+              value={rejectNote}
+              maxLength={300}
+              onChange={(e) => setRejectNote(e.target.value)}
+              rows={3}
+            />
+
+            {rejectError && <div className={styles.modalError}>{rejectError}</div>}
+
+            <div className={styles.modalActions}>
+              <button className={styles.ghost} onClick={() => setRejecting(null)}>
+                Cancel
+              </button>
+              <button className={styles.reject} disabled={busyId === rejecting.id} onClick={() => void confirmReject()}>
+                {busyId === rejecting.id ? "Rejecting…" : "Reject payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {needsSecondary && (
+        <div className={styles.modalBackdrop} role="presentation">
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Secondary password">
+            <h2>Confirm with your secondary password</h2>
+            <p className={styles.modalLead}>
+              This payment is {formatPeso(needsSecondary.amount_claimed)}. Large amounts need your secondary password before they are approved.
+            </p>
+
+            <input
+              className={styles.noteBox}
+              type="password"
+              autoComplete="current-password"
+              placeholder="Secondary password"
+              value={secondaryPassword}
+              onChange={(e) => setSecondaryPassword(e.target.value)}
+              autoFocus
+            />
+
+            {secondaryError && <div className={styles.modalError}>{secondaryError}</div>}
+
+            <div className={styles.modalActions}>
+              <button
+                className={styles.ghost}
+                onClick={() => {
+                  setNeedsSecondary(null);
+                  setSecondaryPassword("");
+                  setSecondaryError("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.verify}
+                disabled={!secondaryPassword || busyId === needsSecondary.id}
+                onClick={() => void runVerify(needsSecondary, secondaryPassword)}
+              >
+                {busyId === needsSecondary.id ? "Checking…" : "Approve payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

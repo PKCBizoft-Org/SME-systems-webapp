@@ -1,0 +1,260 @@
+.page {
+  min-height: 100vh;
+  background: #050d14;
+  color: #eaf7ff;
+}
+
+.shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px clamp(14px, 3vw, 34px) 70px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  margin: 6px 0 6px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.hero p {
+  margin: 0;
+  max-width: 620px;
+  color: #8fa8b8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.back {
+  color: #4ce8ff;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.tab,
+.tabOn,
+.btn,
+.btnPrimary {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+  border: 1px solid rgba(76, 232, 255, 0.25);
+  background: rgba(76, 232, 255, 0.06);
+  color: #eaf7ff;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.tabOn {
+  border-color: #4ce8ff;
+  background: rgba(76, 232, 255, 0.16);
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #17c3e8, #0b86b5);
+  color: #031017;
+  border-color: transparent;
+}
+
+.btn:disabled,
+.btnPrimary:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8fa8b8;
+}
+
+.field input,
+.field select {
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(76, 232, 255, 0.25);
+  background: rgba(3, 12, 17, 0.8);
+  color: #eaf7ff;
+  font: inherit;
+  font-size: 14px;
+  min-width: 190px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(76, 232, 255, 0.18);
+  background: rgba(8, 24, 33, 0.8);
+}
+
+.card small {
+  display: block;
+  color: #8fa8b8;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+}
+
+.good {
+  color: #34d399;
+}
+
+.bad {
+  color: #fb7185;
+}
+
+.panel {
+  border-radius: 16px;
+  border: 1px solid rgba(76, 232, 255, 0.18);
+  background: rgba(8, 24, 33, 0.7);
+  overflow-x: auto;
+}
+
+.panel h2 {
+  margin: 0;
+  padding: 14px 16px 0;
+  font-size: 16px;
+}
+
+.panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.panel th,
+.panel td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(76, 232, 255, 0.1);
+  white-space: nowrap;
+}
+
+.panel th {
+  color: #8fa8b8;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel td.right,
+.panel th.right,
+.right {
+  text-align: right;
+}
+
+.empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #8fa8b8;
+  font-size: 14px;
+}
+
+.flag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 113, 133, 0.5);
+  background: rgba(251, 113, 133, 0.12);
+  color: #fecdd3;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.link {
+  color: #4ce8ff;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.notice {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 99, 99, 0.4);
+  background: rgba(255, 99, 99, 0.1);
+  color: #ffb4b4;
+  font-size: 13px;
+}
+
+.printTitle {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .field input,
+  .field select {
+    min-width: 0;
+    width: 100%;
+  }
+  .field {
+    flex: 1 1 100%;
+  }
+}
+
+@media print {
+  .page {
+    background: #fff;
+    color: #000;
+  }
+  .printTitle {
+    display: block;
+    margin-bottom: 12px;
+  }
+  .card,
+  .panel {
+    border-color: #bbb;
+    background: #fff;
+  }
+  .panel th,
+  .panel td {
+    color: #000;
+    border-color: #ddd;
+  }
+  .good,
+  .bad {
+    color: #000;
+  }
+}

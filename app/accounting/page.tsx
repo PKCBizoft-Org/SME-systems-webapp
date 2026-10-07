@@ -477,6 +477,14 @@ export default function AccountingPage() {
             <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
               ✓ Payment verification
             </Link>
+            <Link href="/accounting/reports" className="refresh" style={{ textDecoration: "none" }}>
+              ▤ Reports
+            </Link>
+            {staffRoles.includes("admin") && (
+              <Link href="/accounting/audit" className="refresh" style={{ textDecoration: "none" }}>
+                ⌕ Audit log
+              </Link>
+            )}
             <button className="refresh" onClick={() => void loadAccountingData(true)} disabled={refreshing}>
               <span className={refreshing ? "spin" : ""}>↻</span>{refreshing ? "Refreshing…" : "Refresh data"}
             </button>
