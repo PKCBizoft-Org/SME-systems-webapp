@@ -1,6 +1,7 @@
 import Link from "next/link";
 import styles from "./staff-chrome.module.css";
 import { PendingPaymentsBadge } from "./PendingPaymentsBadge";
+import { StaffGuard } from "./StaffGuard";
 
 export type StaffSection = "clients" | "inventory" | "accounting" | "users";
 
@@ -19,6 +20,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
 
   return (
     <>
+      <StaffGuard />
       {/* soft ambient light behind every staff page */}
       <div className={styles.aurora} aria-hidden="true" />
       <header className={styles.bar}>

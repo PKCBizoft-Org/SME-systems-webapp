@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getCaller, emailVerifiedRecently } from "@/lib/serverSecurity";
 
 type TenantRole = "admin" | "technician" | "customer" | "accounting" | "inventory";
 
@@ -65,6 +66,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    /*
+      User management needs a recent email-code verification on this
+      session (the popup on the Users page), on top of the password login.
+    */
+    const verifiedCaller = await getCaller(request);
+    if (!verifiedCaller || !(await emailVerifiedRecently(verifiedCaller, "users", 10 * 60))) {
+      return NextResponse.json(
+        {
+          error: "Verification is required. Enter your secondary password.",
+          code: "otp_required",
+        },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
 
     const email =
@@ -72,6 +88,56 @@ export async function POST(request: NextRequest) {
     const role = typeof body.role === "string" ? body.role : "";
     const tenantId =
       typeof body.tenantId === "string" ? body.tenantId.trim() : "";
+
+    const fullName =
+      typeof body.fullName === "string" ? body.fullName.trim() : "";
+    const mobileNumber =
+      typeof body.mobileNumber === "string"
+        ? body.mobileNumber.replace(/[\s-]/g, "")
+        : "";
+    const birthday =
+      typeof body.birthday === "string" ? body.birthday.trim() : "";
+    const gender = typeof body.gender === "string" ? body.gender.trim() : "";
+    const address = typeof body.address === "string" ? body.address.trim() : "";
+
+    if (fullName.length < 3 || !fullName.includes(" ")) {
+      return NextResponse.json(
+        { error: "Enter the user's full name (first and last name)." },
+        { status: 400 },
+      );
+    }
+
+    if (!/^(\+63|0)9\d{9}$/.test(mobileNumber)) {
+      return NextResponse.json(
+        { error: "Enter a valid Philippine mobile number, like 09123456789." },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(birthday) ||
+      Number.isNaN(Date.parse(birthday)) ||
+      new Date(birthday) > new Date()
+    ) {
+      return NextResponse.json(
+        { error: "Enter a valid birthday." },
+        { status: 400 },
+      );
+    }
+
+    if (!["Male", "Female", "Other"].includes(gender)) {
+      return NextResponse.json(
+        { error: "Choose the user's gender." },
+        { status: 400 },
+      );
+    }
+
+    if (address.length < 5) {
+      return NextResponse.json(
+        { error: "Enter the user's complete address." },
+        { status: 400 },
+      );
+    }
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
@@ -252,6 +318,26 @@ export async function POST(request: NextRequest) {
     if (profileError) {
       return NextResponse.json(
         { error: `Unable to save the user's profile: ${profileError.message}` },
+        { status: 500 },
+      );
+    }
+
+    const { error: detailsError } = await adminClient
+      .from("user_profiles")
+      .upsert({
+        user_id: invitedUserId,
+        full_name: fullName,
+        mobile_number: mobileNumber,
+        birthday,
+        gender,
+        purok: address,
+        approval_status: "approved",
+        updated_at: new Date().toISOString(),
+      });
+
+    if (detailsError) {
+      return NextResponse.json(
+        { error: `Unable to save the user's details: ${detailsError.message}` },
         { status: 500 },
       );
     }

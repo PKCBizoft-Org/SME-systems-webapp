@@ -8,6 +8,7 @@
 import { type CSSProperties, FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { homeForUser } from "@/lib/homeForRole";
+import { StaffVerification } from "../components/StaffVerification";
 
 type RobotExpression =
   | "idle"
@@ -471,6 +472,8 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [pendingDestination, setPendingDestination] = useState("/clients");
   const [booting, setBooting] = useState(true);
   const [emailTouched, setEmailTouched] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -553,14 +556,51 @@ export default function LoginPage() {
       ? await homeForUser(supabase, signInData.user.id)
       : "/clients";
 
+    // Anyone with a staff role must pass the email code and secondary
+    // password before they are let in.
+    const statusResponse = await fetch("/api/security/status", {
+      headers: { Authorization: `Bearer ${signInData.session?.access_token}` },
+    });
+    const status = await statusResponse.json().catch(() => ({}));
+
+    if (statusResponse.ok && status.staff && !status.verified) {
+      setPendingDestination(destination);
+      setVerifying(true);
+      setRobotStatus("idle");
+      setLoading(false);
+      return;
+    }
+
+    finishLogin(destination);
+  };
+
+  const finishLogin = (destination: string) => {
     setRobotStatus("success");
     window.setTimeout(() => {
       window.location.href = destination;
     }, 850);
   };
 
+  const cancelVerification = async () => {
+    await supabase.auth.signOut();
+    setVerifying(false);
+    setPassword("");
+    setMessage("Sign-in cancelled.");
+  };
+
   return (
     <main className={`page ${booting ? "isBooting" : "isOnline"}`}>
+      {verifying ? (
+        <StaffVerification
+          email={email.trim()}
+          mode="login"
+          onVerified={() => {
+            setVerifying(false);
+            finishLogin(pendingDestination);
+          }}
+          onCancel={() => void cancelVerification()}
+        />
+      ) : null}
       <div className="background" aria-hidden="true">
         <div className="shape shapeOne" />
         <div className="shape shapeTwo" />

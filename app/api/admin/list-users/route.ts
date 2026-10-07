@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getCaller, emailVerifiedRecently } from "@/lib/serverSecurity";
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +56,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: "Your session is invalid or expired." },
         { status: 401 },
+      );
+    }
+
+    const verifiedCaller = await getCaller(request);
+    if (!verifiedCaller || !(await emailVerifiedRecently(verifiedCaller, "users", 10 * 60))) {
+      return NextResponse.json(
+        {
+          error: "Verification is required. Enter your secondary password.",
+          code: "otp_required",
+        },
+        { status: 403 },
       );
     }
 
