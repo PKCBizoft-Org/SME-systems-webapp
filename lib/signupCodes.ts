@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+﻿import type { SupabaseClient } from '@supabase/supabase-js'
 import { hashCode, newCode } from '@/lib/serverSecurity'
 import { sendCodeEmail } from '@/lib/mailer'
 
@@ -8,7 +8,12 @@ const RESEND_SECONDS = 30
 export type IssueResult = { ok: true } | { ok: false; status: number; error: string }
 
 // Creates a fresh signup code for the user and emails it. Throttled per user.
-export async function issueSignupCode(admin: SupabaseClient, userId: string, email: string): Promise<IssueResult> {
+export async function issueSignupCode(
+  admin: SupabaseClient,
+  userId: string,
+  email: string,
+  purpose: 'signup' | 'reset' = 'signup',
+): Promise<IssueResult> {
   const { data: existing } = await admin.from('signup_codes').select('created_at').eq('user_id', userId).maybeSingle()
 
   if (existing && Date.now() - new Date(existing.created_at).getTime() < RESEND_SECONDS * 1000) {
@@ -26,7 +31,7 @@ export async function issueSignupCode(admin: SupabaseClient, userId: string, ema
   if (error) return { ok: false, status: 500, error: 'Unable to create a verification code.' }
 
   try {
-    await sendCodeEmail(email, code, 'signup')
+    await sendCodeEmail(email, code, purpose)
   } catch (err) {
     console.error('Signup code email failed:', err)
     return { ok: false, status: 502, error: 'The verification email could not be sent. Please try again.' }

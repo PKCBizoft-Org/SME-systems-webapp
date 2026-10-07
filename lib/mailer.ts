@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+﻿import nodemailer from 'nodemailer'
 
 // Sends mail through any SMTP account (Gmail app password, Brevo, ...).
 // Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (and optionally SMTP_FROM).
@@ -6,7 +6,7 @@ export function smtpConfigured() {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
 }
 
-export async function sendCodeEmail(to: string, code: string, purpose: 'login' | 'users' | 'signup') {
+export async function sendCodeEmail(to: string, code: string, purpose: 'login' | 'users' | 'signup' | 'reset') {
   const port = Number(process.env.SMTP_PORT || 465)
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -16,7 +16,9 @@ export async function sendCodeEmail(to: string, code: string, purpose: 'login' |
   })
 
   const reason =
-    purpose === 'signup'
+    purpose === 'reset'
+      ? 'reset your PKC BIZOFT password'
+      : purpose === 'signup'
       ? 'verify your new PKC BIZOFT account'
       : purpose === 'login'
         ? 'sign in to PKC BIZOFT'
