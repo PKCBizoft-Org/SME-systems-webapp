@@ -42,6 +42,13 @@ export async function POST(request: NextRequest) {
     if (incoming[key] !== undefined && incoming[key] !== null) metadata[key] = incoming[key]
   }
 
+  // The mobile number doubles as the GCash / online payment number.
+  const rawMobile = typeof metadata.mobile_number === 'string' ? metadata.mobile_number.replace(/[\s-]/g, '') : ''
+  if (!/^(\+63|0)9\d{9}$/.test(rawMobile)) {
+    return NextResponse.json({ error: 'Enter a valid mobile number, like 09123456789.' }, { status: 400 })
+  }
+  metadata.mobile_number = rawMobile.startsWith('+63') ? `0${rawMobile.slice(3)}` : rawMobile
+
   let user = await findUserByEmail(admin, email)
 
   if (user?.email_confirmed_at) {
@@ -64,6 +71,10 @@ export async function POST(request: NextRequest) {
     }
     user = data.user
   }
+
+  // Make sure the number is saved even if the sign-up trigger ignored it.
+  await admin.from('user_profiles').update({ mobile_number: metadata.mobile_number }).eq('user_id', user.id)
+  await admin.from('clients').update({ mobile_number: metadata.mobile_number }).eq('user_id', user.id)
 
   const issued = await issueSignupCode(admin, user.id, email)
   if (!issued.ok) return NextResponse.json({ error: issued.error }, { status: issued.status })
