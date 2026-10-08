@@ -493,6 +493,9 @@ export default function LoginPage() {
     document.title = "PKC BIZOFT | Business Technology Platform";
 
     const bootTimer = window.setTimeout(() => {
+      if (new URLSearchParams(window.location.search).get("changed")) {
+        setMessage("Password updated. Sign in with your new password.");
+      }
       setBooting(false);
     }, 1350);
 
@@ -549,6 +552,24 @@ export default function LoginPage() {
       );
       setRobotStatus("error");
       setLoading(false);
+      return;
+    }
+
+    // A new account (or a re-issued password) starts with a temporary password:
+    // it expires after 24 hours and must be replaced before anything else.
+    const tempInfo = signInData.user?.app_metadata as
+      | { must_change_password?: boolean; temp_expires_at?: string }
+      | undefined;
+    if (tempInfo?.must_change_password) {
+      if (tempInfo.temp_expires_at && new Date(tempInfo.temp_expires_at) < new Date()) {
+        await supabase.auth.signOut();
+        setMessage("Your temporary password has expired. Ask your administrator to issue a new one.");
+        setLoginErrorMessage("That temporary password is no longer valid.");
+        setRobotStatus("error");
+        setLoading(false);
+        return;
+      }
+      window.location.assign("/set-password?first=1");
       return;
     }
 

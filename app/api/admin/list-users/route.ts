@@ -178,6 +178,12 @@ export async function GET(request: NextRequest) {
         profileRole: profile?.role || null,
         tenantRole: m.role,
         status: authUser?.last_sign_in_at ? "active" : "pending",
+        deactivated: Boolean(
+          (authUser as { banned_until?: string | null } | undefined)?.banned_until &&
+            new Date((authUser as { banned_until?: string }).banned_until as string) > new Date(),
+        ),
+        mustChangePassword: Boolean(authUser?.app_metadata?.must_change_password),
+        tempExpiresAt: (authUser?.app_metadata?.temp_expires_at as string | undefined) || null,
         invitedByEmail:
           invitedByEmailFromMetadata ||
           (invitedById ? invitedByEmailMap.get(invitedById) : null) ||

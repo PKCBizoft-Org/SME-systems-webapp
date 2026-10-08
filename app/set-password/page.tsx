@@ -111,6 +111,26 @@ export default function SetPasswordPage() {
       return
     }
 
+    // First sign-in with a temporary password: clear the flag on the server,
+    // then sign out so the normal login (and 2-step check for staff) runs with
+    // the new password.
+    const firstLogin = new URLSearchParams(window.location.search).get('first')
+    if (firstLogin) {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const done = await fetch('/api/auth/password-changed', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+      }).catch(() => null)
+      if (!done?.ok) {
+        setError('Your password was saved, but we could not finish the setup. Please try again.')
+        return
+      }
+      await supabase.auth.signOut()
+      setSuccess(true)
+      window.setTimeout(() => router.replace('/login?changed=1'), 1500)
+      return
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()

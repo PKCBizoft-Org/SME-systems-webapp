@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getCaller, emailVerifiedRecently } from "@/lib/serverSecurity";
+import { smtpConfigured } from "@/lib/mailer";
+import {
+  TEMP_PASSWORD_HOURS,
+  canonicalEmail,
+  generateTempPassword,
+  logUserAudit,
+  requireTenantAdmin,
+  roleLabel,
+  sendAdminNotice,
+  sendWelcomeEmail,
+  tempPasswordMetadata,
+} from "@/lib/userAdmin";
 
 type TenantRole = "admin" | "technician" | "customer" | "accounting" | "inventory";
 
@@ -12,367 +22,197 @@ const ALLOWED_ROLES: TenantRole[] = [
   "inventory",
 ];
 
+const bad = (error: string, status = 400) => NextResponse.json({ error }, { status });
+
+// Adds a user to the tenant. New people get an account with a generated
+// temporary password that is emailed from our own mailbox (not Supabase's).
+// They must choose their own password at first sign-in, and the temporary one
+// expires after TEMP_PASSWORD_HOURS.
 export async function POST(request: NextRequest) {
   try {
-    const authorization = request.headers.get("authorization");
+    const body = await request.json().catch(() => ({}));
+    const str = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
-    if (!authorization?.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { error: "Authentication is required." },
-        { status: 401 },
-      );
-    }
+    const email = str(body.email).toLowerCase();
+    const role = str(body.role);
+    const tenantId = str(body.tenantId);
+    const fullName = str(body.fullName);
+    const mobileNumber = str(body.mobileNumber).replace(/[\s-]/g, "");
+    const birthday = str(body.birthday);
+    const gender = str(body.gender);
+    const regionCode = str(body.regionCode);
+    const provinceCode = str(body.provinceCode);
+    const cityCode = str(body.cityCode);
+    const barangayCode = str(body.barangayCode);
+    const purok = str(body.purok);
 
-    const accessToken = authorization.slice(7).trim();
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json(
-        { error: "Supabase server configuration is missing." },
-        { status: 500 },
-      );
-    }
-
-    if (!serviceRoleKey) {
-      return NextResponse.json(
-        {
-          error:
-            "SUPABASE_SERVICE_ROLE_KEY is not set on the server. Add it to your environment variables (never expose it to the browser) to enable account creation.",
-        },
-        { status: 500 },
-      );
-    }
-
-    /*
-      This client uses the caller's own session, so it is subject
-      to the same RLS policies as the rest of the app — it can only
-      see what the requesting admin is actually allowed to see.
-    */
-    const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-
-    const { data: userData, error: userError } =
-      await callerClient.auth.getUser(accessToken);
-
-    if (userError || !userData.user) {
-      return NextResponse.json(
-        { error: "Your session is invalid or expired." },
-        { status: 401 },
-      );
-    }
-
-    /*
-      User management needs a recent email-code verification on this
-      session (the popup on the Users page), on top of the password login.
-    */
-    const verifiedCaller = await getCaller(request);
-    if (!verifiedCaller || !(await emailVerifiedRecently(verifiedCaller, "users", 10 * 60))) {
-      return NextResponse.json(
-        {
-          error: "Verification is required. Enter your secondary password.",
-          code: "otp_required",
-        },
-        { status: 403 },
-      );
-    }
-
-    const body = await request.json();
-
-    const email =
-      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const role = typeof body.role === "string" ? body.role : "";
-    const tenantId =
-      typeof body.tenantId === "string" ? body.tenantId.trim() : "";
-
-    const fullName =
-      typeof body.fullName === "string" ? body.fullName.trim() : "";
-    const mobileNumber =
-      typeof body.mobileNumber === "string"
-        ? body.mobileNumber.replace(/[\s-]/g, "")
-        : "";
-    const birthday =
-      typeof body.birthday === "string" ? body.birthday.trim() : "";
-    const gender = typeof body.gender === "string" ? body.gender.trim() : "";
-    const address = typeof body.address === "string" ? body.address.trim() : "";
+    const ctx = await requireTenantAdmin(request, tenantId);
+    if (ctx instanceof NextResponse) return ctx;
+    const { admin } = ctx;
 
     if (fullName.length < 3 || !fullName.includes(" ")) {
-      return NextResponse.json(
-        { error: "Enter the user's full name (first and last name)." },
-        { status: 400 },
-      );
+      return bad("Enter the user's full name (first and last name).");
     }
-
     if (!/^(\+63|0)9\d{9}$/.test(mobileNumber)) {
-      return NextResponse.json(
-        { error: "Enter a valid Philippine mobile number, like 09123456789." },
-        { status: 400 },
-      );
+      return bad("Enter a valid Philippine mobile number, like 09123456789.");
     }
-
     if (
       !/^\d{4}-\d{2}-\d{2}$/.test(birthday) ||
       Number.isNaN(Date.parse(birthday)) ||
       new Date(birthday) > new Date()
     ) {
-      return NextResponse.json(
-        { error: "Enter a valid birthday." },
-        { status: 400 },
-      );
+      return bad("Enter a valid birthday.");
     }
-
     if (!["Male", "Female", "Other"].includes(gender)) {
-      return NextResponse.json(
-        { error: "Choose the user's gender." },
-        { status: 400 },
-      );
+      return bad("Choose the user's gender.");
     }
-
-    if (address.length < 5) {
-      return NextResponse.json(
-        { error: "Enter the user's complete address." },
-        { status: 400 },
-      );
+    if (!regionCode || !cityCode || !barangayCode || !purok) {
+      return bad("Choose the user's region, city / municipality and barangay, and enter the Purok.");
     }
-
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        { error: "A valid email address is required." },
-        { status: 400 },
-      );
+      return bad("A valid email address is required.");
     }
-
     if (!ALLOWED_ROLES.includes(role as TenantRole)) {
-      return NextResponse.json(
-        {
-          error:
-            "Role must be admin, technician, accounting, inventory, or customer.",
-        },
-        { status: 400 },
+      return bad("Role must be admin, technician, accounting, inventory, or customer.");
+    }
+
+    // ---- existing account / look-alike check -------------------------------
+    const { data: usersPage, error: listError } = await admin.auth.admin.listUsers({ perPage: 200 });
+    if (listError) return bad("Unable to check for existing accounts.", 502);
+
+    const canonical = canonicalEmail(email);
+    const existing = usersPage.users.find((u) => u.email?.toLowerCase() === email);
+    const lookAlike = usersPage.users.find(
+      (u) => u.email && u.email.toLowerCase() !== email && canonicalEmail(u.email) === canonical,
+    );
+
+    if (!existing && lookAlike) {
+      return bad(
+        `This email looks the same as an existing account (${lookAlike.email}). Use that exact address, or ask the person which one they use.`,
+        409,
       );
     }
 
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: "A tenant is required." },
-        { status: 400 },
-      );
-    }
+    // ---- account -----------------------------------------------------------
+    let userId: string;
+    let tempPassword: string | null = null;
 
-    /*
-      Confirm the caller is actually an admin of the tenant they are
-      inviting into. This is the check that stops any authenticated
-      user from inviting themselves into a tenant they don't run.
-    */
-    const { data: callerMembership, error: callerMembershipError } =
-      await callerClient
-        .from("tenant_users")
-        .select("role")
-        .eq("user_id", userData.user.id)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
-
-    if (callerMembershipError) {
-      return NextResponse.json(
-        { error: "Unable to verify your admin access." },
-        { status: 500 },
-      );
-    }
-
-    if (!callerMembership || callerMembership.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only tenant admins can invite users." },
-        { status: 403 },
-      );
-    }
-
-    /*
-      Everything past this point uses the service-role key. It never
-      reaches the browser, and it is only reached after the admin
-      check above has already passed.
-    */
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    let invitedUserId: string | null = null;
-
-    /*
-      Without this, Supabase falls back to its default Site URL for
-      the invite link — which is how we previously ended up with
-      invite emails pointing at localhost. Using the request's own
-      origin means this works correctly whether called from
-      localhost during development or the live production domain,
-      with no manual URL configuration needed.
-    */
-    const redirectTo = new URL(
-      "/set-password",
-      request.nextUrl.origin,
-    ).toString();
-
-    const { data: inviteData, error: inviteError } =
-      await adminClient.auth.admin.inviteUserByEmail(email, {
-        redirectTo,
-        data: {
-          invited_by_email: userData.user.email,
-          invited_by_id: userData.user.id,
-        },
-      });
-
-    if (inviteError) {
-      const alreadyRegistered = inviteError.message
-        ?.toLowerCase()
-        .includes("already been registered");
-
-      if (!alreadyRegistered) {
-        return NextResponse.json(
-          { error: `Unable to invite this user: ${inviteError.message}` },
-          { status: 502 },
-        );
-      }
-
-      /*
-        The person already has an account (maybe from another tenant
-        or a prior invite). Look them up instead of failing, so an
-        admin can still grant them access to this tenant.
-
-        perPage is set to match the list-users route — without it,
-        Supabase's default page size could miss this user entirely
-        once the project has more than a handful of accounts, even
-        though they genuinely exist.
-      */
-      const { data: existingUsers, error: listError } =
-        await adminClient.auth.admin.listUsers({ perPage: 200 });
-
-      if (listError) {
-        return NextResponse.json(
-          { error: "Unable to look up the existing account." },
-          { status: 502 },
-        );
-      }
-
-      const existing = existingUsers.users.find(
-        (u) => u.email?.toLowerCase() === email,
-      );
-
-      if (!existing) {
-        return NextResponse.json(
-          {
-            error:
-              "This email is already registered, but the matching account could not be found.",
-          },
-          { status: 502 },
-        );
-      }
-
-      invitedUserId = existing.id;
+    if (existing) {
+      // Already has an account (another tenant or an earlier invite): just
+      // grant access here; their password is untouched.
+      userId = existing.id;
     } else {
-      invitedUserId = inviteData.user?.id ?? null;
-    }
-
-    if (!invitedUserId) {
-      return NextResponse.json(
-        { error: "Unable to determine the invited user's ID." },
-        { status: 502 },
-      );
-    }
-
-    /*
-      Mirror the two-table setup this project already uses:
-      profiles.role is the app-wide role, tenant_users links the
-      person to this specific tenant with a role scoped to it.
-
-      The app-wide role is only set when the profile is first
-      created. An existing user may already hold a different role
-      (and belong to other tenants), and one tenant's admin must not
-      be able to overwrite that — tenant-scoped access is granted
-      through tenant_users below.
-    */
-    const { data: existingProfile, error: profileLookupError } =
-      await adminClient
-        .from("profiles")
-        .select("id")
-        .eq("id", invitedUserId)
-        .maybeSingle();
-
-    if (profileLookupError) {
-      return NextResponse.json(
-        { error: `Unable to check the user's profile: ${profileLookupError.message}` },
-        { status: 500 },
-      );
-    }
-
-    const { error: profileError } = existingProfile
-      ? await adminClient
-          .from("profiles")
-          .update({ email })
-          .eq("id", invitedUserId)
-      : await adminClient
-          .from("profiles")
-          .insert({ id: invitedUserId, email, role });
-
-    if (profileError) {
-      return NextResponse.json(
-        { error: `Unable to save the user's profile: ${profileError.message}` },
-        { status: 500 },
-      );
-    }
-
-    const { error: detailsError } = await adminClient
-      .from("user_profiles")
-      .upsert({
-        user_id: invitedUserId,
-        full_name: fullName,
-        mobile_number: mobileNumber,
-        birthday,
-        gender,
-        purok: address,
-        approval_status: "approved",
-        updated_at: new Date().toISOString(),
+      tempPassword = generateTempPassword();
+      const { data: created, error: createError } = await admin.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: true,
+        app_metadata: tempPasswordMetadata(),
+        user_metadata: {
+          full_name: fullName,
+          invited_by_email: ctx.actorEmail,
+          invited_by_id: ctx.actorId,
+        },
       });
-
-    if (detailsError) {
-      return NextResponse.json(
-        { error: `Unable to save the user's details: ${detailsError.message}` },
-        { status: 500 },
-      );
+      if (createError || !created.user) {
+        return bad(`Unable to create this user: ${createError?.message || "unknown error"}`, 502);
+      }
+      userId = created.user.id;
     }
 
-    const { data: existingMembership } = await adminClient
+    // ---- profile rows ------------------------------------------------------
+    const { data: existingProfile, error: profileLookupError } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileLookupError) {
+      return bad(`Unable to check the user's profile: ${profileLookupError.message}`, 500);
+    }
+
+    // The app-wide role is only set when the profile is first created; an
+    // existing user's other-tenant access must not be overwritten here.
+    const { error: profileError } = existingProfile
+      ? await admin.from("profiles").update({ email }).eq("id", userId)
+      : await admin.from("profiles").insert({ id: userId, email, role });
+    if (profileError) {
+      return bad(`Unable to save the user's profile: ${profileError.message}`, 500);
+    }
+
+    const { error: detailsError } = await admin.from("user_profiles").upsert({
+      user_id: userId,
+      full_name: fullName,
+      mobile_number: mobileNumber,
+      birthday,
+      gender,
+      purok,
+      region_code: regionCode,
+      province_code: provinceCode || null,
+      city_municipality_code: cityCode,
+      barangay_code: barangayCode,
+      approval_status: "approved",
+      updated_at: new Date().toISOString(),
+    });
+    if (detailsError) {
+      return bad(`Unable to save the user's details: ${detailsError.message}`, 500);
+    }
+
+    const { data: membership } = await admin
       .from("tenant_users")
-      .select("user_id")
-      .eq("user_id", invitedUserId)
+      .select("role")
+      .eq("user_id", userId)
       .eq("tenant_id", tenantId)
       .maybeSingle();
 
-    if (existingMembership) {
-      const { error: updateError } = await adminClient
+    let previousRole: string | null = null;
+    if (membership) {
+      previousRole = membership.role as string;
+      const { error: updateError } = await admin
         .from("tenant_users")
         .update({ role })
-        .eq("user_id", invitedUserId)
+        .eq("user_id", userId)
         .eq("tenant_id", tenantId);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: `Unable to update tenant access: ${updateError.message}` },
-          { status: 500 },
-        );
-      }
+      if (updateError) return bad(`Unable to update tenant access: ${updateError.message}`, 500);
     } else {
-      const { error: insertError } = await adminClient
+      const { error: insertError } = await admin
         .from("tenant_users")
-        .insert({ user_id: invitedUserId, tenant_id: tenantId, role });
+        .insert({ user_id: userId, tenant_id: tenantId, role });
+      if (insertError) return bad(`Unable to grant tenant access: ${insertError.message}`, 500);
+    }
 
-      if (insertError) {
-        return NextResponse.json(
-          { error: `Unable to grant tenant access: ${insertError.message}` },
-          { status: 500 },
-        );
+    // ---- email, audit, notice ---------------------------------------------
+    let emailSent = false;
+    if (tempPassword && smtpConfigured()) {
+      try {
+        await sendWelcomeEmail(email, {
+          name: fullName,
+          role,
+          password: tempPassword,
+          loginUrl: new URL("/login", request.nextUrl.origin).toString(),
+          hours: TEMP_PASSWORD_HOURS,
+        });
+        emailSent = true;
+      } catch (error) {
+        console.error("Welcome email failed:", error);
       }
+    }
+
+    const roleChanged = previousRole !== null && previousRole !== role;
+    await logUserAudit(ctx, {
+      targetUserId: userId,
+      targetEmail: email,
+      action: roleChanged ? "role_changed" : existing ? "access_granted" : "user_added",
+      detail: roleChanged ? `${roleLabel(previousRole!)} -> ${roleLabel(role)}` : roleLabel(role),
+    });
+
+    if (roleChanged) {
+      await sendAdminNotice(ctx, "A user's role was changed", [
+        `${email} changed from ${roleLabel(previousRole!)} to ${roleLabel(role)}.`,
+      ]);
+    } else if (!previousRole) {
+      await sendAdminNotice(ctx, "A new user was added", [
+        `${fullName} (${email}) was added as ${roleLabel(role)}.`,
+      ]);
     }
 
     return NextResponse.json({
@@ -380,13 +220,15 @@ export async function POST(request: NextRequest) {
       email,
       role,
       tenantId,
-      userId: invitedUserId,
+      userId,
+      newAccount: Boolean(tempPassword),
+      emailSent,
+      // Only handed back when the email could not be sent, so the admin can
+      // pass it on securely instead of leaving the new user locked out.
+      tempPassword: tempPassword && !emailSent ? tempPassword : undefined,
     });
   } catch (error) {
     console.error("Invite user route error:", error);
-    return NextResponse.json(
-      { error: "An unexpected error occurred while inviting this user." },
-      { status: 500 },
-    );
+    return bad("An unexpected error occurred while adding this user.", 500);
   }
 }

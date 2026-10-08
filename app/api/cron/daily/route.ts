@@ -59,5 +59,24 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, billing, remindersSent: sent, remindersFailed: failed })
+  // Temporary passwords nobody used within 24 hours stop working: block those
+  // accounts until an admin re-issues a password (that also unblocks them).
+  let expiredBlocked = 0
+  try {
+    const { data: page } = await admin.auth.admin.listUsers({ perPage: 200 })
+    for (const user of page?.users || []) {
+      const meta = user.app_metadata as { must_change_password?: boolean; temp_expires_at?: string } | undefined
+      if (!meta?.must_change_password || !meta.temp_expires_at) continue
+      if (new Date(meta.temp_expires_at) >= new Date()) continue
+      const bannedUntil = (user as { banned_until?: string | null }).banned_until
+      if (bannedUntil && new Date(bannedUntil) > new Date()) continue
+      const { error } = await admin.auth.admin.updateUserById(user.id, { ban_duration: '876000h' })
+      if (error) console.error('Blocking expired temporary password failed:', error.message)
+      else expiredBlocked += 1
+    }
+  } catch (err) {
+    console.error('Temporary password sweep failed:', err)
+  }
+
+  return NextResponse.json({ ok: true, billing, remindersSent: sent, remindersFailed: failed, expiredBlocked })
 }
