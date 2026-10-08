@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
+import { passwordWarning } from '@/lib/passwordStrength'
 import styles from './staff-verification.module.css'
 
 type Props = {
@@ -219,6 +220,12 @@ export function StaffVerification({ email, mode, onVerified, onCancel }: Props) 
                 value={confirm}
                 onChange={(event) => setConfirm(event.target.value)}
               />
+            ) : null}
+
+            {needsSetup && passwordWarning(password, email) ? (
+              <div className={styles.error} role="status" style={{ color: '#b45309', borderColor: '#f59e0b' }}>
+                {passwordWarning(password, email)} You can still use it, but a harder one is safer.
+              </div>
             ) : null}
 
             {error ? <div className={styles.error} role="alert">{error}</div> : null}

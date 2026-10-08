@@ -43,6 +43,8 @@ type RequestInfo = {
   requested_plan: string | null;
   requested_amount: number | null;
   status: string | null;
+  installation_location_type: string | null;
+  installation_area: string | null;
 };
 
 type Filter = "pending" | "verified" | "rejected" | "all";
@@ -113,7 +115,7 @@ export default function PaymentVerificationPage() {
           ? supabase.from("clients").select("id, customer_name, account_id, plan_name").in("id", clientIds)
           : Promise.resolve({ data: [], error: null }),
         requestIds.length
-          ? supabase.from("service_requests").select("id, requested_plan, requested_amount, status").in("id", requestIds)
+          ? supabase.from("service_requests").select("id, requested_plan, requested_amount, status, installation_location_type, installation_area").in("id", requestIds)
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (clientResult.error) throw new Error(clientResult.error.message);
@@ -460,6 +462,15 @@ export default function PaymentVerificationPage() {
                         {mismatch && <em> (plan is {formatPeso(request?.requested_amount)})</em>}
                       </dd>
                     </div>
+                    {request?.installation_area && (
+                      <div>
+                        <dt>Install at</dt>
+                        <dd>
+                          {request.installation_area}
+                          {request.installation_location_type === "other" && <em> (different from account address)</em>}
+                        </dd>
+                      </div>
+                    )}
                     <div>
                       <dt>Method</dt>
                       <dd>{s.payment_method || "—"}</dd>
