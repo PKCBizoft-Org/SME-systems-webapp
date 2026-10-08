@@ -429,8 +429,8 @@ export default function UsersPage() {
             </div>
             <h1>Users</h1>
             <p className="subtitle">
-              Invite staff and manage who has access to this tenant&apos;s data.
-              Every invite is scoped to this tenant only.
+              Add staff and manage who has access to this tenant&apos;s data.
+              Everyone you add is scoped to this tenant only.
             </p>
           </div>
 

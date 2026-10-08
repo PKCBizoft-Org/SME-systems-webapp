@@ -162,7 +162,9 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const users = (memberships || []).map((m) => {
+    // A membership whose login account was deleted (for example in the
+    // Supabase dashboard) is a leftover: don't list it, it can't be managed.
+    const users = (memberships || []).filter((m) => authUserMap.has(m.user_id)).map((m) => {
       const profile = profileMap.get(m.user_id);
       const authUser = authUserMap.get(m.user_id);
 
