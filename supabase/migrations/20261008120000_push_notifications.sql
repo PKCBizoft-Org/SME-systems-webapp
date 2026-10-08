@@ -98,3 +98,6 @@ drop trigger if exists payment_submission_push_trigger on public.payment_submiss
 create trigger payment_submission_push_trigger
   after update of status on public.payment_submissions
   for each row execute function public.notify_payment_result();
+
+-- Trigger functions are never meant to be called through the API.
+revoke execute on function public.notify_payment_result() from public, anon, authenticated;
