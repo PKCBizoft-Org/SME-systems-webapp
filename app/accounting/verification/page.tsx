@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
 import { StaffHeader } from "../../components/StaffHeader";
-import { notifyBadgesChanged } from "../../components/PendingPaymentsBadge";
+import { notifyBadgesChanged } from "../../components/LiveBadge";
 import { PkcLoader } from "../../components/PkcLoader";
 import styles from "./verification.module.css";
 

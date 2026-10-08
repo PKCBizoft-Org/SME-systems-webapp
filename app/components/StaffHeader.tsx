@@ -1,14 +1,16 @@
 import Link from "next/link";
 import styles from "./staff-chrome.module.css";
+import { LowRatingsBadge } from "./LowRatingsBadge";
 import { PendingPaymentsBadge } from "./PendingPaymentsBadge";
 import { StaffGuard } from "./StaffGuard";
 
-export type StaffSection = "clients" | "inventory" | "accounting" | "users";
+export type StaffSection = "clients" | "inventory" | "accounting" | "ratings" | "users";
 
 const SECTIONS: { key: StaffSection; label: string; href: string; roles: string[] }[] = [
   { key: "clients", label: "Clients", href: "/clients", roles: ["admin", "technician", "inventory", "accounting"] },
   { key: "inventory", label: "Inventory", href: "/inventory", roles: ["admin", "inventory"] },
   { key: "accounting", label: "Accounting", href: "/accounting", roles: ["admin", "accounting"] },
+  { key: "ratings", label: "Ratings", href: "/ratings", roles: ["admin", "accounting"] },
   { key: "users", label: "Users", href: "/users", roles: ["admin"] },
 ];
 
@@ -42,6 +44,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
           >
             {section.label}
             {section.key === "accounting" ? <PendingPaymentsBadge /> : null}
+            {section.key === "ratings" ? <LowRatingsBadge /> : null}
           </Link>
         ))}
       </nav>

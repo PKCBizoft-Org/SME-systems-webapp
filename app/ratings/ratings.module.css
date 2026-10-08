@@ -1,0 +1,262 @@
+.page {
+  min-height: 100vh;
+  background: #050d14;
+  color: #eaf7ff;
+}
+
+.shell {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px clamp(14px, 3vw, 34px) 60px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.hero p {
+  margin: 0;
+  max-width: 620px;
+  color: #8fa8b8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.btn,
+.tab,
+.tabActive {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+  border: 1px solid rgba(76, 232, 255, 0.25);
+  background: rgba(76, 232, 255, 0.06);
+  color: #eaf7ff;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tabActive {
+  background: rgba(76, 232, 255, 0.2);
+  border-color: #4ce8ff;
+}
+
+.tab span,
+.tabActive span {
+  margin-left: 6px;
+  opacity: 0.7;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.notice {
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 92, 122, 0.4);
+  background: rgba(255, 92, 122, 0.1);
+  color: #ff9db0;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.panel {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(76, 232, 255, 0.14);
+  background: rgba(10, 24, 34, 0.8);
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6f8a9b;
+  font-weight: 700;
+}
+
+.big {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bigSub {
+  margin-top: 6px;
+  color: #8fa8b8;
+  font-size: 13px;
+}
+
+.bars {
+  display: grid;
+  gap: 7px;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #8fa8b8;
+}
+
+.barTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #4ce8ff;
+}
+
+.barFillLow {
+  height: 100%;
+  border-radius: 999px;
+  background: #ff5c7a;
+}
+
+.techs {
+  margin-bottom: 18px;
+}
+
+.techRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(76, 232, 255, 0.1);
+  font-size: 14px;
+}
+
+.techRow:last-child {
+  border-bottom: 0;
+}
+
+.techRow small {
+  color: #8fa8b8;
+  margin-left: 6px;
+}
+
+.stars {
+  color: #ffc857;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.starsOff {
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: #8fa8b8;
+  border: 1px dashed rgba(76, 232, 255, 0.2);
+  border-radius: 14px;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+}
+
+.card {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(76, 232, 255, 0.14);
+  background: rgba(10, 24, 34, 0.8);
+}
+
+.cardLow {
+  border-color: rgba(255, 92, 122, 0.45);
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.cardTop strong {
+  display: block;
+  font-size: 15px;
+}
+
+.cardTop small {
+  color: #8fa8b8;
+}
+
+.comment {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #d5e8f3;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.noComment {
+  margin: 8px 0 0;
+  color: #6f8a9b;
+  font-size: 13px;
+}
+
+.cardFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  color: #8fa8b8;
+  font-size: 12px;
+}
+
+.reviewed {
+  color: #8bf0bd;
+}
+
+@media (max-width: 720px) {
+  .hero {
+    flex-direction: column;
+  }
+  .summary {
+    grid-template-columns: 1fr;
+  }
+}
