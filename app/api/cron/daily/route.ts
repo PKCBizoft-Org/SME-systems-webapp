@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminClient } from '@/lib/serverSecurity'
 import { smtpConfigured } from '@/lib/mailer'
-import { sendReminderEmail } from '@/lib/notifyEmail'
+import { sendMail, sendReminderEmail } from '@/lib/notifyEmail'
 
 // Called once a day by Vercel Cron (see vercel.json). Vercel sends
 // "Authorization: Bearer <CRON_SECRET>" when the CRON_SECRET variable is set.
@@ -78,5 +78,36 @@ export async function GET(request: NextRequest) {
     console.error('Temporary password sweep failed:', err)
   }
 
-  return NextResponse.json({ ok: true, billing, remindersSent: sent, remindersFailed: failed, expiredBlocked })
+  // Health check: tell an admin by email when something needs a human, so a
+  // quiet failure (no bills, stuck payments) is never discovered by a customer.
+  const problems: string[] = []
+  if (billingError) problems.push(`The nightly billing run failed: ${billingError.message}`)
+  if (failed > 0) problems.push(`${failed} reminder email(s) could not be sent.`)
+  if (!smtpConfigured()) problems.push('Email (SMTP) is not configured, so customers get no reminders or receipts.')
+
+  const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString()
+  const { count: stuck } = await admin
+    .from('payment_submissions')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'Pending')
+    .lt('created_at', twoDaysAgo)
+  if (stuck) problems.push(`${stuck} customer payment(s) have waited over 2 days in Payment verification.`)
+
+  let alerted = false
+  const alertTo = process.env.ALERT_EMAIL || process.env.SMTP_USER
+  if (problems.length > 0 && alertTo && smtpConfigured()) {
+    try {
+      await sendMail({
+        to: alertTo,
+        subject: `PKC BIZOFT daily check: ${problems.length} thing${problems.length === 1 ? '' : 's'} need attention`,
+        text: problems.map((p) => `- ${p}`).join('\n'),
+        html: `<p>The daily check found:</p><ul>${problems.map((p) => `<li>${p.replace(/</g, '&lt;')}</li>`).join('')}</ul><p>Open the website's Accounting section to deal with them.</p>`,
+      })
+      alerted = true
+    } catch (err) {
+      console.error('Health alert email failed:', err)
+    }
+  }
+
+  return NextResponse.json({ ok: problems.length === 0, problems, alerted, billing, remindersSent: sent, remindersFailed: failed, expiredBlocked })
 }

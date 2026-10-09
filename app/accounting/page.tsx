@@ -478,6 +478,14 @@ export default function AccountingPage() {
             <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
               ✓ Payment verification
             </Link>
+            <Link href="/accounting/collections" className="refresh" style={{ textDecoration: "none" }}>
+              ▥ Collections
+            </Link>
+            {staffRoles.includes("admin") && (
+              <Link href="/accounting/plans" className="refresh" style={{ textDecoration: "none" }}>
+                ₱ Plans &amp; prices
+              </Link>
+            )}
             <Link href="/accounting/referrals" className="refresh" style={{ textDecoration: "none" }}>
               ★ Referral payouts
               <PendingWithdrawalsBadge />
