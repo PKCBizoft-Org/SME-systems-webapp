@@ -3,6 +3,7 @@ import { smtpConfigured } from "@/lib/mailer";
 import {
   TEMP_PASSWORD_HOURS,
   generateTempPassword,
+  siteUrl,
   logUserAudit,
   requireTenantAdmin,
   sendAdminNotice,
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
           name: details?.full_name || email,
           role: membership.role as string,
           password: tempPassword,
-          loginUrl: new URL("/login", request.nextUrl.origin).toString(),
+          origin: siteUrl(),
           hours: TEMP_PASSWORD_HOURS,
           reissued: true,
         });

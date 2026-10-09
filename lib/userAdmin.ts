@@ -7,6 +7,13 @@ import { sendMail } from '@/lib/notifyEmail'
 
 export const TEMP_PASSWORD_HOURS = 24
 
+// Links inside emails must work on the recipient's phone, so they use the
+// public website address, never the address the admin happened to be on
+// (that would be localhost while testing). Override with PUBLIC_SITE_URL.
+export function siteUrl() {
+  return (process.env.PUBLIC_SITE_URL || 'https://sme-systems-webapp.vercel.app').replace(/\/+$/, '')
+}
+
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Admin',
   technician: 'Technician',
@@ -143,8 +150,17 @@ function shell(title: string, body: string) {
 
 export async function sendWelcomeEmail(
   to: string,
-  d: { name: string; role: string; password: string; loginUrl: string; hours: number; reissued?: boolean },
+  d: { name: string; role: string; password: string; origin: string; hours: number; reissued?: boolean },
 ) {
+  // Technicians (and customers) work in the mobile app: the button opens it,
+  // or sends them to the download page if it is not installed. Everyone else
+  // (admin, accounting, inventory) signs in on the website.
+  const usesApp = d.role === 'technician' || d.role === 'customer'
+  const buttonUrl = new URL(usesApp ? '/open-app' : '/login', d.origin).toString()
+  const buttonLabel = usesApp ? 'Open the PKC BIZOFT app' : 'Sign in on the website'
+  const extra = usesApp
+    ? `<p style="color:#8fa8b8;font-size:12px;line-height:1.6;margin:14px 0 0">Don&#39;t have the app yet? <a href="${esc(new URL('/download', d.origin).toString())}" style="color:#22d3ee">Download it here</a> (Android), install it, then sign in with the details above.</p>`
+    : ''
   const title = d.reissued ? 'Your temporary password was reset' : 'Your PKC BIZOFT staff account is ready'
   const html = shell(
     title,
@@ -156,13 +172,14 @@ export async function sendWelcomeEmail(
        <tr><td style="padding:12px 14px;color:#8fa8b8;font-size:12px;border-top:1px solid #17475c">TEMPORARY PASSWORD</td><td style="padding:12px 14px;color:#22d3ee;font-size:16px;font-weight:700;font-family:Consolas,monospace;text-align:right;border-top:1px solid #17475c">${esc(d.password)}</td></tr>
      </table>
      <p style="color:#8fa8b8;font-size:13px;line-height:1.6;margin:14px 0">You will be asked to choose your own password the first time you sign in. This temporary password expires in ${d.hours} hours.</p>
-     <a href="${esc(d.loginUrl)}" style="display:inline-block;background:#22d3ee;color:#00141b;font-weight:800;text-decoration:none;padding:12px 20px;border-radius:10px;font-size:14px">Sign in</a>
+     <a href="${esc(buttonUrl)}" style="display:inline-block;background:#22d3ee;color:#00141b;font-weight:800;text-decoration:none;padding:12px 20px;border-radius:10px;font-size:14px">${buttonLabel}</a>
+     ${extra}
      <p style="color:#5f758a;font-size:11px;margin:18px 0 0">If you did not expect this email, ignore it and tell your administrator.</p>`,
   )
   await sendMail({
     to,
     subject: d.reissued ? 'Your PKC BIZOFT temporary password' : 'Your PKC BIZOFT staff account',
-    text: `Hi ${d.name},\n\n${d.reissued ? 'Your temporary password was reset.' : `You were added to PKC BIZOFT as ${roleLabel(d.role)}.`}\n\nEmail: ${to}\nTemporary password: ${d.password}\n\nYou must choose your own password at first sign-in. This temporary password expires in ${d.hours} hours.\nSign in: ${d.loginUrl}\n`,
+    text: `Hi ${d.name},\n\n${d.reissued ? 'Your temporary password was reset.' : `You were added to PKC BIZOFT as ${roleLabel(d.role)}.`}\n\nEmail: ${to}\nTemporary password: ${d.password}\n\nYou must choose your own password at first sign-in. This temporary password expires in ${d.hours} hours.\n${usesApp ? `Open the app: ${buttonUrl}\nDownload the app: ${new URL('/download', d.origin).toString()}` : `Sign in: ${buttonUrl}`}\n`,
     html,
   })
 }

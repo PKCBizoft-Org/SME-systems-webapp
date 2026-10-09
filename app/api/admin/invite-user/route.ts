@@ -4,6 +4,7 @@ import {
   TEMP_PASSWORD_HOURS,
   canonicalEmail,
   generateTempPassword,
+  siteUrl,
   logUserAudit,
   requireTenantAdmin,
   roleLabel,
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
           name: fullName,
           role,
           password: tempPassword,
-          loginUrl: new URL("/login", request.nextUrl.origin).toString(),
+          origin: siteUrl(),
           hours: TEMP_PASSWORD_HOURS,
         });
         emailSent = true;
