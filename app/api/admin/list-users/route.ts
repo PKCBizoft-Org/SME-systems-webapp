@@ -146,6 +146,40 @@ export async function GET(request: NextRequest) {
     );
     const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
+    const { data: staffDetails } = await adminClient
+      .from("user_profiles")
+      .select("user_id, full_name, employee_number, mobile_number, purok, region_code, province_code, city_municipality_code, barangay_code")
+      .in("user_id", userIds);
+    const detailsMap = new Map((staffDetails || []).map((d) => [d.user_id, d]));
+
+    // Readable addresses: look up the names for the saved location codes.
+    const codes = new Set<string>();
+    (staffDetails || []).forEach((d) => {
+      [d.region_code, d.province_code, d.city_municipality_code, d.barangay_code].forEach((c) => {
+        if (c) codes.add(c as string);
+      });
+    });
+    const nameByCode = new Map<string, string>();
+    if (codes.size > 0) {
+      const { data: places } = await adminClient
+        .from("ph_locations")
+        .select("code, name")
+        .in("code", [...codes]);
+      (places || []).forEach((pl) => nameByCode.set(pl.code as string, pl.name as string));
+    }
+    const addressOf = (d: Record<string, unknown> | undefined) => {
+      if (!d) return null;
+      const purok = String(d.purok || "").trim().replace(/^purok\s*/i, "");
+      const parts = [
+        nameByCode.get(d.barangay_code as string),
+        nameByCode.get(d.city_municipality_code as string),
+        nameByCode.get(d.province_code as string),
+        nameByCode.get(d.region_code as string),
+        purok ? `Purok ${purok}` : null,
+      ].filter(Boolean);
+      return parts.length ? parts.join(", ") : null;
+    };
+
     const invitedByIds = Array.from(
       new Set(
         (memberships || [])
@@ -180,6 +214,10 @@ export async function GET(request: NextRequest) {
         profileRole: profile?.role || null,
         tenantRole: m.role,
         status: authUser?.last_sign_in_at ? "active" : "pending",
+        fullName: detailsMap.get(m.user_id)?.full_name || null,
+        employeeNumber: detailsMap.get(m.user_id)?.employee_number || null,
+        mobileNumber: detailsMap.get(m.user_id)?.mobile_number || null,
+        addressText: addressOf(detailsMap.get(m.user_id)),
         deactivated: Boolean(
           (authUser as { banned_until?: string | null } | undefined)?.banned_until &&
             new Date((authUser as { banned_until?: string }).banned_until as string) > new Date(),

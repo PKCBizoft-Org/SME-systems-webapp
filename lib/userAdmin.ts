@@ -150,7 +150,15 @@ function shell(title: string, body: string) {
 
 export async function sendWelcomeEmail(
   to: string,
-  d: { name: string; role: string; password: string; origin: string; hours: number; reissued?: boolean },
+  d: {
+    name: string
+    role: string
+    employeeNumber?: string | null
+    password: string
+    origin: string
+    hours: number
+    reissued?: boolean
+  },
 ) {
   // Technicians (and customers) work in the mobile app: the button opens it,
   // or sends them to the download page if it is not installed. Everyone else
@@ -168,7 +176,12 @@ export async function sendWelcomeEmail(
       d.reissued ? 'have a new temporary password' : `were added as <b style="color:#eaf7ff">${esc(roleLabel(d.role))}</b>`
     }. Sign in with these details:</p>
      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061a25;border:1px solid #17475c;border-radius:12px">
-       <tr><td style="padding:12px 14px;color:#8fa8b8;font-size:12px">EMAIL</td><td style="padding:12px 14px;color:#eaf7ff;font-size:14px;text-align:right">${esc(to)}</td></tr>
+       ${
+         d.employeeNumber
+           ? `<tr><td style="padding:12px 14px;color:#8fa8b8;font-size:12px">EMPLOYEE NO.</td><td style="padding:12px 14px;color:#eaf7ff;font-size:14px;font-weight:700;text-align:right">${esc(d.employeeNumber)}</td></tr>`
+           : ''
+       }
+       <tr><td style="padding:12px 14px;color:#8fa8b8;font-size:12px${d.employeeNumber ? ';border-top:1px solid #17475c' : ''}">EMAIL</td><td style="padding:12px 14px;color:#eaf7ff;font-size:14px;text-align:right${d.employeeNumber ? ';border-top:1px solid #17475c' : ''}">${esc(to)}</td></tr>
        <tr><td style="padding:12px 14px;color:#8fa8b8;font-size:12px;border-top:1px solid #17475c">TEMPORARY PASSWORD</td><td style="padding:12px 14px;color:#22d3ee;font-size:16px;font-weight:700;font-family:Consolas,monospace;text-align:right;border-top:1px solid #17475c">${esc(d.password)}</td></tr>
      </table>
      <p style="color:#8fa8b8;font-size:13px;line-height:1.6;margin:14px 0">You will be asked to choose your own password the first time you sign in. This temporary password expires in ${d.hours} hours.</p>
@@ -179,7 +192,7 @@ export async function sendWelcomeEmail(
   await sendMail({
     to,
     subject: d.reissued ? 'Your PKC BIZOFT temporary password' : 'Your PKC BIZOFT staff account',
-    text: `Hi ${d.name},\n\n${d.reissued ? 'Your temporary password was reset.' : `You were added to PKC BIZOFT as ${roleLabel(d.role)}.`}\n\nEmail: ${to}\nTemporary password: ${d.password}\n\nYou must choose your own password at first sign-in. This temporary password expires in ${d.hours} hours.\n${usesApp ? `Open the app: ${buttonUrl}\nDownload the app: ${new URL('/download', d.origin).toString()}` : `Sign in: ${buttonUrl}`}\n`,
+    text: `Hi ${d.name},\n\n${d.reissued ? 'Your temporary password was reset.' : `You were added to PKC BIZOFT as ${roleLabel(d.role)}.`}\n\n${d.employeeNumber ? `Employee no.: ${d.employeeNumber}\n` : ''}Email: ${to}\nTemporary password: ${d.password}\n\nYou must choose your own password at first sign-in. This temporary password expires in ${d.hours} hours.\n${usesApp ? `Open the app: ${buttonUrl}\nDownload the app: ${new URL('/download', d.origin).toString()}` : `Sign in: ${buttonUrl}`}\n`,
     html,
   })
 }

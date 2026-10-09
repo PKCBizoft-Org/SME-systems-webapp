@@ -22,6 +22,10 @@ type UserRow = {
   status: 'active' | 'pending' | 'deactivated' | 'expired'
   invitedByEmail: string | null
   mustChangePassword: boolean
+  fullName: string | null
+  employeeNumber: string | null
+  mobileNumber: string | null
+  addressText: string | null
 }
 
 type AuditRow = {
@@ -48,6 +52,7 @@ const AUDIT_LABEL: Record<string, string> = {
   password_reissued: 'Re-issued temporary password',
   user_deactivated: 'Deactivated',
   user_reactivated: 'Reactivated',
+  profile_updated: 'Updated profile',
 }
 
 function statusOf(u: Record<string, unknown>): UserRow['status'] {
@@ -96,6 +101,12 @@ export default function UsersPage() {
   const [locationReset, setLocationReset] = useState(0)
   const [inviting, setInviting] = useState(false)
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
+  const [editUser, setEditUser] = useState<UserRow | null>(null)
+  const [editMobile, setEditMobile] = useState('')
+  const [editChangeAddress, setEditChangeAddress] = useState(false)
+  const [editLocation, setEditLocation] = useState<LocationValue>(EMPTY_LOCATION)
+  const [editError, setEditError] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
   const [rowNotice, setRowNotice] = useState('')
   const [handoverPassword, setHandoverPassword] = useState<{ email: string; password: string } | null>(null)
   const [audit, setAudit] = useState<AuditRow[]>([])
@@ -142,6 +153,10 @@ export default function UsersPage() {
           status: statusOf(u as Record<string, unknown>),
           invitedByEmail: u.invitedByEmail || null,
           mustChangePassword: Boolean((u as Record<string, unknown>).mustChangePassword),
+          fullName: ((u as Record<string, unknown>).fullName as string | null) || null,
+          employeeNumber: ((u as Record<string, unknown>).employeeNumber as string | null) || null,
+          mobileNumber: ((u as Record<string, unknown>).mobileNumber as string | null) || null,
+          addressText: ((u as Record<string, unknown>).addressText as string | null) || null,
         }))
 
         setUsers(rows)
@@ -272,6 +287,78 @@ export default function UsersPage() {
       setListError(err instanceof Error ? err.message : 'That action could not be completed.')
     } finally {
       setBusyUserId(null)
+    }
+  }
+
+  function openEdit(user: UserRow) {
+    setEditUser(user)
+    setEditMobile(user.mobileNumber || '')
+    setEditChangeAddress(false)
+    setEditLocation(EMPTY_LOCATION)
+    setEditError('')
+  }
+
+  async function saveEdit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!editUser || !tenantId) return
+    setEditError('')
+
+    const mobile = editMobile.replace(/[\s-]/g, '')
+    const mobileChanged = mobile !== (editUser.mobileNumber || '')
+
+    if (mobileChanged && !/^(\+63|0)9\d{9}$/.test(mobile)) {
+      setEditError('Enter a valid mobile number, like 09123456789.')
+      return
+    }
+    if (editChangeAddress && (!editLocation.complete || !editLocation.purok)) {
+      setEditError('Choose the region, province, city / municipality and barangay, and enter the Purok.')
+      return
+    }
+    if (!mobileChanged && !editChangeAddress) {
+      setEditError('Change the mobile number or the address first.')
+      return
+    }
+
+    setEditSaving(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const response = await fetch('/api/admin/staff-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionData.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          tenantId,
+          userId: editUser.id,
+          ...(mobileChanged ? { mobileNumber: mobile } : {}),
+          ...(editChangeAddress
+            ? {
+                address: {
+                  regionCode: editLocation.regionCode,
+                  provinceCode: editLocation.provinceCode || null,
+                  cityCode: editLocation.cityCode,
+                  barangayCode: editLocation.barangayCode,
+                  purok: editLocation.purok,
+                },
+              }
+            : {}),
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        if (result?.code === 'otp_required') setCodeVerified(false)
+        setEditError(result?.error || 'Unable to save.')
+        return
+      }
+      setEditUser(null)
+      setRowNotice('Profile updated.')
+      await loadUsers(tenantId)
+      await loadAudit(tenantId)
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Unable to save.')
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -478,7 +565,14 @@ export default function UsersPage() {
           ) : (
             users.map((u) => (
               <div className="tableRow" key={u.id}>
-                <span className="cellEmail">{u.email}</span>
+                <span className="cellEmail">
+                  {u.email}
+                  {(u.employeeNumber || u.fullName) && (
+                    <small className="cellSub">
+                      {[u.employeeNumber, u.fullName].filter(Boolean).join(' · ')}
+                    </small>
+                  )}
+                </span>
                 <span className="cellRole">{u.profileRole || '—'}</span>
                 <span className={`roleTag roleTag-${u.tenantRole}`}>
                   {u.tenantRole}
@@ -491,6 +585,13 @@ export default function UsersPage() {
                   {u.invitedByEmail || '—'}
                 </span>
                 <span className="rowActions">
+                  <button
+                    type="button"
+                    className="miniButton"
+                    onClick={() => openEdit(u)}
+                  >
+                    Edit
+                  </button>
                   <button
                     type="button"
                     className="miniButton"
@@ -553,6 +654,64 @@ export default function UsersPage() {
             ))}
         </div>
       </section>
+
+      {editUser && (
+        <div className="modalBackdrop" role="presentation" onClick={() => setEditUser(null)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit staff profile"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button type="button" className="modalClose" aria-label="Close" onClick={() => setEditUser(null)}>
+              ×
+            </button>
+            <h2>Edit profile</h2>
+            <p className="modalSubtitle">
+              {editUser.email}
+              {editUser.employeeNumber ? ` · ${editUser.employeeNumber}` : ''}. Only the mobile number and
+              address can be changed here.
+            </p>
+
+            <form onSubmit={saveEdit} className="inviteForm">
+              <label>
+                <span>Mobile number</span>
+                <input
+                  type="tel"
+                  value={editMobile}
+                  onChange={(e) => setEditMobile(e.target.value)}
+                  placeholder="09123456789"
+                  autoComplete="off"
+                />
+              </label>
+
+              <div className="rolePreview">
+                <b>Current address:</b> {editUser.addressText || 'Not set'}
+              </div>
+
+              {editChangeAddress ? (
+                <>
+                  <LocationFields onChange={setEditLocation} />
+                  <button type="button" className="miniButton" onClick={() => setEditChangeAddress(false)}>
+                    Keep the current address
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="miniButton" onClick={() => setEditChangeAddress(true)}>
+                  Change address
+                </button>
+              )}
+
+              {editError && <div className="formError">{editError}</div>}
+
+              <button type="submit" className="submitButton" disabled={editSaving}>
+                {editSaving ? 'Saving...' : 'Save changes'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {showInvite && (
         <div
@@ -914,6 +1073,15 @@ const styles = `
   .cellEmail {
     color: #eef7ff;
     font-weight: 600;
+  }
+
+  .cellSub {
+    display: block;
+    margin-top: 2px;
+    color: #6c8195;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
 
   .cellRole {

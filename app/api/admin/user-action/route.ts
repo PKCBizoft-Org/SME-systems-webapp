@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     const { data: details } = await admin
       .from("user_profiles")
-      .select("full_name")
+      .select("full_name, employee_number")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
         await sendWelcomeEmail(email, {
           name: details?.full_name || email,
           role: membership.role as string,
+          employeeNumber: details?.employee_number ?? null,
           password: tempPassword,
           origin: siteUrl(),
           hours: TEMP_PASSWORD_HOURS,

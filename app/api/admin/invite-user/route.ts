@@ -119,6 +119,15 @@ export async function POST(request: NextRequest) {
         return bad(`Unable to create this user: ${createError?.message || "unknown error"}`, 502);
       }
       userId = created.user.id;
+
+      // Supabase's sign-up trigger files every new login as a customer (profile
+      // role "customer" plus an empty customer record). Staff are not
+      // customers: give them their real role and remove that empty record, or
+      // the mobile app and the Users page treat them as customers.
+      if (role !== "customer") {
+        await admin.from("profiles").update({ role }).eq("id", userId);
+        await admin.from("clients").delete().eq("user_id", userId);
+      }
     }
 
     // ---- profile rows ------------------------------------------------------
@@ -181,6 +190,17 @@ export async function POST(request: NextRequest) {
       if (insertError) return bad(`Unable to grant tenant access: ${insertError.message}`, 500);
     }
 
+    // Staff get an employee number (EMP-0001, ...), kept if they already have one.
+    let employeeNumber: string | null = null;
+    if (role !== "customer") {
+      const { data: assigned, error: numberError } = await admin.rpc("assign_employee_number", {
+        p_user: userId,
+        p_role: role,
+      });
+      if (numberError) console.error("assign_employee_number failed:", numberError.message);
+      else employeeNumber = assigned as string;
+    }
+
     // ---- email, audit, notice ---------------------------------------------
     let emailSent = false;
     if (tempPassword && smtpConfigured()) {
@@ -188,6 +208,7 @@ export async function POST(request: NextRequest) {
         await sendWelcomeEmail(email, {
           name: fullName,
           role,
+          employeeNumber,
           password: tempPassword,
           origin: siteUrl(),
           hours: TEMP_PASSWORD_HOURS,
