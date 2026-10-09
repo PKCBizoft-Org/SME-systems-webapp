@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: m.user_id,
-        email: profile?.email || authUser?.email || "(no email on file)",
+        email: authUser?.email || profile?.email || "(no email on file)",
         profileRole: profile?.role || null,
         tenantRole: m.role,
         status: authUser?.last_sign_in_at ? "active" : "pending",

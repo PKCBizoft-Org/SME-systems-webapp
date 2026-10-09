@@ -180,15 +180,21 @@ export async function sendAdminNotice(ctx: AdminContext, subject: string, lines:
     const ids = (admins || []).map((a) => a.user_id as string)
     if (ids.length === 0) return
 
-    const { data: profiles } = await ctx.admin.from('profiles').select('email').in('id', ids)
-    const recipients = [...new Set((profiles || []).map((p) => p.email as string).filter(Boolean))]
+    // The login account's email is the source of truth: profiles.email can be
+    // stale (e.g. after the address was changed in the Supabase dashboard) and
+    // a notice sent there bounces.
+    const found = await Promise.all(ids.map((id) => ctx.admin.auth.admin.getUserById(id)))
+    const recipients = [
+      ...new Set(found.map((r) => r.data.user?.email?.toLowerCase()).filter((e): e is string => Boolean(e))),
+    ]
 
     const html = shell(
       subject,
       `<p style="color:#8fa8b8;font-size:14px;line-height:1.7;margin:0">${lines.map(esc).join('<br/>')}</p>
        <p style="color:#5f758a;font-size:11px;margin:18px 0 0">Done by ${esc(ctx.actorEmail)}. If this was not you or someone you trust, change your password now.</p>`,
     )
-    await Promise.all(
+    // One bad address must not stop the others.
+    await Promise.allSettled(
       recipients.map((to) =>
         sendMail({ to, subject: `PKC BIZOFT: ${subject}`, text: `${lines.join('\n')}\n\nDone by ${ctx.actorEmail}.`, html }),
       ),
