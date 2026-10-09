@@ -16,6 +16,11 @@ type Submission = {
   client_id: string | null;
   user_id: string | null;
   service_request_id: string | null;
+  /** Set when the customer is paying a monthly bill instead of applying for a plan. */
+  billing_id?: string | null;
+  gcash_mobile?: string | null;
+  bank_account_name?: string | null;
+  bank_account_number?: string | null;
   amount_claimed: number | null;
   payment_method: string | null;
   reference_number: string | null;
@@ -47,6 +52,18 @@ type RequestInfo = {
   installation_area: string | null;
 };
 
+type BillInfo = {
+  id: string;
+  bill_id: string | null;
+  due_date: string | null;
+  billing_period_start: string | null;
+  billing_period_end: string | null;
+  amount: number | null;
+  paid: number | null;
+  balance: number | null;
+  status: string | null;
+};
+
 type Filter = "pending" | "verified" | "rejected" | "all";
 
 const supabase = createClient();
@@ -74,6 +91,7 @@ export default function PaymentVerificationPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [clients, setClients] = useState<Map<string, ClientInfo>>(new Map());
   const [requests, setRequests] = useState<Map<string, RequestInfo>>(new Map());
+  const [bills, setBills] = useState<Map<string, BillInfo>>(new Map());
 
   const [filter, setFilter] = useState<Filter>("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -109,20 +127,29 @@ export default function PaymentVerificationPage() {
 
       const clientIds = [...new Set(rows.map((r) => r.client_id).filter((v): v is string => !!v))];
       const requestIds = [...new Set(rows.map((r) => r.service_request_id).filter((v): v is string => !!v))];
+      const billIds = [...new Set(rows.map((r) => r.billing_id).filter((v): v is string => !!v))];
 
-      const [clientResult, requestResult] = await Promise.all([
+      const [clientResult, requestResult, billResult] = await Promise.all([
         clientIds.length
           ? supabase.from("clients").select("id, customer_name, account_id, plan_name").in("id", clientIds)
           : Promise.resolve({ data: [], error: null }),
         requestIds.length
           ? supabase.from("service_requests").select("id, requested_plan, requested_amount, status, installation_location_type, installation_area").in("id", requestIds)
           : Promise.resolve({ data: [], error: null }),
+        billIds.length
+          ? supabase
+              .from("billing_balances")
+              .select("id, bill_id, due_date, billing_period_start, billing_period_end, amount, paid, balance, status")
+              .in("id", billIds)
+          : Promise.resolve({ data: [], error: null }),
       ]);
       if (clientResult.error) throw new Error(clientResult.error.message);
       if (requestResult.error) throw new Error(requestResult.error.message);
+      if (billResult.error) throw new Error(billResult.error.message);
 
       setClients(new Map(((clientResult.data || []) as ClientInfo[]).map((c) => [c.id, c])));
       setRequests(new Map(((requestResult.data || []) as RequestInfo[]).map((r) => [r.id, r])));
+      setBills(new Map(((billResult.data || []) as BillInfo[]).map((b) => [b.id, b])));
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Unable to load payment submissions.");
     } finally {
@@ -261,13 +288,20 @@ export default function PaymentVerificationPage() {
 
       const receipt = result?.result?.receipt_number as string | undefined;
       const toInstall = Boolean(result?.result?.new_customer);
+      const isBill = result?.result?.kind === "bill";
+      const billRef = (result?.result?.bill_id as string | undefined) || "the bill";
+      const left = Number(result?.result?.remaining ?? 0);
       setMessage({
         kind: "ok",
         text:
           `Verified ${formatPeso(claimed)} for ${client?.customer_name || "the customer"}${receipt ? ` (${receipt})` : ""}. ` +
-          (toInstall
-            ? "Their account is now For installation and the job is in the technicians' list."
-            : "Their plan is now set up.") +
+          (isBill
+            ? left > 0
+              ? `Bill ${billRef} is partly paid — ${formatPeso(left)} is still due.`
+              : `Bill ${billRef} is now fully paid.`
+            : toInstall
+              ? "Their account is now For installation and the job is in the technicians' list."
+              : "Their plan is now set up.") +
           (result?.emailed ? " The customer was emailed." : " (No email was sent.)"),
       });
     } catch (error) {
@@ -284,6 +318,7 @@ export default function PaymentVerificationPage() {
 
     const client = submission.client_id ? clients.get(submission.client_id) : undefined;
     const request = submission.service_request_id ? requests.get(submission.service_request_id) : undefined;
+    const bill = submission.billing_id ? bills.get(submission.billing_id) : undefined;
     const claimed = Number(submission.amount_claimed || 0);
     const expected = Number(request?.requested_amount || 0);
 
@@ -291,11 +326,23 @@ export default function PaymentVerificationPage() {
       setMessage({ kind: "error", text: "This submission has no client or tenant, so it can't be posted." });
       return;
     }
-    if (!submission.service_request_id) {
-      setMessage({ kind: "error", text: "This submission is not linked to a plan application." });
+    if (!submission.service_request_id && !submission.billing_id) {
+      setMessage({ kind: "error", text: "This submission is not linked to a plan application or a bill." });
       return;
     }
-    if (expected > 0 && claimed !== expected) {
+    if (submission.billing_id) {
+      if (bill && Number(bill.balance || 0) <= 0) {
+        setMessage({ kind: "error", text: `Bill ${bill.bill_id || ""} is already fully paid. Reject this payment.` });
+        return;
+      }
+      if (bill && claimed > Number(bill.balance || 0)) {
+        setMessage({
+          kind: "error",
+          text: `The customer claims ${formatPeso(claimed)} but only ${formatPeso(bill.balance)} is left on bill ${bill.bill_id || ""}. Reject it and ask them to resubmit the right amount.`,
+        });
+        return;
+      }
+    } else if (expected > 0 && claimed !== expected) {
       setMessage({
         kind: "error",
         text: `Amount mismatch: the customer entered ${formatPeso(claimed)} but ${request?.requested_plan || "the plan"} costs ${formatPeso(expected)}. Reject it and ask them to pay the exact amount.`,
@@ -323,7 +370,12 @@ export default function PaymentVerificationPage() {
     const ok = window.confirm(
       `Confirm you received ${formatPeso(claimed)} by ${submission.payment_method || "payment"}` +
         `${reference ? ` (ref ${reference})` : ""} from ${client?.customer_name || "this customer"}?\n\n` +
-        `This records the payment, emails the customer, and ${request?.requested_plan || "the plan"} is set up.`,
+        (submission.billing_id
+          ? `This records the payment against bill ${bill?.bill_id || ""} and emails the customer.` +
+            (bill && claimed < Number(bill.balance || 0)
+              ? ` It is a partial payment: ${formatPeso(Number(bill.balance) - claimed)} will stay due.`
+              : "")
+          : `This records the payment, emails the customer, and ${request?.requested_plan || "the plan"} is set up.`),
     );
     if (!ok) return;
 
@@ -367,7 +419,10 @@ export default function PaymentVerificationPage() {
       setRejecting(null);
       setMessage({
         kind: "ok",
-        text: `Payment rejected (${rejectReason}). The application was cancelled${result?.emailed ? " and the customer was emailed." : "."}`,
+        text:
+          result?.kind === "bill"
+            ? `Payment rejected (${rejectReason}). The bill stays open so the customer can pay again${result?.emailed ? "; they were emailed." : "."}`
+            : `Payment rejected (${rejectReason}). The application was cancelled${result?.emailed ? " and the customer was emailed." : "."}`,
       });
     } catch (error) {
       setRejectError(error instanceof Error ? error.message : "Rejection failed.");
@@ -435,9 +490,11 @@ export default function PaymentVerificationPage() {
             {visible.map((s) => {
               const client = s.client_id ? clients.get(s.client_id) : undefined;
               const request = s.service_request_id ? requests.get(s.service_request_id) : undefined;
+              const bill = s.billing_id ? bills.get(s.billing_id) : undefined;
               const bucket = bucketOf(s.status);
-              const mismatch =
-                !!request?.requested_amount && Number(s.amount_claimed || 0) !== Number(request.requested_amount);
+              const mismatch = bill
+                ? bucket === "pending" && Number(s.amount_claimed || 0) > Number(bill.balance || 0)
+                : !!request?.requested_amount && Number(s.amount_claimed || 0) !== Number(request.requested_amount);
               const busy = busyId === s.id;
 
               return (
@@ -451,17 +508,60 @@ export default function PaymentVerificationPage() {
                   </header>
 
                   <dl>
-                    <div>
-                      <dt>Plan</dt>
-                      <dd>{request?.requested_plan || "—"}</dd>
-                    </div>
+                    {s.billing_id ? (
+                      <>
+                        <div>
+                          <dt>Paying bill</dt>
+                          <dd>
+                            {bill?.bill_id || "—"}
+                            {bill?.due_date && <em> (due {formatDate(bill.due_date)})</em>}
+                          </dd>
+                        </div>
+                        {bill?.billing_period_start && bill?.billing_period_end && (
+                          <div>
+                            <dt>Billing period</dt>
+                            <dd>
+                              {formatDate(bill.billing_period_start)} – {formatDate(bill.billing_period_end)}
+                            </dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt>Still owed on bill</dt>
+                          <dd>
+                            {formatPeso(bill?.balance)}
+                            {Number(bill?.paid || 0) > 0 && <em> ({formatPeso(bill?.paid)} already paid)</em>}
+                          </dd>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <dt>Plan</dt>
+                        <dd>{request?.requested_plan || "—"}</dd>
+                      </div>
+                    )}
                     <div>
                       <dt>Amount paid</dt>
                       <dd className={mismatch ? styles.bad : undefined}>
                         {formatPeso(s.amount_claimed)}
-                        {mismatch && <em> (plan is {formatPeso(request?.requested_amount)})</em>}
+                        {mismatch && !bill && <em> (plan is {formatPeso(request?.requested_amount)})</em>}
+                        {mismatch && bill && <em> (more than the {formatPeso(bill.balance)} owed)</em>}
+                        {bill && !mismatch && bucket === "pending" && Number(s.amount_claimed || 0) < Number(bill.balance || 0) && (
+                          <em> (partial payment)</em>
+                        )}
                       </dd>
                     </div>
+                    {s.gcash_mobile && (
+                      <div>
+                        <dt>Paid from GCash</dt>
+                        <dd className={styles.mono}>{s.gcash_mobile}</dd>
+                      </div>
+                    )}
+                    {s.bank_name && (
+                      <div>
+                        <dt>Bank</dt>
+                        <dd>{s.bank_name}</dd>
+                      </div>
+                    )}
                     {request?.installation_area && (
                       <div>
                         <dt>Install at</dt>
@@ -546,7 +646,8 @@ export default function PaymentVerificationPage() {
           <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Reject payment" onClick={(e) => e.stopPropagation()}>
             <h2>Reject this payment?</h2>
             <p className={styles.modalLead}>
-              {clients.get(rejecting.client_id || "")?.customer_name || "The customer"} will see the reason and can apply again.
+              {clients.get(rejecting.client_id || "")?.customer_name || "The customer"} will see the reason and can{" "}
+              {rejecting.billing_id ? "pay the bill again (it stays open)" : "apply again"}.
             </p>
 
             <div className={styles.reasons}>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StaffHeader } from "../components/StaffHeader";
 import { StaffMotion } from "../components/StaffMotion";
 import { PkcLoader } from "../components/PkcLoader";
+import { PendingWithdrawalsBadge } from "../components/PendingWithdrawalsBadge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
@@ -476,6 +477,10 @@ export default function AccountingPage() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
               ✓ Payment verification
+            </Link>
+            <Link href="/accounting/referrals" className="refresh" style={{ textDecoration: "none" }}>
+              ★ Referral payouts
+              <PendingWithdrawalsBadge />
             </Link>
             <Link href="/accounting/reports" className="refresh" style={{ textDecoration: "none" }}>
               ▤ Reports

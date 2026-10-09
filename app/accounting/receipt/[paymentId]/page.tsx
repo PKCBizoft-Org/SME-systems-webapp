@@ -19,6 +19,11 @@ type Receipt = {
   account_id: string | null;
   plan: string | null;
   reference: string | null;
+  // Present for payments that settled a monthly bill.
+  kind?: "bill" | "plan" | null;
+  bill_id?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
 };
 
 const supabase = createClient();
@@ -106,8 +111,22 @@ export default function ReceiptPage() {
               </div>
               <div>
                 <dt>For</dt>
-                <dd>{receipt.plan ? `Internet plan ${receipt.plan}` : "Internet service"}</dd>
+                <dd>
+                  {receipt.kind === "bill" && receipt.bill_id
+                    ? `Internet service bill ${receipt.bill_id}`
+                    : receipt.plan
+                      ? `Internet plan ${receipt.plan}`
+                      : "Internet service"}
+                </dd>
               </div>
+              {receipt.kind === "bill" && receipt.period_start && receipt.period_end && (
+                <div>
+                  <dt>Billing period</dt>
+                  <dd>
+                    {formatDate(receipt.period_start)} – {formatDate(receipt.period_end)}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt>Payment date</dt>
                 <dd>{formatDate(receipt.payment_date)}</dd>

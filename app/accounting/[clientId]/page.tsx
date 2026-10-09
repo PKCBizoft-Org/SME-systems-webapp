@@ -105,6 +105,11 @@ function getInitials(name: string | null) {
     : `${parts[0][0]}${parts.at(-1)?.[0] || ""}`.toUpperCase();
 }
 
+// Today's date in the Philippines, whatever time zone this computer uses.
+function phToday() {
+  return new Date(Date.now() + 8 * 3_600_000).toISOString().slice(0, 10);
+}
+
 function amountOf(bill: BillingRecord) {
   return Number(
     bill.final_amount ?? bill.amount_due ?? bill.original_amount ?? 0,
@@ -178,6 +183,21 @@ export default function AccountingCustomerPage() {
   const [reminderResult, setReminderResult] = useState<ReminderResult | null>(
     null,
   );
+
+  // Recording a payment the customer made in person (cash, collector, office).
+  const [recordFor, setRecordFor] = useState<{ bill: BillingRecord; balance: number } | null>(null);
+  const [recAmount, setRecAmount] = useState("");
+  const [recMethod, setRecMethod] = useState("Cash");
+  const [recReference, setRecReference] = useState("");
+  const [recDate, setRecDate] = useState("");
+  const [recMax, setRecMax] = useState("");
+  const [recNote, setRecNote] = useState("");
+  const [recSecondary, setRecSecondary] = useState("");
+  const [recNeedsSecondary, setRecNeedsSecondary] = useState(false);
+  const [recBusy, setRecBusy] = useState(false);
+  const [recError, setRecError] = useState("");
+  const [recWaiting, setRecWaiting] = useState(0);
+  const [flash, setFlash] = useState<string | null>(null);
 
   const loadAccount = useCallback(
     async (showRefresh = false) => {
@@ -384,6 +404,82 @@ export default function AccountingCustomerPage() {
     );
   }, [payments, paymentSearch]);
 
+  async function openRecord(bill: BillingRecord, balance: number) {
+    setRecError("");
+    setRecNeedsSecondary(false);
+    setRecSecondary("");
+    setRecAmount(balance.toFixed(2));
+    setRecMethod("Cash");
+    setRecReference("");
+    setRecNote("");
+    setRecDate(phToday());
+    setRecMax(phToday());
+    setRecWaiting(0);
+    setFlash(null);
+    setRecordFor({ bill, balance });
+
+    // A payment the customer already sent for this bill must be verified instead.
+    const { data } = await supabase
+      .from("payment_submissions")
+      .select("amount_claimed")
+      .eq("billing_id", bill.id)
+      .eq("status", "Pending");
+    setRecWaiting((data || []).reduce((sum, row) => sum + Number(row.amount_claimed || 0), 0));
+  }
+
+  async function submitRecord() {
+    if (!recordFor || recBusy) return;
+    const amount = Number(recAmount.replace(/,/g, ""));
+    if (!Number.isFinite(amount) || amount <= 0) return setRecError("Enter the amount received.");
+    if (amount > recordFor.balance + 0.0001) {
+      return setRecError(`Only ${formatPeso(recordFor.balance)} is left on this bill.`);
+    }
+    if (recMethod !== "Cash" && !recReference.trim()) return setRecError("Enter the transaction reference number.");
+
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return setRecError("Your session has expired. Please sign in again.");
+
+    setRecBusy(true);
+    setRecError("");
+    try {
+      const response = await fetch("/api/accounting/record-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          billingId: recordFor.bill.id,
+          amount,
+          method: recMethod,
+          reference: recReference.trim(),
+          paidOn: recDate,
+          note: recNote.trim(),
+          secondary: recSecondary || undefined,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (response.status === 428 || result?.code === "secondary_wrong") {
+        setRecNeedsSecondary(true);
+        setRecError(result?.code === "secondary_wrong" ? result.error : "");
+        return;
+      }
+      if (!response.ok) throw new Error(result?.error || "The payment could not be recorded.");
+
+      const left = Number(result?.result?.remaining ?? 0);
+      setRecordFor(null);
+      setFlash(
+        `Recorded ${formatPeso(amount)} (${result?.result?.receipt_number || "receipt issued"}) on bill ${result?.result?.bill_id || ""}. ` +
+          (left > 0 ? `${formatPeso(left)} is still due.` : "The bill is now fully paid.") +
+          (result?.emailed ? " The customer was emailed." : ""),
+      );
+      void loadAccount(true);
+    } catch (error) {
+      setRecError(error instanceof Error ? error.message : "The payment could not be recorded.");
+    } finally {
+      setRecBusy(false);
+    }
+  }
+
   function openReminder() {
     if (!client) return;
     setReminderResult(null);
@@ -533,6 +629,12 @@ export default function AccountingCustomerPage() {
           </div>
         )}
 
+        {flash && (
+          <div className="flash" role="status">
+            {flash}
+          </div>
+        )}
+
         <section className="financials">
           <article>
             <small>TOTAL BILLED</small>
@@ -622,6 +724,7 @@ export default function AccountingCustomerPage() {
                         <th>Amount</th>
                         <th>Balance</th>
                         <th>Status</th>
+                        <th />
                       </tr>
                     </thead>
                     <tbody>
@@ -646,12 +749,17 @@ export default function AccountingCustomerPage() {
                                 {status}
                               </span>
                             </td>
+                            <td className="right">
+                              <button className="row-action" onClick={() => void openRecord(bill, balance)}>
+                                Record payment
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
                       {openBills.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="empty">
+                          <td colSpan={6} className="empty">
                             No outstanding bills.
                           </td>
                         </tr>
@@ -752,6 +860,7 @@ export default function AccountingCustomerPage() {
                     <th className="right">Amount</th>
                     <th className="right">Balance</th>
                     <th>Status</th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -780,12 +889,19 @@ export default function AccountingCustomerPage() {
                             {status}
                           </span>
                         </td>
+                        <td className="right">
+                          {balance > 0 && (
+                            <button className="row-action" onClick={() => void openRecord(bill, balance)}>
+                              Record payment
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
                   {filteredBills.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="empty">
+                      <td colSpan={9} className="empty">
                         No billing records found.
                       </td>
                     </tr>
@@ -937,6 +1053,119 @@ export default function AccountingCustomerPage() {
         </div>
       )}
 
+      {recordFor && (
+        <div className="modal-backdrop" onMouseDown={() => !recBusy && setRecordFor(null)}>
+          <section className="modal" onMouseDown={(e) => e.stopPropagation()}>
+            <header>
+              <div>
+                <small>COLLECTION</small>
+                <h2>Record a payment</h2>
+              </div>
+              <button onClick={() => setRecordFor(null)} disabled={recBusy}>
+                ×
+              </button>
+            </header>
+
+            <div className="recipient">
+              <span className="avatar">{getInitials(client.customer_name)}</span>
+              <div>
+                <strong>{client.customer_name || "Customer"}</strong>
+                <small>
+                  Bill {recordFor.bill.bill_id || recordFor.bill.id.slice(0, 8)} · {formatPeso(recordFor.balance)} still due
+                </small>
+              </div>
+            </div>
+
+            {recWaiting > 0 && (
+              <div className="result error">
+                The customer already sent {formatPeso(recWaiting)} for this bill. Verify or reject it under Payment
+                verification instead of recording it twice.
+              </div>
+            )}
+
+            <div className="form-grid">
+              <label className="field">
+                <span>AMOUNT RECEIVED (₱)</span>
+                <input
+                  value={recAmount}
+                  onChange={(e) => setRecAmount(e.target.value)}
+                  inputMode="decimal"
+                  disabled={recBusy}
+                />
+              </label>
+              <label className="field">
+                <span>HOW THEY PAID</span>
+                <select value={recMethod} onChange={(e) => setRecMethod(e.target.value)} disabled={recBusy}>
+                  <option>Cash</option>
+                  <option>GCash</option>
+                  <option>Bank Transfer</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>{recMethod === "Cash" ? "RECEIPT / OR NUMBER (OPTIONAL)" : "TRANSACTION REFERENCE"}</span>
+                <input
+                  value={recReference}
+                  onChange={(e) => setRecReference(e.target.value)}
+                  disabled={recBusy}
+                  maxLength={80}
+                />
+              </label>
+              <label className="field">
+                <span>DATE RECEIVED</span>
+                <input
+                  type="date"
+                  value={recDate}
+                  max={recMax}
+                  onChange={(e) => setRecDate(e.target.value)}
+                  disabled={recBusy}
+                />
+              </label>
+            </div>
+
+            <label className="field">
+              <span>NOTE (OPTIONAL, KEPT IN THE AUDIT LOG)</span>
+              <textarea
+                value={recNote}
+                onChange={(e) => setRecNote(e.target.value)}
+                rows={2}
+                maxLength={300}
+                disabled={recBusy}
+                style={{ minHeight: 60 }}
+              />
+            </label>
+
+            {recNeedsSecondary && (
+              <label className="field">
+                <span>SECONDARY PASSWORD (REQUIRED FOR LARGE AMOUNTS)</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={recSecondary}
+                  onChange={(e) => setRecSecondary(e.target.value)}
+                  disabled={recBusy}
+                  autoFocus
+                />
+              </label>
+            )}
+
+            {recError && <div className="result error">{recError}</div>}
+
+            <footer>
+              <button className="secondary" onClick={() => setRecordFor(null)} disabled={recBusy}>
+                Cancel
+              </button>
+              <button
+                className="primary"
+                onClick={() => void submitRecord()}
+                disabled={recBusy || recWaiting > 0 || (recNeedsSecondary && !recSecondary)}
+              >
+                {recBusy ? "Recording…" : "Record payment"}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
+
       <style jsx>{styles}</style>
     </main>
   );
@@ -944,6 +1173,16 @@ export default function AccountingCustomerPage() {
 
 const styles = `
 *{box-sizing:border-box}.page{min-height:100vh;background:#05090d;color:#e7f0f6;font-family:var(--font-geist-sans),ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.topbar{height:70px;padding:0 34px;border-bottom:1px solid #16242d;background:#071016;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}.brand,.top-actions,.identity,.head-actions,.secure{display:flex;align-items:center}.brand{gap:11px}.brand-mark{width:36px;height:36px;display:grid;place-items:center;border:1px solid #16486a;border-radius:9px;background:#092237;color:#5ebeff;font-weight:900}.brand strong{color:#fff;font-size:14px}.brand span{color: #677c8c;font-size:14px;font-weight:700}.top-actions{gap:13px}.top-actions>button{border:0;background:none;color:#70baf0;font-size:10px;font-weight:900;cursor:pointer}.secure{gap:8px;color:#718894;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.secure i{width:7px;height:7px;border-radius:50%;background:#35d38f;box-shadow:0 0 12px #35d38f}.shell{width:min(1500px,calc(100% - 48px));margin:auto;padding:30px 0 50px}.crumb{color:#4b87ad;font-size: 9px;font-weight:900;letter-spacing:.13em}.crumb i{display:inline-block;width:6px;height:6px;margin-right:7px;border-radius:50%;background:#1a9cff}.customer-head{margin-top:12px;padding:20px;border:1px solid #172832;border-radius:14px;background:#080f14;display:flex;justify-content:space-between;gap:20px}.identity{gap:12px;min-width:0}.identity>div{min-width:0}.identity small,.panel-head small,.modal small{color:#4287b2;font-size: 9px;font-weight:900;letter-spacing:.13em}.identity h1{margin:5px 0 4px;font-size:25px;letter-spacing:-.04em}.identity p{margin:0;color: #6d8491;font-size:10px}.avatar{width:44px;height:44px;display:grid;place-items:center;flex:0 0 auto;border:1px solid #165074;border-radius:10px;background:#092237;color:#63beff;font-size:11px;font-weight:900}.head-actions{gap:8px;flex-wrap:wrap;justify-content:flex-end}.badge{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid #263843;border-radius:999px;background:#0c151b;color:#7d919d;font-size: 9px;font-weight:900;white-space:nowrap}.badge.good{border-color:#1a6048;background:#092219;color:#51d99b}.badge.danger{border-color:#6a2830;background:#220d10;color:#ff7b83}.badge.warning{border-color:#6a501e;background:#201707;color:#eabd58}.badge.neutral{color:#8296a2}.secondary,.primary,.refresh{min-height:40px;padding:0 13px;border-radius:8px;font-size:9px;font-weight:900;cursor:pointer}.secondary{border:1px solid #263843;background:#0a1318;color:#91a5b2}.primary{border:1px solid #0e72ad;background:#092237;color:#5ebeff}.refresh{border:1px solid #16486a;background:#092033;color:#6bc0ff}.refresh:disabled,.primary:disabled,.secondary:disabled{opacity:.5;cursor:not-allowed}.notice{display:flex;gap:12px;margin-top:12px;padding:12px;border:1px solid #4a3515;border-radius:10px;background:#171107;color:#c2a15a}.notice>b{width:23px;height:23px;display:grid;place-items:center;border-radius:7px;background:#2b1d08}.notice div{display:grid;gap:3px}.notice strong{font-size:10px}.notice span{font-size:9px;color: #957f53}.financials{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px}.financials article{min-height:100px;padding:17px;border:1px solid #172832;border-radius:12px;background:#080f14}.financials small{display:block;color: #6d8490;font-size: 9px;font-weight:900;letter-spacing:.1em}.financials strong{display:block;margin:7px 0 4px;font-size:19px;letter-spacing:-.03em}.financials span{color: #71848e;font-size:9px}.financials .green strong{color:#4bd99a}.financials .orange strong{color:#efbf59}.financials .red strong{color:#ff777e}.tabs{display:flex;gap:2px;margin-top:16px;border-bottom:1px solid #172832}.tabs button{padding:11px 15px;border:0;border-bottom:2px solid transparent;background:transparent;color: #6f8491;font-size:10px;font-weight:900;cursor:pointer}.tabs button span{display:inline-grid;place-items:center;min-width:20px;height:19px;margin-left:5px;padding:0 5px;border-radius:6px;background:#0d1a21;color:#77909d;font-size: 9px}.tabs button.active{border-bottom-color:#1598ff;color:#66bfff}.overview-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,.9fr);gap:12px;margin-top:12px}.main-col,.side-col{display:grid;gap:12px;align-content:start}.panel{border:1px solid #172832;border-radius:13px;background:#080f14;overflow:hidden}.panel-head{min-height:72px;padding:17px 18px;border-bottom:1px solid #14232c;display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.panel-head.simple{min-height:auto}.panel-head h2{margin:5px 0 3px;font-size:17px}.panel-head p{margin:0;color: #6f8490;font-size:9px}.progress-value{color:#5ebeff;font-size:22px}.progress-track{height:9px;margin:16px 18px 9px;border-radius:99px;background:#142631;overflow:hidden}.progress-track i{display:block;height:100%;border-radius:99px;background:#1598ff}.progress-meta{display:flex;justify-content:space-between;padding:0 18px 16px;color: #6e8490;font-size:9px}.progress-meta b{color:#b9cbd4}.count{display:inline-grid;place-items:center;min-width:28px;height:26px;padding:0 7px;border-radius:7px;background:#0b1922;color:#63bcf7;font-size:9px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:700px}th{padding:11px 14px;text-align:left;color: #6f8490;font-size: 9px;letter-spacing:.11em;border-bottom:1px solid #172832;background:#071016;white-space:nowrap}td{padding:12px 14px;border-bottom:1px solid #102029;color:#9bb0bd;font-size:9px;vertical-align:middle}tbody tr{background:#080f14}tbody tr:hover{background:#0a171f}td strong{color:#d2e1e8;font-size:10px}td small{display:block;margin-top:3px;color: #73858f;font-size: 9px}.balance{color:#f0c45e!important;font-weight:900}.right{text-align:right}.empty{text-align:center!important;height:130px;color: #677c87!important}.table-more{width:100%;padding:12px;border:0;border-top:1px solid #14232c;background:#071016;color:#59b7f3;font-size:9px;font-weight:900;cursor:pointer}.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:14px}.detail{padding:9px;border:1px solid #162a34;border-radius:8px;background:#09141a;min-width:0}.detail.wide{grid-column:1/-1}.detail span{display:block;color: #70848f;font-size: 9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.detail strong{display:block;margin-top:4px;color:#bdd0da;font-size:9px;overflow-wrap:anywhere}.full{margin-top:12px}.table-tools{padding:11px 13px;border-bottom:1px solid #14232c}.table-tools label{display:flex;align-items:center;gap:8px;width:min(360px,100%);height:37px;padding:0 10px;border:1px solid #1c303b;border-radius:8px;background:#060c10;color: #627c8a}.table-tools input{width:100%;border:0;outline:0;background:transparent;color:#dbe8ef;font-size:10px}.method{display:inline-block;padding:4px 7px;border-radius:6px;border:1px solid #1d3946;background:#091923;color:#77a8c4;font-size: 9px}.payment-amount{color:#4bd99a;font-weight:900}.modal-backdrop{position:fixed;inset:0;z-index:60;background:rgba(1,5,8,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px}.modal{width:min(520px,100%);border:1px solid #203640;border-radius:14px;background:#080f14;box-shadow:0 25px 90px rgba(0,0,0,.6);overflow:hidden}.modal header{display:flex;justify-content:space-between;padding:19px;border-bottom:1px solid #182a34}.modal header>button{width:34px;height:34px;border:1px solid #263943;border-radius:8px;background:#0a1318;color:#8298a5;font-size:20px;cursor:pointer}.modal h2{margin:5px 0 0;font-size:18px}.recipient{display:flex;align-items:center;gap:10px;margin:16px;padding:12px;border:1px solid #1a303b;border-radius:9px;background:#060c10}.recipient strong,.recipient small{display:block}.recipient strong{font-size:10px}.recipient small{margin-top:3px;color: #6f8590;font-size: 9px}.reminder-balance{margin:0 16px 15px;padding:14px;border:1px solid #463818;border-radius:9px;background:#171107}.reminder-balance small,.reminder-balance span{display:block;color:#9b8248;font-size: 9px}.reminder-balance strong{display:block;margin:4px 0;color:#efc05a;font-size:22px}.field{display:block;margin:0 16px}.field>span{display:block;margin-bottom:7px;color:#8299a6;font-size:9px;font-weight:900}.field textarea{width:100%;resize:vertical;min-height:125px;padding:11px;border:1px solid #1d333e;border-radius:9px;outline:none;background:#050b0f;color:#d8e6ed;font:11px/1.55 inherit}.field textarea:focus{border-color:#197cb6;box-shadow:0 0 0 2px rgba(25,124,182,.12)}.field small{display:block;margin-top:5px;text-align:right;color: #6f838e;font-size: 9px}.result{margin:12px 16px 0;padding:10px;border-radius:8px;font-size:9px}.result.success{border:1px solid #1a5c47;background:#092219;color:#54d99b}.result.error{border:1px solid #64272d;background:#210b0e;color:#ff7a82}.modal footer{display:flex;justify-content:flex-end;gap:8px;margin-top:17px;padding:14px 16px;border-top:1px solid #182a34;background:#071016}.state{min-height:100vh;display:grid;place-items:center;align-content:center;gap:10px;background:#05090d;color:#78909e;font:12px var(--font-geist-sans),system-ui}.loader{width:25px;height:25px;border:2px solid #17384f;border-top-color:#1598ff;border-radius:50%;animation:spin .8s linear infinite}.not-found{text-align:center}.not-found>span{display:grid;place-items:center;width:56px;height:56px;margin:0 auto 14px;border:1px solid #642126;border-radius:15px;background:#210b0d;color:#ff737b;font-size:22px;font-weight:900}.not-found small{color:#138fff;font-size: 9px;font-weight:900;letter-spacing:.13em}.not-found h1{margin:8px 0;font-size:27px}.not-found p{margin:0 0 18px;color: #718594;font-size:11px}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:1050px){.overview-grid{grid-template-columns:1fr}.financials{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.shell{width:calc(100% - 24px);padding-top:24px}.topbar{padding:0 15px}.top-actions>button{display:none}.customer-head{flex-direction:column}.head-actions{justify-content:flex-start}.financials{grid-template-columns:1fr 1fr}.details-grid{grid-template-columns:1fr}.detail.wide{grid-column:auto}.tabs{overflow:auto}.tabs button{white-space:nowrap}}@media(max-width:470px){.financials{grid-template-columns:1fr}.identity h1{font-size:21px}.head-actions>*{flex:1}.modal-backdrop{padding:10px}.modal{max-height:calc(100vh - 20px);overflow:auto}}
+
+/* ---- record payment ---- */
+.row-action{padding:6px 10px;border:1px solid #1b3b50;border-radius:8px;background:#091923;color:#5cb9f7;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap}
+.row-action:hover{background:#0c2b45}
+.flash{margin-top:12px;padding:12px 14px;border:1px solid #1a5c47;border-radius:10px;background:#092219;color:#54d99b;font-size:12px;line-height:1.5}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 4px}
+.field input,.field select{width:100%;height:40px;padding:0 11px;border:1px solid #1d333e;border-radius:9px;outline:none;background:#050b0f;color:#d8e6ed;font:12px/1.4 inherit}
+.field input:focus,.field select:focus{border-color:#197cb6;box-shadow:0 0 0 2px rgba(25,124,182,.12)}
+.field{margin-bottom:12px}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}}
 
 /* ---- readability + small screens ---- */
 td{font-size:12px}th{font-size:10px}

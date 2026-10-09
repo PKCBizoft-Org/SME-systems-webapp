@@ -47,9 +47,12 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
   const result = data as {
+    kind?: 'bill' | 'plan'
     receipt_number?: string
     amount?: number
     plan?: string
+    bill_id?: string
+    remaining?: number
     new_customer?: boolean
     customer_name?: string
     customer_email?: string
@@ -67,6 +70,9 @@ export async function POST(request: NextRequest) {
         reference: result.reference,
         receipt: result.receipt_number,
         newCustomer: Boolean(result.new_customer),
+        kind: result.kind,
+        billId: result.bill_id,
+        remaining: result.remaining,
       })
       emailed = true
     } catch (err) {

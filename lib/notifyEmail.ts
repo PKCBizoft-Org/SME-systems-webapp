@@ -76,25 +76,56 @@ function shell(opts: { badge: string; badgeColor: string; title: string; intro: 
 </body></html>`
 }
 
-export async function sendApprovedEmail(to: string, d: { name?: string | null; amount: unknown; plan?: string | null; reference?: string | null; receipt?: string | null; newCustomer: boolean }) {
+export async function sendApprovedEmail(
+  to: string,
+  d: {
+    name?: string | null
+    amount: unknown
+    plan?: string | null
+    reference?: string | null
+    receipt?: string | null
+    newCustomer: boolean
+    /** A payment for a monthly bill (instead of a plan application). */
+    kind?: 'bill' | 'plan'
+    billId?: string | null
+    /** What is still owed on the bill after this payment. */
+    remaining?: number | null
+    /** Accounting entered it for the customer (cash / walk-in) rather than verifying a submission. */
+    recorded?: boolean
+  },
+) {
   const first = (d.name || 'there').split(' ')[0]
-  const note = d.newCustomer
-    ? 'Next step: a PKC technician will be assigned to <strong>install your connection</strong>. You can follow it in the app under Repair status. We will tell you who is coming.'
-    : 'Your plan is now set up. You can see it in the app under Payment.'
+  const isBill = d.kind === 'bill'
+  const still = Number(d.remaining ?? 0)
+
+  const note = isBill
+    ? still > 0
+      ? `${peso(still)} is still due on this bill. You can pay the rest in the app under <strong>Plan &amp; Bills</strong>.`
+      : 'This bill is now fully paid. Your receipt is saved in the app under <strong>Plan &amp; Bills</strong>.'
+    : d.newCustomer
+      ? 'Next step: a PKC technician will be assigned to <strong>install your connection</strong>. You can follow it in the app under Repair status. We will tell you who is coming.'
+      : 'Your plan is now set up. You can see it in the app under Plan &amp; Bills.'
+
+  const subject = d.recorded ? `Payment received - ${peso(d.amount)}` : `Payment verified - ${peso(d.amount)}`
+  const what = isBill ? `bill ${d.billId || ''}`.trim() : d.plan || 'your plan'
+
   await sendMail({
     to,
-    subject: `Payment verified - ${peso(d.amount)}`,
-    text: `Hi ${first}, your payment of ${peso(d.amount)} for ${d.plan || 'your plan'} was verified (receipt ${d.receipt || '-'}).`,
+    subject,
+    text: `Hi ${first}, your payment of ${peso(d.amount)} for ${what} was ${d.recorded ? 'received' : 'verified'} (receipt ${d.receipt || '-'}).`,
     html: shell({
-      badge: 'PAYMENT VERIFIED',
+      badge: d.recorded ? 'PAYMENT RECEIVED' : 'PAYMENT VERIFIED',
       badgeColor: '#34d399',
-      title: 'Your payment is verified',
-      intro: `Hi ${esc(first)}, Accounting checked your payment and it is confirmed. Thank you!`,
+      title: d.recorded ? 'We received your payment' : 'Your payment is verified',
+      intro: d.recorded
+        ? `Hi ${esc(first)}, Accounting recorded your payment. Thank you!`
+        : `Hi ${esc(first)}, Accounting checked your payment and it is confirmed. Thank you!`,
       rows: [
         ['Amount', peso(d.amount)],
-        ['Plan', d.plan || '-'],
+        isBill ? ['Bill no.', d.billId || '-'] : ['Plan', d.plan || '-'],
         ['Reference no.', d.reference || '-'],
         ['Receipt no.', d.receipt || '-'],
+        ...(isBill && d.remaining != null ? [['Still due', peso(d.remaining)]] : []),
       ],
       note,
       noteTone: 'good',
@@ -102,8 +133,21 @@ export async function sendApprovedEmail(to: string, d: { name?: string | null; a
   })
 }
 
-export async function sendRejectedEmail(to: string, d: { name?: string | null; amount: unknown; plan?: string | null; reference?: string | null; reason: string; note?: string | null }) {
+export async function sendRejectedEmail(
+  to: string,
+  d: {
+    name?: string | null
+    amount: unknown
+    plan?: string | null
+    reference?: string | null
+    reason: string
+    note?: string | null
+    kind?: 'bill' | 'plan'
+    billId?: string | null
+  },
+) {
   const first = (d.name || 'there').split(' ')[0]
+  const isBill = d.kind === 'bill'
   await sendMail({
     to,
     subject: 'Your payment was not accepted',
@@ -115,21 +159,72 @@ export async function sendRejectedEmail(to: string, d: { name?: string | null; a
       intro: `Hi ${esc(first)}, Accounting could not verify this payment.`,
       rows: [
         ['Amount', peso(d.amount)],
-        ['Plan', d.plan || '-'],
+        isBill ? ['Bill no.', d.billId || '-'] : ['Plan', d.plan || '-'],
         ['Reference no.', d.reference || '-'],
         ['Reason', d.reason],
       ],
-      note: `${d.note ? `<strong>Note from Accounting:</strong> ${esc(d.note)}<br><br>` : ''}What to do: open the app, go to <strong>Payment</strong> and apply for your plan again with the correct amount, reference number and a clear receipt.`,
+      note: `${d.note ? `<strong>Note from Accounting:</strong> ${esc(d.note)}<br><br>` : ''}${
+        isBill
+          ? 'What to do: open the app, go to <strong>Plan &amp; Bills</strong> and tap <strong>Pay again</strong> on your bill with the correct amount, reference number and a clear receipt. Your bill is still open.'
+          : 'What to do: open the app, go to <strong>Plan &amp; Bills</strong> and apply for your plan again with the correct amount, reference number and a clear receipt.'
+      }`,
       noteTone: 'bad',
     }),
   })
 }
 
+/** Outcome of a referral payout request (paid or not approved). */
+export async function sendWithdrawalEmail(
+  to: string,
+  d: {
+    name?: string | null
+    paid: boolean
+    net: unknown
+    gross: unknown
+    method?: string | null
+    accountNumber?: string | null
+    reference?: string | null
+    reason?: string | null
+  },
+) {
+  const first = (d.name || 'there').split(' ')[0]
+  await sendMail({
+    to,
+    subject: d.paid ? `Referral payout sent - ${peso(d.net)}` : 'Your referral withdrawal was not approved',
+    text: d.paid
+      ? `Hi ${first}, ${peso(d.net)} was sent to your ${d.method || 'payout'} account (ref ${d.reference || '-'}).`
+      : `Hi ${first}, your referral withdrawal was not approved: ${d.reason || '-'}. Your ${peso(d.gross)} is back in your referral balance.`,
+    html: shell({
+      badge: d.paid ? 'PAYOUT SENT' : 'NOT APPROVED',
+      badgeColor: d.paid ? '#34d399' : '#fb7185',
+      title: d.paid ? 'Your referral payout was sent' : 'Your withdrawal was not approved',
+      intro: d.paid
+        ? `Hi ${esc(first)}, thank you for referring a friend to PKC BIZOFT. Your payout is on its way.`
+        : `Hi ${esc(first)}, Accounting could not approve this withdrawal.`,
+      rows: d.paid
+        ? [
+            ['Amount sent', peso(d.net)],
+            ['Withdrawn', peso(d.gross)],
+            ['Sent to', `${d.method || '-'} ${d.accountNumber || ''}`.trim()],
+            ['Transfer ref.', d.reference || '-'],
+          ]
+        : [
+            ['Amount', peso(d.gross)],
+            ['Reason', d.reason || '-'],
+          ],
+      note: d.paid
+        ? 'Keep this email as your record. Your referral history is in the app under <strong>Refer &amp; Earn</strong>.'
+        : 'The amount is back in your available referral balance. You can request a withdrawal again in the app under <strong>Refer &amp; Earn</strong>.',
+      noteTone: d.paid ? 'good' : 'bad',
+    }),
+  })
+}
+
 const REMINDERS: Record<string, { badge: string; color: string; title: string; tone: 'good' | 'warn' | 'bad'; note: string }> = {
-  due5: { badge: 'DUE SOON', color: '#fbbf24', title: 'Your bill is due in 5 days', tone: 'warn', note: 'Pay in the app under <strong>Payment</strong> to avoid any interruption.' },
-  due0: { badge: 'DUE TODAY', color: '#fbbf24', title: 'Your bill is due today', tone: 'warn', note: 'Please pay today in the app under <strong>Payment</strong>.' },
-  late1: { badge: 'OVERDUE', color: '#fb7185', title: 'Your bill is overdue', tone: 'bad', note: 'Your bill was due yesterday. Please pay as soon as you can in the app under <strong>Payment</strong>.' },
-  late7: { badge: 'FINAL NOTICE', color: '#fb7185', title: 'Your bill is 7 days overdue', tone: 'bad', note: 'Your account may be disconnected if this stays unpaid. Please pay now in the app under <strong>Payment</strong>, or contact us if you already did.' },
+  due5: { badge: 'DUE SOON', color: '#fbbf24', title: 'Your bill is due in 5 days', tone: 'warn', note: 'Pay in the app under <strong>Plan &amp; Bills</strong> to avoid any interruption.' },
+  due0: { badge: 'DUE TODAY', color: '#fbbf24', title: 'Your bill is due today', tone: 'warn', note: 'Please pay today in the app under <strong>Plan &amp; Bills</strong>.' },
+  late1: { badge: 'OVERDUE', color: '#fb7185', title: 'Your bill is overdue', tone: 'bad', note: 'Your bill was due yesterday. Please pay as soon as you can in the app under <strong>Plan &amp; Bills</strong>.' },
+  late7: { badge: 'FINAL NOTICE', color: '#fb7185', title: 'Your bill is 7 days overdue', tone: 'bad', note: 'Your account may be disconnected if this stays unpaid. Please pay now in the app under <strong>Plan &amp; Bills</strong>, or contact us if you already did.' },
 }
 
 export async function sendReminderEmail(to: string, kind: string, d: { name?: string | null; amount: unknown; due: string | null; ref?: string | null }) {
