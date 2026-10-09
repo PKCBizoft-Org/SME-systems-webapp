@@ -4,7 +4,7 @@ import { LowRatingsBadge } from "./LowRatingsBadge";
 import { PendingPaymentsBadge } from "./PendingPaymentsBadge";
 import { StaffGuard } from "./StaffGuard";
 
-export type StaffSection = "clients" | "inventory" | "accounting" | "ratings" | "users";
+export type StaffSection = "clients" | "inventory" | "accounting" | "ratings" | "users" | "account";
 
 const SECTIONS: { key: StaffSection; label: string; href: string; roles: string[] }[] = [
   { key: "clients", label: "Clients", href: "/clients", roles: ["admin", "technician", "inventory", "accounting"] },
@@ -49,10 +49,10 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
         ))}
       </nav>
 
-      <span className={styles.session}>
+      <Link href="/account" className={styles.session} title="My account and password">
         <i aria-hidden="true" />
-        Secure session
-      </span>
+        Secure session · Account
+      </Link>
       </header>
     </>
   );

@@ -493,7 +493,10 @@ export default function LoginPage() {
     document.title = "PKC BIZOFT | Business Technology Platform";
 
     const bootTimer = window.setTimeout(() => {
-      if (new URLSearchParams(window.location.search).get("changed")) {
+      const changed = new URLSearchParams(window.location.search).get("changed");
+      if (changed === "kept") {
+        setMessage("Okay! Sign in with your default password.");
+      } else if (changed) {
         setMessage("Password updated. Sign in with your new password.");
       }
       setBooting(false);

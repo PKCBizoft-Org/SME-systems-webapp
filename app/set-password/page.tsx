@@ -140,6 +140,29 @@ export default function SetPasswordPage() {
     window.setTimeout(() => router.replace(destination), 1500)
   }
 
+  // First sign-in with the default password an admin generated: the person may
+  // also decide to simply keep it. The flag is cleared either way.
+  async function keepDefault() {
+    setError('')
+    setSaving(true)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const done = await fetch('/api/auth/password-changed', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${sessionData.session?.access_token}` },
+    }).catch(() => null)
+    if (!done?.ok) {
+      setSaving(false)
+      setError('We could not save your choice. Please try again.')
+      return
+    }
+    await supabase.auth.signOut()
+    setSuccess(true)
+    window.setTimeout(() => router.replace('/login?changed=kept'), 1500)
+  }
+
+  const isFirstLogin =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('first') === '1'
+
   if (checking) {
     return (
       <PkcLoader label="Checking your invite link" steps={['Checking your invite link', 'Preparing your account']} />
@@ -231,6 +254,12 @@ export default function SetPasswordPage() {
             <button type="submit" disabled={saving}>
               {saving ? 'Setting password...' : 'Set password and continue'}
             </button>
+
+            {isFirstLogin && (
+              <button type="button" className="secondary" disabled={saving} onClick={() => void keepDefault()}>
+                Keep the default password
+              </button>
+            )}
           </form>
         )}
       </div>
@@ -338,6 +367,11 @@ const styles = `
 
   .toggleVisibility:hover {
     color: #4cb6ff;
+  }
+
+  .secondary {
+    background: transparent;
+    color: #1599ff;
   }
 
   .fieldHint {
