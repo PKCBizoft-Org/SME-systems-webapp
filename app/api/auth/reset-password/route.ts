@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminClient, hashCode } from '@/lib/serverSecurity'
 import { findUserByEmail } from '@/lib/signupCodes'
+import { RESETS_PER_MONTH, currentResetMonth, limitMessage, resetsUsed } from '@/lib/resetLimit'
 
 const MAX_ATTEMPTS = 5
 
@@ -29,6 +30,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'That code is wrong or has expired.' }, { status: 400 })
   }
 
+  const used = resetsUsed(user.app_metadata)
+  if (used >= RESETS_PER_MONTH) {
+    return NextResponse.json({ error: limitMessage(), limit: RESETS_PER_MONTH }, { status: 429 })
+  }
+
   const { data: record } = await admin
     .from('signup_codes')
     .select('code_hash, expires_at, attempts')
@@ -47,9 +53,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'That code is wrong.' }, { status: 401 })
   }
 
-  const { error } = await admin.auth.admin.updateUserById(user.id, { password })
+  const { error } = await admin.auth.admin.updateUserById(user.id, {
+    password,
+    app_metadata: { reset_month: currentResetMonth(), reset_count: used + 1 },
+  })
   if (error) return NextResponse.json({ error: 'Unable to set the new password.' }, { status: 500 })
 
   await admin.from('signup_codes').delete().eq('user_id', user.id)
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, limit: RESETS_PER_MONTH, remaining: RESETS_PER_MONTH - used - 1 })
 }
