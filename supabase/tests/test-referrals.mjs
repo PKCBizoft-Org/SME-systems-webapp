@@ -159,4 +159,19 @@ await t('the referrer is told when a friend\'s install earns a reward', async ()
   eq((await one(`select count(*)::int n from public.referral_rewards`)).n, 1, 'no duplicate reward')
 })
 
+section('7. A referred customer can refer others')
+await t('a customer who was themselves referred earns a reward for their own friend', async () => {
+  await db.exec(`delete from public.referral_rewards; delete from public.referral_withdrawals; delete from public.referrals;`)
+  // c2 was referred by c1; now c3 joins through c2.
+  await db.query(`update public.clients set referred_by_client_id = $1 where id = $2`, [ID.c1, ID.c2])
+  await db.query(`update public.clients set referred_by_client_id = $1 where id = $2`, [ID.c2, ID.c3])
+  const req = await one(`insert into public.service_requests (user_id, client_id, request_type, requested_plan, status) values ($1, $2, 'plan_change', 'G1_P750', 'Completed') returning id`, [ID.u3, ID.c3])
+  await db.query(`delete from public.payment_submissions where client_id = $1`, [ID.c3])
+  await db.query(`insert into public.payment_submissions (client_id, user_id, service_request_id, amount_claimed, payment_method, status) values ($1, $2, $3, 750, 'GCash', 'Verified')`, [ID.c3, ID.u3, req.id])
+  await db.query(`select public.award_referral($1)`, [ID.c3])
+  const reward = await one(`select referrer_client_id, amount from public.referral_rewards`)
+  eq(reward.referrer_client_id, ID.c2, 'the reward goes to the referred customer who referred c3')
+  eq(Number(reward.amount), 250, 'amount')
+})
+
 process.exit(summary() ? 1 : 0)
