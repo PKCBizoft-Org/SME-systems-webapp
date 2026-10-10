@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const dir = path.dirname(fileURLToPath(import.meta.url))
-const all = '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261009240000_db_hygiene.sql'
+const all = '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261009240000_db_hygiene.sql,20261010110000_cancel_bill_payment.sql'
 const suites = ['test-bills', 'test-referrals', 'test-automation', 'test-hygiene', 'test-staff-view']
 
 let failed = 0

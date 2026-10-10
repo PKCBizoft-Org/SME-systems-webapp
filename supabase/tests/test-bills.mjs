@@ -3,7 +3,7 @@ import { applyMigrations } from './migrate.mjs'
 import { ID, seed, addBill } from './seed.mjs'
 import { t, rejects, eq, ok, section, summary } from './kit.mjs'
 
-const MIGRATIONS = (process.env.MIGRATIONS || '20261009220000_bill_payments.sql').split(',')
+const MIGRATIONS = (process.env.MIGRATIONS || '20261009220000_bill_payments.sql,20261010110000_cancel_bill_payment.sql').split(',')
 
 const { db, failures } = await createDb()
 if (failures.length > 1) console.log('replica load warnings:', failures.length)
@@ -308,6 +308,32 @@ await t('a plan that is not in the old hardcoded list is accepted by the table',
   const id = (await as(ID.u2, `select public.submit_plan_purchase($1, 'G1_P3000', 3000, 'Manual', 'GCash', 'GC-3000', null, null, null, '09170000002', null, $2, null) id`, [ID.c2, `${ID.u2}/${ID.c2}/p.jpg`])).rows[0].id
   ok(id, 'created')
   await as(ID.u2, `select public.cancel_scheduled_plan_change($1)`, [id])
+})
+
+section('11. Customer cancels a pending bill payment')
+const C1 = await addBill(db, { client: ID.c3, billId: 'SAM-00011', amount: 750, dueOffset: 4, periodStartOffset: -25 })
+const C2 = await addBill(db, { billId: 'SAM-00012', amount: 750, dueOffset: 6, periodStartOffset: -24 })
+await t('cancel frees the bill and the reference, keeps a record, and cannot be repeated', async () => {
+  const sub = await submitBill(ID.u3, C1, 300, { ref: 'CANCEL-REF-1' })
+  await rejects(() => as(ID.u1, `select public.cancel_bill_payment($1)`, [sub]), /could not be found/)
+  await as(ID.u3, `select public.cancel_bill_payment($1)`, [sub])
+  const row = await one(`select status, reject_note from public.payment_submissions where id = $1`, [sub])
+  eq(row.status, 'Cancelled', 'status')
+  eq(row.reject_note, 'Cancelled by the customer', 'note')
+  await rejects(() => as(ID.u3, `select public.cancel_bill_payment($1)`, [sub]), /already cancelled/)
+  await submitBill(ID.u3, C1, 750, { ref: 'CANCEL-REF-1' })
+  eq((await one(`select count(*)::int n from public.audit_log where field_name = 'payment_cancelled'`)).n, 1, 'audited')
+})
+await t('a verified payment cannot be cancelled', async () => {
+  const sub = (await q(`select id from public.payment_submissions where reference_number = 'CANCEL-REF-1' and status = 'Pending'`))[0].id
+  await verify(sub)
+  await rejects(() => as(ID.u3, `select public.cancel_bill_payment($1)`, [sub]), /already verified/)
+})
+await t('cancelling does not send a rejection push', async () => {
+  const before = (await pushes()).length
+  const sub = await submitBill(ID.u1, C2, 100)
+  await as(ID.u1, `select public.cancel_bill_payment($1)`, [sub])
+  eq((await pushes()).length, before, 'no push')
 })
 
 process.exit(summary() ? 1 : 0)
