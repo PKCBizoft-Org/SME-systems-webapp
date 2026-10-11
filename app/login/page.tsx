@@ -8,6 +8,7 @@
 import { type CSSProperties, FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { homeForUser } from "@/lib/homeForRole";
+import { attemptsMessage, checkLock, lockMessage, recordAttempt } from "@/lib/loginLockout";
 import { StaffVerification } from "../components/StaffVerification";
 
 type RobotExpression =
@@ -533,16 +534,28 @@ export default function LoginPage() {
     setLoginErrorMessage("");
     setRobotStatus("loading");
 
+    // Too many wrong passwords recently: do not even try.
+    const lock = await checkLock(email);
+    if (lock.locked) {
+      setMessage(lockMessage(lock.secondsLeft));
+      setLoginErrorMessage("Sign-in is paused for a few minutes to keep this account safe.");
+      setRobotStatus("error");
+      setLoading(false);
+      return;
+    }
+
     const { data: signInData, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
 
     if (error) {
-      const friendlyMessage = error.message
-        .toLowerCase()
-        .includes("invalid login credentials")
-        ? "The email or password is incorrect. Please try again."
+      const wrongPassword = error.message.toLowerCase().includes("invalid login credentials");
+      const after = wrongPassword ? await recordAttempt(email, false) : null;
+      const friendlyMessage = after?.locked
+        ? lockMessage(after.secondsLeft)
+        : wrongPassword
+        ? `The email or password is incorrect. Please try again.${attemptsMessage(after?.attemptsLeft ?? 5)}`
         : error.message.toLowerCase().includes("email not confirmed")
           ? "Please confirm your email address before signing in."
           : "We couldn't sign you in right now. Please check your details and try again.";
@@ -553,6 +566,18 @@ export default function LoginPage() {
           ? "Your email still needs to be confirmed."
           : "Those email and password details don't match an account. Let's check them and try again.",
       );
+      setRobotStatus("error");
+      setLoading(false);
+      return;
+    }
+
+    // Signed in: clear the count. If the address is locked after all (for
+    // example another device locked it a moment ago), sign out again.
+    const afterSuccess = await recordAttempt(email, true);
+    if (afterSuccess.locked) {
+      await supabase.auth.signOut();
+      setMessage(lockMessage(afterSuccess.secondsLeft));
+      setLoginErrorMessage("Sign-in is paused for a few minutes to keep this account safe.");
       setRobotStatus("error");
       setLoading(false);
       return;

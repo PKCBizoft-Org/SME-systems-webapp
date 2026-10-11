@@ -28,7 +28,8 @@ const FEATURES: { key: string; label: string; help: string; enforced: boolean }[
   { key: "ratings", label: "Ratings", help: "Customer ratings and surveys", enforced: false },
   { key: "analytics", label: "Revenue analytics", help: "Monthly revenue and collections", enforced: true },
   { key: "tickets", label: "Tickets", help: "Read and answer customer chats", enforced: true },
-  { key: "audit", label: "Audit log", help: "Who changed what, and when", enforced: true },
+  { key: "audit", label: "Audit log and app errors", help: "Who changed what, and crash reports", enforced: true },
+  { key: "dispatch", label: "Dispatch and outages", help: "Assign jobs and post outage notices", enforced: true },
 ];
 
 const DEFAULTS: Record<string, string[]> = {

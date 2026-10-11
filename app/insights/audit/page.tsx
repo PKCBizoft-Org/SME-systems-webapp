@@ -31,12 +31,16 @@ const LABELS: Record<string, string> = {
   account_status: "Account status",
   modem_serial: "Modem serial saved",
   permission_changed: "Permission changed",
+  job_assigned: "Job assigned",
+  outage_created: "Outage posted",
+  outage_resolved: "Outage resolved",
 };
 
 function groupOf(entry: Entry): Exclude<Group, "all"> {
   if (entry.source === "staff") return "staff";
   if (entry.what.startsWith("payment")) return "money";
-  if (entry.what === "installation_completed" || entry.what === "modem_serial") return "installs";
+  if (entry.what === "installation_completed" || entry.what === "modem_serial" || entry.what === "job_assigned") return "installs";
+  if (entry.what.startsWith("outage")) return "accounts";
   return "accounts";
 }
 
@@ -124,7 +128,7 @@ export default function AuditPage() {
             [
               ["all", "Everything"],
               ["money", "Payments"],
-              ["installs", "Installations & modems"],
+              ["installs", "Installations, jobs & modems"],
               ["accounts", "Account changes"],
               ["staff", "Staff & permissions"],
             ] as [Group, string][]

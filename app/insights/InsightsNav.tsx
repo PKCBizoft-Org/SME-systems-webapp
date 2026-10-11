@@ -4,6 +4,10 @@ import styles from "../accounting/reports/reports.module.css";
 const TABS: { key: string; label: string; href: string; permission: string }[] = [
   { key: "analytics", label: "Revenue analytics", href: "/insights/analytics", permission: "analytics" },
   { key: "tickets", label: "Tickets", href: "/insights/tickets", permission: "tickets" },
+  { key: "dispatch", label: "Dispatch", href: "/insights/dispatch", permission: "dispatch" },
+  { key: "outages", label: "Outages", href: "/insights/outages", permission: "dispatch" },
+  { key: "trucks", label: "Truck stock", href: "/insights/trucks", permission: "inventory" },
+  { key: "errors", label: "App errors", href: "/insights/errors", permission: "audit" },
   { key: "audit", label: "Audit log", href: "/insights/audit", permission: "audit" },
   { key: "permissions", label: "Permissions", href: "/insights/permissions", permission: "users" },
 ];
