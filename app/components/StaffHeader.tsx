@@ -4,13 +4,14 @@ import { LowRatingsBadge } from "./LowRatingsBadge";
 import { PendingPaymentsBadge } from "./PendingPaymentsBadge";
 import { StaffGuard } from "./StaffGuard";
 
-export type StaffSection = "clients" | "inventory" | "accounting" | "ratings" | "users" | "account";
+export type StaffSection = "clients" | "inventory" | "accounting" | "ratings" | "insights" | "users" | "account";
 
 const SECTIONS: { key: StaffSection; label: string; href: string; roles: string[] }[] = [
   { key: "clients", label: "Clients", href: "/clients", roles: ["admin", "technician", "inventory", "accounting"] },
   { key: "inventory", label: "Inventory", href: "/inventory", roles: ["admin", "inventory"] },
   { key: "accounting", label: "Accounting", href: "/accounting", roles: ["admin", "accounting"] },
   { key: "ratings", label: "Ratings", href: "/ratings", roles: ["admin", "accounting"] },
+  { key: "insights", label: "Insights", href: "/insights/analytics", roles: ["admin", "accounting"] },
   { key: "users", label: "Users", href: "/users", roles: ["admin"] },
 ];
 

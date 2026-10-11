@@ -16,6 +16,9 @@ type Rating = {
   technician_name: string | null;
   stars: number;
   comment: string | null;
+  on_time: boolean | null;
+  explained: boolean | null;
+  tidy: boolean | null;
   reviewed_at: string | null;
   created_at: string;
 };
@@ -59,7 +62,7 @@ export default function RatingsPage() {
     try {
       const result = await supabase
         .from("ratings")
-        .select("id, client_id, kind, technician_name, stars, comment, reviewed_at, created_at")
+        .select("id, client_id, kind, technician_name, stars, comment, on_time, explained, tidy, reviewed_at, created_at")
         .order("created_at", { ascending: false })
         .limit(500);
       if (result.error) throw new Error(result.error.message);
@@ -277,6 +280,19 @@ export default function RatingsPage() {
                   </div>
 
                   {r.comment ? <p className={styles.comment}>{r.comment}</p> : <p className={styles.noComment}>No comment.</p>}
+
+                  {r.on_time !== null || r.explained !== null || r.tidy !== null ? (
+                    <p className={styles.noComment}>
+                      {[
+                        ["On time", r.on_time],
+                        ["Explained clearly", r.explained],
+                        ["Left tidy", r.tidy],
+                      ]
+                        .filter(([, answer]) => answer !== null)
+                        .map(([label, answer]) => `${answer ? "✓" : "✗"} ${label}`)
+                        .join("   ")}
+                    </p>
+                  ) : null}
 
                   <div className={styles.cardFoot}>
                     <span>{formatDate(r.created_at)}</span>
