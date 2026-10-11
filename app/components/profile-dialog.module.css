@@ -137,7 +137,7 @@
   border-radius: 999px;
   background: rgba(76, 232, 255, 0.07);
   color: #7ff0ff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -185,7 +185,7 @@
 .detail dt {
   margin-bottom: 4px;
   color: rgba(203, 230, 237, 0.56);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
