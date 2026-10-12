@@ -726,10 +726,10 @@ export default function AccountingPage() {
                 <header><div><small>BILLING SCHEDULE</small><h3>Account cycle</h3></div></header>
                 <div className="details-grid compact">
                   <Detail label="Cycle" value={selectedClient.billing_cycle} />
-                  <Detail label="Billing day" value={selectedClient.billing_day} />
-                  <Detail label="Due day" value={selectedClient.due_day} />
-                  <Detail label="Disconnect" value={selectedClient.disconnect_day} />
-                  <Detail label="Terminate" value={selectedClient.terminate_day} />
+                  <Detail label="Billing day" value={selectedClient.billing_day ?? (selectedClient.install_date ? `${Math.min(new Date(`${selectedClient.install_date}T00:00:00`).getDate(), 28)} (install day)` : null)} />
+                  <Detail label="Due day" value={selectedClient.due_day ?? "7 days after the bill"} />
+                  <Detail label="Disconnect" value={selectedClient.disconnect_day ?? "Flagged 7 days after due"} />
+                  <Detail label="Terminate" value={selectedClient.terminate_day ?? "Decided by admin"} />
                 </div>
               </section>
             </div>
