@@ -194,7 +194,9 @@ export default function SetPasswordPage() {
 
         {success ? (
           <div className="successBox">
-            Password set. Taking you to your dashboard...
+            {isFirstLogin
+              ? 'Password saved. Taking you to sign in with your new password. Staff will then be asked for their 2-step code.'
+              : 'Password set. Taking you to your dashboard...'}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="form">

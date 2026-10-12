@@ -553,21 +553,21 @@ export default function AccountingPage() {
                     >
                       🔔 Remind all overdue ({overdueCustomers})
                     </button>
-                    <Link role="menuitem" href="/accounting/referrals" onClick={() => setMoreOpen(false)}>
+                    <a role="menuitem" href="/accounting/referrals">
                       ★ Referral payouts <PendingWithdrawalsBadge />
-                    </Link>
-                    <Link role="menuitem" href="/accounting/reports" onClick={() => setMoreOpen(false)}>
+                    </a>
+                    <a role="menuitem" href="/accounting/reports">
                       ▤ Reports
-                    </Link>
+                    </a>
                     {staffRoles.includes("admin") && (
-                      <Link role="menuitem" href="/accounting/plans" onClick={() => setMoreOpen(false)}>
+                      <a role="menuitem" href="/accounting/plans">
                         ₱ Plans &amp; prices
-                      </Link>
+                      </a>
                     )}
                     {staffRoles.includes("admin") && (
-                      <Link role="menuitem" href="/accounting/audit" onClick={() => setMoreOpen(false)}>
+                      <a role="menuitem" href="/accounting/audit">
                         ⌕ Audit log
-                      </Link>
+                      </a>
                     )}
                   </div>
                 </>
