@@ -29,6 +29,7 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migra
 await db.exec(fs.readFileSync(path.join(dir, '20261012120000_pending_payment_notice_realtime.sql'), 'utf8').replace(/do \$\$[\s\S]*?end \$\$;/i, ''))
 await db.exec(fs.readFileSync(path.join(dir, '20261012140000_install_payment_remote_signoff.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012170000_notify_technicians_new_installation.sql'), 'utf8'))
+await db.exec(fs.readFileSync(path.join(dir, '20261012200000_install_needs_plan_billing_day.sql'), 'utf8'))
 
 const TECH = 'e0000000-0000-0000-0000-000000000071'
 await db.exec(`
@@ -83,6 +84,13 @@ await db.query(`insert into public.repair_photos (repair_id, photo_type, storage
 await t('only the technician who took the job can ask', async () => {
   await rejects(() => call(ID.acc, `select public.request_customer_signature($1, 'Done', null)`, [job]), /Only the technician/)
 })
+await t('a customer with no plan cannot be finished, on the spot or by asking for a signature', async () => {
+  await db.query(`update public.clients set plan_name = null where id = $1`, [ID.c2])
+  await rejects(() => call(TECH, `select public.request_customer_signature($1, 'Done', null)`, [job]), /no plan yet/)
+  await rejects(() => db.query(`update public.repair_records set status = 'Completed' where id = $1`, [job]), /no plan yet/)
+  eq((await one(`select status from public.repair_records where id = $1`, [job])).status, 'In Progress')
+  await db.query(`update public.clients set plan_name = 'G1_P750' where id = $1`, [ID.c2])
+})
 await t('asking puts the job on hold, keeps the account inactive and notifies the customer', async () => {
   await call(TECH, `select public.request_customer_signature($1, 'Router installed', null)`, [job])
   const j = await one(`select status, resolution, signature_requested_at from public.repair_records where id = $1`, [job])
@@ -114,6 +122,8 @@ await t('signing finishes the job and switches the account on', async () => {
   const c = await one(`select account_status, installation_status from public.clients where id = $1`, [ID.c2])
   eq(c.account_status, 'Active')
   eq(c.installation_status, 'Installed')
+  const day = (await one(`select least(extract(day from current_date)::int, 28) d`)).d
+  eq((await one(`select billing_day from public.clients where id = $1`, [ID.c2])).billing_day, day)
   eq((await q(`select 1 from public.repair_photos where repair_id = $1 and photo_type = 'signature'`, [job])).length, 1)
 })
 await t('it cannot be signed twice', async () => {

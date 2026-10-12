@@ -153,6 +153,22 @@ function badgeClass(value: string) {
   return "neutral";
 }
 
+function nextBillText(client: Client, bills: BillingRecord[]) {
+  if (!client.plan_name?.trim()) return "No plan yet, so nothing to bill";
+  if (!client.install_date) return "Not installed yet";
+  const day = Math.min(client.billing_day ?? new Date(`${client.install_date}T00:00:00`).getDate(), 28);
+  const latest = bills
+    .map((bill) => bill.billing_period_start)
+    .filter((value): value is string => !!value)
+    .sort()
+    .at(-1);
+  const base = new Date(`${latest ?? client.install_date}T00:00:00`);
+  let next = new Date(base.getFullYear(), base.getMonth(), day);
+  if (next <= base) next = new Date(base.getFullYear(), base.getMonth() + 1, day);
+  const iso = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+  return latest ? formatDate(iso) : `${formatDate(iso)} (first month was paid with the plan)`;
+}
+
 function jobLabel(type: string | null) {
   return type === "installation" ? "Installation" : "Repair";
 }
@@ -846,11 +862,12 @@ export default function AccountingCustomerPage() {
                   </div>
                 </header>
                 <div className="details-grid">
-                  <Detail label="Cycle" value={client.billing_cycle} />
-                  <Detail label="Billing day" value={client.billing_day} />
-                  <Detail label="Due day" value={client.due_day} />
-                  <Detail label="Disconnect" value={client.disconnect_day} />
-                  <Detail label="Terminate" value={client.terminate_day} />
+                  <Detail label="Cycle" value={client.billing_cycle || "Monthly"} />
+                  <Detail label="Billing day" value={client.billing_day ?? (client.install_date ? `${Math.min(new Date(`${client.install_date}T00:00:00`).getDate(), 28)} (install day)` : null)} />
+                  <Detail label="Due day" value={client.due_day ?? "7 days after the bill"} />
+                  <Detail label="Disconnect" value={client.disconnect_day ?? "Flagged 7 days after due"} />
+                  <Detail label="Terminate" value={client.terminate_day ?? "Decided by admin"} />
+                  <Detail label="Next bill" value={nextBillText(client, billing)} wide />
                 </div>
               </section>
 
@@ -866,7 +883,7 @@ export default function AccountingCustomerPage() {
                   <Detail label="Account ID" value={client.account_id} />
                   <Detail label="Mobile" value={client.mobile_number} />
                   <Detail label="Email" value={client.email} />
-                  <Detail label="Plan" value={planLabel(client.plan_name)} />
+                  <Detail label="Plan" value={planLabel(client.plan_name) || "No plan yet"} />
                   <Detail label="Area" value={client.area} />
                   <Detail
                     label="Installation"
