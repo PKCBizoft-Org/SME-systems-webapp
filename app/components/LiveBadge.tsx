@@ -6,6 +6,10 @@ import { createClient } from "../../lib/supabaseClient";
 const supabase = createClient();
 const REFRESH_MS = 15_000;
 
+// Two badges for the same table on one page must not share a channel: the client hands back the
+// already-subscribed one and throws when a second listener is added to it.
+let badgeSeq = 0;
+
 // Any page that changes something a badge counts calls this so every badge
 // updates right away instead of waiting for the next refresh.
 export const BADGES_CHANGED_EVENT = "pkc:badges-changed";
@@ -46,7 +50,7 @@ export function LiveBadge({ fetchCount, table, label }: Props) {
     document.addEventListener("visibilitychange", refreshNow);
 
     const channel = supabase
-      .channel(`badge-${table}`)
+      .channel(`badge-${table}-${++badgeSeq}`)
       .on("postgres_changes", { event: "*", schema: "public", table }, () => void load())
       .subscribe();
 

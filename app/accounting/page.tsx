@@ -554,7 +554,7 @@ export default function AccountingPage() {
                       🔔 Remind all overdue ({overdueCustomers})
                     </button>
                     <a role="menuitem" href="/accounting/referrals">
-                      ★ Referral payouts <PendingWithdrawalsBadge />
+                      ★ Referral payouts
                     </a>
                     <a role="menuitem" href="/accounting/reports">
                       ▤ Reports
