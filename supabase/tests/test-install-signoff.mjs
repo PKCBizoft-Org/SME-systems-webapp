@@ -30,6 +30,7 @@ await db.exec(fs.readFileSync(path.join(dir, '20261012120000_pending_payment_not
 await db.exec(fs.readFileSync(path.join(dir, '20261012140000_install_payment_remote_signoff.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012170000_notify_technicians_new_installation.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012200000_install_needs_plan_billing_day.sql'), 'utf8'))
+await db.exec(fs.readFileSync(path.join(dir, '20261012210000_require_arrival_before_done.sql'), 'utf8'))
 
 const TECH = 'e0000000-0000-0000-0000-000000000071'
 await db.exec(`
@@ -77,6 +78,19 @@ await t('every technician of the company is told to get to work, nobody else', a
 
 section('3. Customer not at home: sign in the app')
 await db.query(`update public.repair_records set technician_user_id = $1, status = 'In Progress' where id = $2`, [TECH, job])
+await db.query(`update public.clients set plan_name = 'G1_P750' where id = $1`, [ID.c2])
+await t('the technician cannot finish a job before checking in as arrived', async () => {
+  await rejects(() => call(TECH, `select public.request_customer_signature($1, 'Done', null)`, [job]), /I have arrived/)
+  await rejects(() => call(TECH, `update public.repair_records set status = 'Completed' where id = $1`, [job]), /I have arrived/)
+  eq((await one(`select status from public.repair_records where id = $1`, [job])).status, 'In Progress')
+})
+await t('an admin can still close a job from the website without the check-in', async () => {
+  await db.query(`update public.repair_records set status = 'Completed' where id = $1`, [job])
+  await db.query(`update public.repair_records set status = 'In Progress' where id = $1`, [job])
+  // Closing it switched the account on; put it back for the rest of the test.
+  await db.query(`update public.clients set account_status = 'Inactive', installation_status = null, install_date = null, billing_day = null where id = $1`, [ID.c2])
+})
+await db.query(`update public.repair_records set arrived_at = now() where id = $1`, [job])
 await t('the after photo is required first', async () => {
   await rejects(() => call(TECH, `select public.request_customer_signature($1, 'Done', null)`, [job]), /after photo/)
 })
@@ -130,7 +144,7 @@ await t('it cannot be signed twice', async () => {
   await rejects(() => call(ID.u2, `select public.sign_off_job($1, $2)`, [job, file]), /not waiting/)
 })
 await t('the technician can take the request back', async () => {
-  const j2 = (await one(`insert into public.repair_records (client_id, status, problem_description, job_type, technician_user_id) values ($1, 'In Progress', 'x', 'repair', $2) returning id`, [ID.c1, TECH])).id
+  const j2 = (await one(`insert into public.repair_records (client_id, status, problem_description, job_type, technician_user_id, arrived_at) values ($1, 'In Progress', 'x', 'repair', $2, now()) returning id`, [ID.c1, TECH])).id
   await db.query(`insert into public.repair_photos (repair_id, photo_type, storage_path) values ($1, 'after', 'jobs/x/a.jpg')`, [j2])
   await call(TECH, `select public.request_customer_signature($1, null, null)`, [j2])
   await call(TECH, `select public.cancel_signature_request($1)`, [j2])
