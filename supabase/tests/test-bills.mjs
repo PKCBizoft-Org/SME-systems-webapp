@@ -262,7 +262,7 @@ await t('a new customer\'s payment date is kept and verification still creates t
   REQ = (
     await as(
       ID.u2,
-      `select public.submit_plan_purchase($1, 'G1_P750', 750, 'Manual', 'GCash', 'GC-PLAN-1', null, null, null, '09170000002', $2::date, $3, null) id`,
+      `select public.submit_plan_purchase($1, 'G1_P750', 1500, 'Manual', 'GCash', 'GC-PLAN-1', null, null, null, '09170000002', $2::date, $3, null) id`,
       [ID.c2, d, `${ID.u2}/${ID.c2}/p.jpg`],
     )
   ).rows[0].id
@@ -305,7 +305,7 @@ await t('list_plans returns this tenant\'s active plans, cheapest first', async 
 })
 await t('a plan that is not in the old hardcoded list is accepted by the table', async () => {
   await db.query(`insert into public.internet_plans (tenant_id, plan_name, price, speed, active) values ($1, 'G1_P3000', 3000, '3000 Mbps', true)`, [ID.tenant])
-  const id = (await as(ID.u2, `select public.submit_plan_purchase($1, 'G1_P3000', 3000, 'Manual', 'GCash', 'GC-3000', null, null, null, '09170000002', null, $2, null) id`, [ID.c2, `${ID.u2}/${ID.c2}/p.jpg`])).rows[0].id
+  const id = (await as(ID.u2, `select public.submit_plan_purchase($1, 'G1_P3000', 3750, 'Manual', 'GCash', 'GC-3000', null, null, null, '09170000002', null, $2, null) id`, [ID.c2, `${ID.u2}/${ID.c2}/p.jpg`])).rows[0].id
   ok(id, 'created')
   await as(ID.u2, `select public.cancel_scheduled_plan_change($1)`, [id])
 })
