@@ -325,6 +325,17 @@ export default function ClientDetailPage() {
         return;
       }
 
+      // Accounting only handles money: their customer page is the accounting one.
+      const { data: roleRows } = await supabase
+        .from("tenant_users")
+        .select("role")
+        .eq("user_id", sessionData.session.user.id);
+      const roles = (roleRows || []).map((row) => row.role);
+      if (roles.includes("accounting") && !roles.includes("admin") && !roles.includes("technician")) {
+        router.replace(`/accounting/${id}`);
+        return;
+      }
+
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("*")

@@ -75,6 +75,18 @@ type PaymentRecord = {
 
 type ReminderResult = { type: "success" | "error"; message: string };
 
+// What the technicians have done for this customer. Read-only and automatic.
+type ServiceSummary = {
+  house_photos: number;
+  post_photos: number;
+  installation_photos: number;
+  open_jobs: number;
+  repairs_done: number;
+  last_repair_at: string | null;
+  install_job_status: string | null;
+  install_signed_at: string | null;
+};
+
 const supabase = createClient();
 
 const CLIENT_COLUMNS = `
@@ -130,11 +142,49 @@ function billStatus(bill: BillingRecord, paid: number) {
   return "Unpaid";
 }
 
+// Colour for any status word: green = done, amber = in progress, red = problem.
 function badgeClass(value: string) {
-  if (value === "Paid" || value === "Active") return "good";
-  if (value === "Overdue" || value === "Suspended") return "danger";
-  if (value === "Partial") return "warning";
+  const v = value.trim().toLowerCase();
+  if (/^(paid|active|installed|completed|done|recorded)/.test(v)) return "good";
+  if (/(overdue|suspend|cancel|terminat|disconnect)/.test(v)) return "danger";
+  if (/(partial|due|for install|schedul|progress|assigned|pending|awaiting|open|not recorded)/.test(v)) return "warning";
   return "neutral";
+}
+
+function plural(count: number, word: string) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+// The service status rows, worked out from the records (nobody types these).
+function serviceRows(client: Client, s: ServiceSummary | null) {
+  const awaiting = /awaiting signature/i.test(s?.install_job_status || "");
+  const installation = awaiting
+    ? "Awaiting customer signature"
+    : s?.install_signed_at
+      ? `Installed · signed ${formatDate(s.install_signed_at)}`
+      : client.installation_status || "Not started";
+  const rows = [
+    { key: "installation", title: "Installation", value: installation },
+  ];
+  if (s) {
+    const photo = (count: number) => (count > 0 ? `Recorded · ${plural(count, "photo")}` : "Not recorded");
+    rows.push(
+      { key: "house", title: "House / service location", value: photo(s.house_photos) },
+      { key: "post", title: "Post / pole", value: photo(s.post_photos) },
+      { key: "install-photos", title: "Installation proof", value: photo(s.installation_photos) },
+      {
+        key: "repairs",
+        title: "Repair & maintenance",
+        value:
+          s.open_jobs > 0
+            ? `${s.open_jobs} open`
+            : s.repairs_done > 0
+              ? `${s.repairs_done} done${s.last_repair_at ? ` · last ${formatDate(s.last_repair_at)}` : ""}`
+              : "No visits",
+      },
+    );
+  }
+  return rows;
 }
 
 function Detail({
@@ -166,6 +216,7 @@ export default function AccountingCustomerPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [billing, setBilling] = useState<BillingRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [service, setService] = useState<ServiceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -220,6 +271,12 @@ export default function AccountingCustomerPage() {
           return;
         }
         setClient(clientResult.data as Client);
+
+        // The service status is a convenience; the page works without it.
+        void supabase.rpc("account_service_summary", { p_client: clientId }).then(({ data }) => {
+          const row = Array.isArray(data) ? data[0] : data;
+          setService((row as ServiceSummary | null) ?? null);
+        });
 
         const [billingResult, paymentsResultRaw] = await Promise.all([
           supabase
@@ -485,20 +542,13 @@ export default function AccountingCustomerPage() {
     if (!client) return;
     setReminderResult(null);
     setReminderMessage(
-      `Hello ${client.customer_name || "Customer"}, this is a friendly reminder from PKC BIZOFT. Your current outstanding balance is ${formatPeso(financials.outstanding)}. Please settle your account at your earliest convenience. Thank you.`,
+      `Hello ${client.customer_name || "Customer"}, your balance is ${formatPeso(financials.outstanding)}. Please pay in the app at your earliest convenience. Thank you.`,
     );
     setReminderOpen(true);
   }
 
   async function sendReminder() {
     if (!client) return;
-    if (!client.mobile_number?.trim()) {
-      setReminderResult({
-        type: "error",
-        message: "This customer does not have a mobile number saved.",
-      });
-      return;
-    }
     if (!reminderMessage.trim()) {
       setReminderResult({
         type: "error",
@@ -510,35 +560,21 @@ export default function AccountingCustomerPage() {
     setSendingReminder(true);
     setReminderResult(null);
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token)
-        throw new Error("Your session has expired. Please sign in again.");
-
-      const response = await fetch("/api/sms/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          clientId: client.id,
-          message: reminderMessage.trim(),
-        }),
+      const { error } = await supabase.rpc("remind_customer", {
+        p_client: client.id,
+        p_message: reminderMessage.trim(),
       });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error || "The SMS could not be sent.");
+      if (error) throw new Error(error.message);
 
       setReminderResult({
         type: "success",
-        message: `SMS queued successfully for ${result.recipient || client.mobile_number}.`,
+        message: "Reminder sent. The customer will see it in their app.",
       });
     } catch (error) {
       setReminderResult({
         type: "error",
         message:
-          error instanceof Error ? error.message : "The SMS could not be sent.",
+          error instanceof Error ? error.message : "The reminder could not be sent.",
       });
     } finally {
       setSendingReminder(false);
@@ -686,6 +722,24 @@ export default function AccountingCustomerPage() {
               <section className="panel">
                 <header className="panel-head">
                   <div>
+                    <small>SERVICE</small>
+                    <h2>Service status</h2>
+                    <p>Updated automatically from the technicians&apos; work. Nothing here is typed in.</p>
+                  </div>
+                </header>
+                <div className="service-grid">
+                  {serviceRows(client, service).map((row) => (
+                    <div className="service-card" key={row.key}>
+                      <span>{row.title}</span>
+                      <b className={`badge ${badgeClass(row.value)}`}>{row.value}</b>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="panel">
+                <header className="panel-head">
+                  <div>
                     <small>COLLECTION</small>
                     <h2>Payment progress</h2>
                     <p>Overall collection against recorded bills.</p>
@@ -801,6 +855,7 @@ export default function AccountingCustomerPage() {
                   <div>
                     <small>CUSTOMER</small>
                     <h2>Account details</h2>
+                    <p>View only. Admin and technicians keep these up to date.</p>
                   </div>
                 </header>
                 <div className="details-grid">
@@ -812,10 +867,6 @@ export default function AccountingCustomerPage() {
                   <Detail
                     label="Installation"
                     value={formatDate(client.install_date)}
-                  />
-                  <Detail
-                    label="Installation status"
-                    value={client.installation_status}
                   />
                   <Detail label="Technician" value={client.technicians} />
                   <Detail label="PPPoE" value={client.pppoe_name} />
@@ -993,7 +1044,7 @@ export default function AccountingCustomerPage() {
             <header>
               <div>
                 <small>COLLECTION</small>
-                <h2>Send payment reminder</h2>
+                <h2>Remind customer in the app</h2>
               </div>
               <button
                 onClick={() => setReminderOpen(false)}
@@ -1009,7 +1060,7 @@ export default function AccountingCustomerPage() {
               <div>
                 <strong>{client.customer_name || "Customer"}</strong>
                 <small>
-                  {client.mobile_number || "No mobile number saved"}
+                  {client.user_id ? "Gets it as a notification in the PKC BIZOFT app" : "Has not signed in to the app yet"}
                 </small>
               </div>
             </div>
@@ -1019,15 +1070,15 @@ export default function AccountingCustomerPage() {
               <span>{formatPeso(financials.overdue)} overdue</span>
             </div>
             <label className="field">
-              <span>SMS message</span>
+              <span>Message</span>
               <textarea
                 value={reminderMessage}
                 onChange={(e) => setReminderMessage(e.target.value)}
                 rows={6}
-                maxLength={480}
+                maxLength={300}
                 disabled={sendingReminder}
               />
-              <small>{reminderMessage.length}/480</small>
+              <small>{reminderMessage.length}/300 · one reminder per customer per hour</small>
             </label>
             {reminderResult && (
               <div className={`result ${reminderResult.type}`}>
@@ -1045,9 +1096,9 @@ export default function AccountingCustomerPage() {
               <button
                 className="primary"
                 onClick={() => void sendReminder()}
-                disabled={sendingReminder || !client.mobile_number}
+                disabled={sendingReminder || !client.user_id}
               >
-                {sendingReminder ? "Sending…" : "Send SMS reminder"}
+                {sendingReminder ? "Sending…" : "Send reminder"}
               </button>
             </footer>
           </section>
@@ -1188,5 +1239,9 @@ const styles = `
 /* ---- readability + small screens ---- */
 td{font-size:12px}th{font-size:10px}
 .stats small,.panel-head small{font-size:10px}
+.service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;padding:14px}
+.service-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:1px solid #162a34;border-radius:9px;background:#09141a}
+.service-card>span{color:#70848f;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.service-card .badge{font-size:12px;padding:6px 10px;white-space:normal}
 @media(max-width:760px){.table-wrap{overflow-x:auto}.stats{grid-template-columns:1fr 1fr}}
 `;
