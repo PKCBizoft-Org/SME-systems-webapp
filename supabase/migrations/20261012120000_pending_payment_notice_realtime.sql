@@ -97,3 +97,52 @@ $$;
 
 revoke execute on function public.open_jobs_overview() from public, anon;
 grant execute on function public.open_jobs_overview() to authenticated;
+
+-- Hand-back v2: restore the installation request status and tell the customer,
+-- who was already told a technician was coming.
+create or replace function public.release_repair_job(p_repair uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r public.repair_records%rowtype;
+  v_customer uuid;
+begin
+  select * into r from public.repair_records where id = p_repair for update;
+  if r.id is null or r.technician_user_id is distinct from auth.uid() then
+    raise exception 'Only the technician who took this job can hand it back.';
+  end if;
+  if lower(r.status) !~ '^(assigned|pending)$' or r.arrived_at is not null then
+    raise exception 'This job has already started, so it can no longer be handed back.';
+  end if;
+
+  delete from public.repair_job_crew where repair_id = p_repair;
+
+  -- repair_record_sync clears the technician name, phone and accepted time.
+  update public.repair_records
+  set technician_user_id = null, status = 'Pending'
+  where id = p_repair;
+
+  -- An installation request waits as "For installation", not "Pending".
+  if r.job_type = 'installation' and r.service_request_id is not null then
+    update public.service_requests set status = 'For installation' where id = r.service_request_id;
+  end if;
+
+  select user_id into v_customer from public.clients where id = r.client_id;
+  if v_customer is not null then
+    begin
+      perform public.team_push(
+        v_customer,
+        'Your technician changed',
+        'The technician who accepted your ' ||
+          case when r.job_type = 'installation' then 'installation' else 'repair' end ||
+          ' request can no longer come. We are finding another technician for you.'
+      );
+    exception when others then
+      null;
+    end;
+  end if;
+end;
+$$;
