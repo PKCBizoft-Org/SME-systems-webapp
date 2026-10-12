@@ -27,34 +27,45 @@ await seed(db)
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migrations')
 await db.exec(fs.readFileSync(path.join(dir, '20261012140000_install_payment_remote_signoff.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012160000_accounting_service_summary_reminder.sql'), 'utf8'))
+await db.exec(fs.readFileSync(path.join(dir, '20261012180000_accounting_repair_costs_technician.sql'), 'utf8'))
 
 const TECH = 'e0000000-0000-0000-0000-000000000081'
 await db.exec(`
   insert into auth.users (id, email) values ('${TECH}', 'tech@pkc.test');
   insert into public.tenant_users (user_id, tenant_id, role) values ('${TECH}', '${ID.tenant}', 'technician');
-  create table if not exists public.client_site_photos (id uuid primary key default gen_random_uuid(), client_id uuid, created_at timestamptz default now());
-  alter table public.client_site_photos add column if not exists photo_type text, add column if not exists storage_path text, add column if not exists caption text, add column if not exists uploaded_by text;
+  drop table if exists public.inventory_movements cascade;
+  drop table if exists public.truck_stock_log cascade;
+  drop table if exists public.inventory_items cascade;
+  create table public.inventory_items (id uuid primary key default gen_random_uuid(), tenant_id uuid, name text, unit text, unit_cost numeric);
+  create table public.truck_stock_log (id uuid primary key default gen_random_uuid(), tenant_id uuid, user_id uuid, item_id uuid, change numeric, kind text, client_id uuid, repair_id uuid, created_by uuid, created_at timestamptz default now());
+  create table public.inventory_movements (id uuid primary key default gen_random_uuid(), tenant_id uuid, item_id uuid, movement_type text, quantity_change numeric, client_id uuid, reference text, notes text, job_type text, created_at timestamptz default now());
+  insert into public.user_profiles (user_id, full_name) values ('${TECH}', 'Mernas Tech');
 `)
 
 const q = async (s, p) => (await db.query(s, p)).rows
 const one = async (s, p) => (await q(s, p))[0]
 const call = (user, s, p) => asUser(db, user, () => db.query(s, p)).then((r) => r.rows)
 
-section('1. Service summary for accounting')
-await db.query(`insert into public.client_site_photos (client_id, photo_type, storage_path) values ($1, 'house', 'a'), ($1, 'house', 'b'), ($1, 'post', 'c')`, [ID.c1])
-await db.query(`insert into public.repair_records (client_id, status, problem_description, job_type, completed_at) values ($1, 'Completed', 'old', 'repair', now()), ($1, 'Pending', 'open one', 'repair', null)`, [ID.c1])
-await t('accounting sees the counts, read-only', async () => {
-  const s = (await call(ID.acc, `select * from public.account_service_summary($1)`, [ID.c1]))[0]
-  eq(s.house_photos, 2)
-  eq(s.post_photos, 1)
-  eq(s.installation_photos, 0)
-  eq(s.open_jobs, 1)
-  eq(s.repairs_done, 1)
+section('1. Technician and repair costs for accounting')
+const repairId = (await one(`insert into public.repair_records (client_id, status, problem_description, job_type, technician_user_id) values ($1, 'In Progress', 'No internet', 'repair', $2) returning id`, [ID.c1, TECH])).id
+const cable = (await one(`insert into public.inventory_items (tenant_id, name, unit, unit_cost) values ($1, 'Drop cable', 'm', 12.5) returning id`, [ID.tenant])).id
+const conn = (await one(`insert into public.inventory_items (tenant_id, name, unit, unit_cost) values ($1, 'Connector', 'pc', 20) returning id`, [ID.tenant])).id
+await db.query(`insert into public.truck_stock_log (tenant_id, user_id, item_id, change, kind, client_id, repair_id) values ($1, $2, $3, -10, 'use', $4, $5), ($1, $2, $6, -2, 'use', $4, $5)`, [ID.tenant, TECH, cable, ID.c1, repairId, conn])
+await db.query(`insert into public.inventory_movements (tenant_id, item_id, movement_type, quantity_change, client_id, job_type) values ($1, $2, 'installation_use', -4, $3, 'installation'), ($1, $2, 'return', 1, $3, 'installation')`, [ID.tenant, conn, ID.c1])
+await t('accounting sees who is on the job', async () => {
+  eq((await call(ID.acc, `select public.account_technician($1) n`, [ID.c1]))[0].n, 'Mernas Tech')
+})
+await t('repair costs add up truck use and office issues, returns count back', async () => {
+  const rows = await call(ID.acc, `select * from public.account_repair_costs($1)`, [ID.c1])
+  const total = rows.reduce((sum, r) => sum + Number(r.line_cost), 0)
+  eq(total, 10 * 12.5 + 2 * 20 + 4 * 20 - 1 * 20)
+  eq(rows.filter((r) => r.source === 'truck').length, 2)
 })
 await t('technicians, customers and other companies are refused', async () => {
-  await rejects(() => call(TECH, `select * from public.account_service_summary($1)`, [ID.c1]), /Only accounting or admin/)
-  await rejects(() => call(ID.u1, `select * from public.account_service_summary($1)`, [ID.c1]), /Only accounting or admin/)
-  await rejects(() => call(ID.acc2, `select * from public.account_service_summary($1)`, [ID.c1]), /Only accounting or admin/)
+  for (const who of [TECH, ID.u1, ID.acc2]) {
+    await rejects(() => call(who, `select * from public.account_repair_costs($1)`, [ID.c1]), /Only accounting or admin/)
+    await rejects(() => call(who, `select public.account_technician($1)`, [ID.c1]), /Only accounting or admin/)
+  }
 })
 
 section('2. Remind customer')

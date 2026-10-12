@@ -160,6 +160,20 @@ export default function AccountingPage() {
   >([]);
 
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  // Who is on the selected customer's job (the account's own field is only filled when it is finished).
+  const [selectedTech, setSelectedTech] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedClientId) return;
+    let active = true;
+    void supabase.rpc("account_technician", { p_client: selectedClientId }).then(({ data }) => {
+      if (active) setSelectedTech(typeof data === "string" && data ? data : null);
+    });
+    return () => {
+      active = false;
+      setSelectedTech(null);
+    };
+  }, [selectedClientId]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [areaFilter, setAreaFilter] = useState("All");
@@ -653,7 +667,7 @@ export default function AccountingPage() {
                   <Detail label="Plan" value={selectedClient.plan_name} />
                   <Detail label="Area" value={selectedClient.area} />
                   <Detail label="Installation" value={formatDate(selectedClient.install_date)} />
-                  <Detail label="Technician" value={selectedClient.technicians} />
+                  <Detail label="Technician" value={selectedTech || selectedClient.technicians} />
                   <Detail label="PPPoE" value={selectedClient.pppoe_name} />
                   <Detail label="Referral" value={selectedClient.referral_code} />
                   <Detail label="Address" value={selectedClient.address} />
@@ -758,9 +772,14 @@ const styles = `
 .search input{font-size:13px}
 .filters select{font-size:12px}
 .quick-filters button{font-size:13px;padding:8px 12px}
-th{font-size:13px}
-td{font-size:12px}
-td small{font-size:13px}
+th{font-size:14px}
+td{font-size:16px}
+td strong,.customer-cell strong{font-size:17px}
+td small,.customer-cell small{font-size:14px}
+.badge{font-size:13px}
+.detail span{font-size:13px}.detail strong{font-size:15px}
+.row-open,.row-action{font-size:14px}
+td small{font-size:14px}
 tbody tr{transition:background .2s ease}
 tbody tr:hover{background:rgba(27,156,255,.05)}
 .row-open{transition:transform .2s ease,background .2s ease}.row-open:hover{transform:translateX(2px);background:#0c2b45}

@@ -75,16 +75,18 @@ type PaymentRecord = {
 
 type ReminderResult = { type: "success" | "error"; message: string };
 
-// What the technicians have done for this customer. Read-only and automatic.
-type ServiceSummary = {
-  house_photos: number;
-  post_photos: number;
-  installation_photos: number;
-  open_jobs: number;
-  repairs_done: number;
-  last_repair_at: string | null;
-  install_job_status: string | null;
-  install_signed_at: string | null;
+// One material used on one of this customer's jobs, with what it cost.
+type CostLine = {
+  used_at: string;
+  source: "truck" | "office";
+  repair_id: string | null;
+  job_type: string | null;
+  job_note: string | null;
+  item_name: string;
+  unit: string | null;
+  qty: number;
+  unit_cost: number;
+  line_cost: number;
 };
 
 const supabase = createClient();
@@ -151,40 +153,8 @@ function badgeClass(value: string) {
   return "neutral";
 }
 
-function plural(count: number, word: string) {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
-
-// The service status rows, worked out from the records (nobody types these).
-function serviceRows(client: Client, s: ServiceSummary | null) {
-  const awaiting = /awaiting signature/i.test(s?.install_job_status || "");
-  const installation = awaiting
-    ? "Awaiting customer signature"
-    : s?.install_signed_at
-      ? `Installed · signed ${formatDate(s.install_signed_at)}`
-      : client.installation_status || "Not started";
-  const rows = [
-    { key: "installation", title: "Installation", value: installation },
-  ];
-  if (s) {
-    const photo = (count: number) => (count > 0 ? `Recorded · ${plural(count, "photo")}` : "Not recorded");
-    rows.push(
-      { key: "house", title: "House / service location", value: photo(s.house_photos) },
-      { key: "post", title: "Post / pole", value: photo(s.post_photos) },
-      { key: "install-photos", title: "Installation proof", value: photo(s.installation_photos) },
-      {
-        key: "repairs",
-        title: "Repair & maintenance",
-        value:
-          s.open_jobs > 0
-            ? `${s.open_jobs} open`
-            : s.repairs_done > 0
-              ? `${s.repairs_done} done${s.last_repair_at ? ` · last ${formatDate(s.last_repair_at)}` : ""}`
-              : "No visits",
-      },
-    );
-  }
-  return rows;
+function jobLabel(type: string | null) {
+  return type === "installation" ? "Installation" : "Repair";
 }
 
 function Detail({
@@ -216,7 +186,8 @@ export default function AccountingCustomerPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [billing, setBilling] = useState<BillingRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
-  const [service, setService] = useState<ServiceSummary | null>(null);
+  const [technician, setTechnician] = useState<string | null>(null);
+  const [costs, setCosts] = useState<CostLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -272,10 +243,12 @@ export default function AccountingCustomerPage() {
         }
         setClient(clientResult.data as Client);
 
-        // The service status is a convenience; the page works without it.
-        void supabase.rpc("account_service_summary", { p_client: clientId }).then(({ data }) => {
-          const row = Array.isArray(data) ? data[0] : data;
-          setService((row as ServiceSummary | null) ?? null);
+        // Who is on the job and what the repairs cost: extras, the page works without them.
+        void supabase.rpc("account_technician", { p_client: clientId }).then(({ data }) => {
+          setTechnician(typeof data === "string" && data ? data : null);
+        });
+        void supabase.rpc("account_repair_costs", { p_client: clientId }).then(({ data }) => {
+          setCosts(Array.isArray(data) ? (data as CostLine[]) : []);
         });
 
         const [billingResult, paymentsResultRaw] = await Promise.all([
@@ -722,18 +695,49 @@ export default function AccountingCustomerPage() {
               <section className="panel">
                 <header className="panel-head">
                   <div>
-                    <small>SERVICE</small>
-                    <h2>Service status</h2>
-                    <p>Updated automatically from the technicians&apos; work. Nothing here is typed in.</p>
+                    <small>COSTS</small>
+                    <h2>Repair costs</h2>
+                    <p>Materials used on this customer&apos;s jobs, at the inventory unit cost.</p>
                   </div>
+                  <strong className="progress-value">
+                    {formatPeso(costs.reduce((sum, line) => sum + Number(line.line_cost || 0), 0))}
+                  </strong>
                 </header>
-                <div className="service-grid">
-                  {serviceRows(client, service).map((row) => (
-                    <div className="service-card" key={row.key}>
-                      <span>{row.title}</span>
-                      <b className={`badge ${badgeClass(row.value)}`}>{row.value}</b>
-                    </div>
-                  ))}
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Job</th>
+                        <th>Material</th>
+                        <th>Qty</th>
+                        <th className="right">Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costs.map((line, index) => (
+                        <tr key={`${line.used_at}-${index}`}>
+                          <td>{formatDate(line.used_at)}</td>
+                          <td>
+                            <strong>{jobLabel(line.job_type)}</strong>
+                            {line.job_note ? <small>{line.job_note}</small> : null}
+                          </td>
+                          <td>{line.item_name}</td>
+                          <td>
+                            {Number(line.qty)} {line.unit || ""} × {formatPeso(Number(line.unit_cost))}
+                          </td>
+                          <td className="right balance">{formatPeso(Number(line.line_cost))}</td>
+                        </tr>
+                      ))}
+                      {costs.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="empty">
+                            No materials have been used on this customer&apos;s jobs yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </section>
 
@@ -868,7 +872,7 @@ export default function AccountingCustomerPage() {
                     label="Installation"
                     value={formatDate(client.install_date)}
                   />
-                  <Detail label="Technician" value={client.technicians} />
+                  <Detail label="Technician" value={technician || client.technicians} />
                   <Detail label="PPPoE" value={client.pppoe_name} />
                   <Detail label="Referral code" value={client.referral_code} />
                   <Detail label="Address" value={client.address} wide />
@@ -1237,11 +1241,7 @@ const styles = `
 @media(max-width:560px){.form-grid{grid-template-columns:1fr}}
 
 /* ---- readability + small screens ---- */
-td{font-size:12px}th{font-size:13px}
+td{font-size:16px}th{font-size:14px}td strong{font-size:17px}td small{font-size:14px}.badge{font-size:13px}.detail span{font-size:13px}.detail strong{font-size:15px}.row-action{font-size:14px}.identity p{font-size:15px}.panel-head p{font-size:14px}.financials span{font-size:14px}
 .stats small,.panel-head small{font-size:13px}
-.service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;padding:14px}
-.service-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px;border:1px solid #162a34;border-radius:9px;background:#09141a}
-.service-card>span{color:#70848f;font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
-.service-card .badge{font-size:12px;padding:6px 10px;white-space:normal}
 @media(max-width:760px){.table-wrap{overflow-x:auto}.stats{grid-template-columns:1fr 1fr}}
 `;

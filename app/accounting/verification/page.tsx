@@ -102,6 +102,14 @@ export default function PaymentVerificationPage() {
   const [rejectNote, setRejectNote] = useState("");
   const [rejectError, setRejectError] = useState("");
 
+  // The "did the money arrive?" question, shown before a payment is verified.
+  const [confirming, setConfirming] = useState<{
+    submission: Submission;
+    headline: string;
+    facts: [string, string][];
+    detail: string;
+  } | null>(null);
+
   const [needsSecondary, setNeedsSecondary] = useState<Submission | null>(null);
   const [secondaryPassword, setSecondaryPassword] = useState("");
   const [secondaryError, setSecondaryError] = useState("");
@@ -367,19 +375,21 @@ export default function PaymentVerificationPage() {
       }
     }
 
-    const ok = window.confirm(
-      `Confirm you received ${formatPeso(claimed)} by ${submission.payment_method || "payment"}` +
-        `${reference ? ` (ref ${reference})` : ""} from ${client?.customer_name || "this customer"}?\n\n` +
-        (submission.billing_id
-          ? `This records the payment against bill ${bill?.bill_id || ""} and emails the customer.` +
-            (bill && claimed < Number(bill.balance || 0)
-              ? ` It is a partial payment: ${formatPeso(Number(bill.balance) - claimed)} will stay due.`
-              : "")
-          : `This records the payment, emails the customer, and ${request?.requested_plan || "the plan"} is set up.`),
-    );
-    if (!ok) return;
-
-    void runVerify(submission);
+    setConfirming({
+      submission,
+      headline: `Did ${formatPeso(claimed)} really arrive?`,
+      facts: [
+        ["From", client?.customer_name || "this customer"],
+        ["Method", submission.payment_method || "Payment"],
+        ["Reference", reference || "—"],
+      ],
+      detail: submission.billing_id
+        ? `This records the payment against bill ${bill?.bill_id || ""} and emails the customer.` +
+          (bill && claimed < Number(bill.balance || 0)
+            ? ` It is a partial payment: ${formatPeso(Number(bill.balance) - claimed)} will stay due.`
+            : "")
+        : `This records the payment and emails the customer. For a new customer the installation goes to the technicians, and they are told to get to work.`,
+    });
   }
 
   function openReject(submission: Submission) {
@@ -676,6 +686,42 @@ export default function PaymentVerificationPage() {
               </button>
               <button className={styles.reject} disabled={busyId === rejecting.id} onClick={() => void confirmReject()}>
                 {busyId === rejecting.id ? "Rejecting…" : "Reject payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirming && (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => setConfirming(null)}>
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Verify payment" onClick={(e) => e.stopPropagation()}>
+            <h2>{confirming.headline}</h2>
+            <p className={styles.modalLead}>Check your own GCash or bank history before you confirm.</p>
+
+            <dl className={styles.confirmFacts}>
+              {confirming.facts.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd className={label === "Reference" ? styles.mono : undefined}>{value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <p className={styles.modalLead}>{confirming.detail}</p>
+
+            <div className={styles.modalActions}>
+              <button className={styles.ghost} onClick={() => setConfirming(null)}>
+                Not yet
+              </button>
+              <button
+                className={styles.verify}
+                onClick={() => {
+                  const target = confirming.submission;
+                  setConfirming(null);
+                  void runVerify(target);
+                }}
+              >
+                Yes, it arrived
               </button>
             </div>
           </div>
