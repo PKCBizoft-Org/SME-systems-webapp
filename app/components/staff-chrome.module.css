@@ -147,7 +147,7 @@
 }
 
 /* Phone: brand + session on the first row, the navigation scrolls on its own row */
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .bar {
     grid-template-columns: 1fr auto;
     grid-template-areas:
@@ -160,11 +160,18 @@
 
   .brand {
     grid-area: brand;
+    min-width: 0;
   }
 
   .session {
     grid-area: session;
-    font-size: 11px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 5px 9px;
+    min-width: 0;
+    max-width: 52vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .nav {

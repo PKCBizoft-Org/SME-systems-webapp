@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatPeso } from "@/lib/format";
+import { INSTALL_FEE } from "@/lib/plans";
 import { StaffHeader } from "../../components/StaffHeader";
 import { PkcLoader } from "../../components/PkcLoader";
 import styles from "../verification/verification.module.css";
@@ -139,6 +140,7 @@ export default function PlansPage() {
             <p>
               The internet plans customers can apply for in the app. A new price applies to new bills and new applications;
               bills already issued keep their price. A plan&apos;s name cannot change once it exists.
+              Every new installation also has a one-time {formatPeso(INSTALL_FEE)} installation fee.
             </p>
           </div>
           <button className={styles.verify} onClick={() => open("new")}>

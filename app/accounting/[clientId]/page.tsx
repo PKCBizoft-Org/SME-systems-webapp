@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
+import { planLabel } from "@/lib/plans";
 import { StaffHeader } from "../../components/StaffHeader";
 import { StaffMotion } from "../../components/StaffMotion";
 import { PkcLoader } from "../../components/PkcLoader";
@@ -596,7 +597,7 @@ export default function AccountingCustomerPage() {
               <h1>{client.customer_name || "Unnamed customer"}</h1>
               <p>
                 {client.account_id || "No account ID"} ·{" "}
-                {client.area || "No area"} · {client.plan_name || "No plan"}
+                {client.area || "No area"} · {planLabel(client.plan_name) || "No plan"}
               </p>
             </div>
           </div>
@@ -806,7 +807,7 @@ export default function AccountingCustomerPage() {
                   <Detail label="Account ID" value={client.account_id} />
                   <Detail label="Mobile" value={client.mobile_number} />
                   <Detail label="Email" value={client.email} />
-                  <Detail label="Plan" value={client.plan_name} />
+                  <Detail label="Plan" value={planLabel(client.plan_name)} />
                   <Detail label="Area" value={client.area} />
                   <Detail
                     label="Installation"

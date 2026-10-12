@@ -1413,7 +1413,7 @@ const styles = `
     cursor: not-allowed;
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 900px) {
     .topNav { display: none; }
     .content { width: calc(100% - 28px); }
     .pageHeader { flex-direction: column; align-items: flex-start; }
