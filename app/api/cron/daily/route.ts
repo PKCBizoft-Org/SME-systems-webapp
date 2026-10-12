@@ -109,5 +109,57 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: problems.length === 0, problems, alerted, billing, remindersSent: sent, remindersFailed: failed, expiredBlocked })
+  // Every morning: what came in yesterday, what is waiting, who owes.
+  let summarySent = false
+  if (alertTo && smtpConfigured()) {
+    try {
+      const today = new Date(Date.now() + 8 * 3_600_000 - 86_400_000).toISOString().slice(0, 10) // yesterday (the job runs at 9am)
+      const peso = (n: number) => `PHP ${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+      const { data: paidToday } = await admin.from('payments').select('amount_paid').eq('payment_date', today).gt('amount_paid', 0)
+      const collected = (paidToday || []).reduce((sum, row) => sum + Number(row.amount_paid || 0), 0)
+
+      const { count: waiting } = await admin
+        .from('payment_submissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'Pending')
+
+      const { data: overdueRows } = await admin
+        .from('billing_balances')
+        .select('client_id, balance')
+        .eq('closed', false)
+        .gt('balance', 0)
+        .gt('days_overdue', 0)
+      const overdueClients = new Set((overdueRows || []).map((row) => row.client_id)).size
+      const overdueTotal = (overdueRows || []).reduce((sum, row) => sum + Number(row.balance || 0), 0)
+
+      const { data: openInstalls } = await admin
+        .from('repair_records')
+        .select('status, technician_user_id')
+        .eq('job_type', 'installation')
+        .not('status', 'ilike', '%complete%')
+        .not('status', 'ilike', '%cancel%')
+      const unaccepted = (openInstalls || []).filter((row) => !row.technician_user_id).length
+      const awaitingSignature = (openInstalls || []).filter((row) => /awaiting signature/i.test(row.status || '')).length
+
+      const lines = [
+        `Collected yesterday: ${peso(collected)} (${(paidToday || []).length} payment${(paidToday || []).length === 1 ? '' : 's'})`,
+        `Waiting to be checked: ${waiting ?? 0} payment${waiting === 1 ? '' : 's'}`,
+        `Overdue: ${overdueClients} customer${overdueClients === 1 ? '' : 's'}, ${peso(overdueTotal)}`,
+        `Installations not yet accepted by a technician: ${unaccepted}`,
+        `Installations waiting for the customer's signature: ${awaitingSignature}`,
+      ]
+      await sendMail({
+        to: alertTo,
+        subject: `PKC BIZOFT daily summary: ${peso(collected)} collected yesterday`,
+        text: `Summary for ${today} (yesterday)\n\n${lines.join('\n')}\n`,
+        html: `<p>Summary for ${today} (yesterday)</p><ul>${lines.map((l) => `<li>${l.replace(/</g, '&lt;')}</li>`).join('')}</ul>`,
+      })
+      summarySent = true
+    } catch (err) {
+      console.error('Daily summary email failed:', err)
+    }
+  }
+
+  return NextResponse.json({ ok: problems.length === 0, problems, alerted, summarySent, billing, remindersSent: sent, remindersFailed: failed, expiredBlocked })
 }

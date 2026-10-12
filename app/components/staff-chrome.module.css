@@ -5,7 +5,7 @@
   top: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 18px;
   min-height: 68px;
@@ -152,7 +152,8 @@
     grid-template-columns: 1fr auto;
     grid-template-areas:
       "brand session"
-      "nav nav";
+      "nav nav"
+      "search search";
     gap: 6px 10px;
     padding-top: 10px;
     padding-bottom: 8px;
@@ -222,4 +223,17 @@
 
 @media (prefers-reduced-motion: reduce) {
   .aurora { animation: none; }
+}
+
+.searchSlot {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .searchSlot {
+    grid-area: search;
+  }
+  .searchSlot input {
+    width: 100%;
+  }
 }

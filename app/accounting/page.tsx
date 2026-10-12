@@ -161,6 +161,27 @@ export default function AccountingPage() {
 
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
+  // "Remind all overdue": one confirmation, then the database sends them.
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkResult, setBulkResult] = useState<ReminderResult | null>(null);
+
+  async function sendBulkReminders() {
+    setBulkBusy(true);
+    setBulkResult(null);
+    const { data, error } = await supabase.rpc("remind_overdue_customers");
+    setBulkBusy(false);
+    if (error) {
+      setBulkResult({ type: "error", message: error.message });
+      return;
+    }
+    const row = (Array.isArray(data) ? data[0] : data) as { sent: number; skipped: number } | null;
+    setBulkResult({
+      type: "success",
+      message: `Reminded ${row?.sent ?? 0} customer${row?.sent === 1 ? "" : "s"}. ${row?.skipped ?? 0} skipped (no app yet, reminded within the hour, or already paid and waiting to be checked).`,
+    });
+  }
+
   // Who is on the selected customer's job (the account's own field is only filled when it is finished).
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
   useEffect(() => {
@@ -347,6 +368,11 @@ export default function AccountingPage() {
     return map;
   }, [payments]);
 
+  const overdueCustomers = useMemo(
+    () => clients.filter((client) => !!client.user_id && billing.some((bill) => bill.client_id === client.id && getBillStatus(bill, paymentMap.get(bill.id) || 0) === "Overdue")).length,
+    [clients, billing, paymentMap],
+  );
+
   const clientStats = useMemo(() => {
     const map = new Map<string, { billed: number; paid: number; balance: number; overdue: number; open: number }>();
     for (const client of clients) {
@@ -505,6 +531,15 @@ export default function AccountingPage() {
             <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
               ✓ Payment verification
             </Link>
+            <button
+              className="refresh"
+              onClick={() => {
+                setBulkResult(null);
+                setBulkOpen(true);
+              }}
+            >
+              🔔 Remind all overdue ({overdueCustomers})
+            </button>
             <Link href="/accounting/collections" className="refresh" style={{ textDecoration: "none" }}>
               ▥ Collections
             </Link>
@@ -692,6 +727,36 @@ export default function AccountingPage() {
               <button className="primary" onClick={() => router.push(`/accounting/${selectedClient.id}`)}>View full account →</button>
             </footer>
           </aside>
+        </div>
+      )}
+
+      {bulkOpen && (
+        <div className="modal-backdrop" onMouseDown={() => !bulkBusy && setBulkOpen(false)}>
+          <section className="modal" onMouseDown={(e) => e.stopPropagation()}>
+            <header>
+              <div>
+                <small>COLLECTION</small>
+                <h2>Remind everyone who is overdue?</h2>
+              </div>
+              <button onClick={() => setBulkOpen(false)} disabled={bulkBusy}>×</button>
+            </header>
+            <p style={{ margin: "16px", color: "#9bb0bd", fontSize: 15, lineHeight: 1.6 }}>
+              {overdueCustomers} customer{overdueCustomers === 1 ? " is" : "s are"} overdue. Each one with the app gets a
+              notification with the amount they owe. Anyone reminded in the last hour, or who already paid and is waiting to be
+              checked, is skipped.
+            </p>
+            {bulkResult && <div className={`result ${bulkResult.type}`}>{bulkResult.message}</div>}
+            <footer>
+              <button className="secondary" onClick={() => setBulkOpen(false)} disabled={bulkBusy}>
+                {bulkResult?.type === "success" ? "Close" : "Cancel"}
+              </button>
+              {bulkResult?.type !== "success" && (
+                <button className="primary" onClick={() => void sendBulkReminders()} disabled={bulkBusy || overdueCustomers === 0}>
+                  {bulkBusy ? "Sending…" : "Send reminders"}
+                </button>
+              )}
+            </footer>
+          </section>
         </div>
       )}
 

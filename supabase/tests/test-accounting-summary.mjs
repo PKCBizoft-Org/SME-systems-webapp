@@ -3,7 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createDb, asUser } from './lib.mjs'
 import { applyMigrations } from './migrate.mjs'
-import { seed, ID } from './seed.mjs'
+import { seed, ID, addBill } from './seed.mjs'
 import { t, rejects, eq, section, summary } from './kit.mjs'
 
 const { db } = await createDb()
@@ -28,6 +28,7 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migra
 await db.exec(fs.readFileSync(path.join(dir, '20261012140000_install_payment_remote_signoff.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012160000_accounting_service_summary_reminder.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012180000_accounting_repair_costs_technician.sql'), 'utf8'))
+await db.exec(fs.readFileSync(path.join(dir, '20261012190000_remind_overdue_customers.sql'), 'utf8'))
 
 const TECH = 'e0000000-0000-0000-0000-000000000081'
 await db.exec(`
@@ -86,6 +87,28 @@ await t('empty, too long, other company and technician are refused', async () =>
 await t('a customer who never opened the app cannot be notified', async () => {
   await db.query(`update public.clients set user_id = null where id = $1`, [ID.c3])
   await rejects(() => call(ID.acc, `select public.remind_customer($1, 'hi')`, [ID.c3]), /not signed in to the app/)
+})
+
+section('3. Remind everyone who is overdue')
+await db.query(`delete from public.audit_log where field_name = 'customer_reminder'`)
+await db.query(`delete from net.sent`)
+await addBill(db, { client: ID.c1, billId: 'SAM-OD-1', amount: 750, dueOffset: -10, periodStartOffset: -40 })
+await addBill(db, { client: ID.c3, billId: 'SAM-OD-3', amount: 750, dueOffset: -5, periodStartOffset: -35 })
+await t('overdue customers with the app get a reminder; the one without the app is skipped', async () => {
+  const r = (await call(ID.acc, `select * from public.remind_overdue_customers()`))[0]
+  eq(r.sent, 1)
+  eq(r.skipped, 1)
+  const sent = (await q(`select body from net.sent`)).map((x) => x.body).filter((b) => /overdue/.test(JSON.stringify(b)))
+  eq(sent.length, 1)
+  eq(sent[0].user_id, ID.u1)
+})
+await t('running it again straight away reminds nobody', async () => {
+  const r = (await call(ID.acc, `select * from public.remind_overdue_customers()`))[0]
+  eq(r.sent, 0)
+})
+await t('only accounting or admin can use it', async () => {
+  await rejects(() => call(TECH, `select * from public.remind_overdue_customers()`), /Only accounting or admin/)
+  await rejects(() => call(ID.u1, `select * from public.remind_overdue_customers()`), /Only accounting or admin/)
 })
 
 summary()

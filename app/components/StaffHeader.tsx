@@ -3,6 +3,7 @@ import styles from "./staff-chrome.module.css";
 import { LowRatingsBadge } from "./LowRatingsBadge";
 import { PendingPaymentsBadge } from "./PendingPaymentsBadge";
 import { StaffGuard } from "./StaffGuard";
+import { GlobalSearch } from "./GlobalSearch";
 
 export type StaffSection = "clients" | "inventory" | "accounting" | "ratings" | "insights" | "users" | "account";
 
@@ -54,6 +55,10 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
           </Link>
         ))}
       </nav>
+
+      <div className={styles.searchSlot}>
+        <GlobalSearch roles={roles} />
+      </div>
 
       <Link href="/account" className={styles.session} title="My account and password">
         <i aria-hidden="true" />

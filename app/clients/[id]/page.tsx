@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabaseClient";
 import { ClientMaterials } from "../../components/ClientMaterials";
 import { formatDate, formatPeso } from "@/lib/format";
 import { planLabel } from "@/lib/plans";
+import { openJobReport, type ReportCostLine } from "@/lib/jobReport";
 
 // Leaflet is loaded from a CDN at runtime and ships no bundled types.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,6 +86,12 @@ type Repair = {
   resolution: string | null;
   status: string;
   created_at: string;
+  job_type?: string | null;
+  checklist?: unknown;
+  accepted_at?: string | null;
+  arrived_at?: string | null;
+  completed_at?: string | null;
+  customer_signed_at?: string | null;
   photos: RepairPhoto[];
 };
 type RepairPhoto = {
@@ -941,6 +948,40 @@ export default function ClientDetailPage() {
     }
   };
 
+  // A printable one-page report (the browser's print dialog can save it as PDF).
+  const printJobReport = async (repair: Repair) => {
+    if (!client) return;
+    const supabase = createClient();
+    // Costs are for staff who handle money; for everyone else this simply fails and is left out.
+    const { data: costData, error: costError } = await supabase.rpc("account_repair_costs", {
+      p_client: client.id,
+    });
+    const costs = costError
+      ? null
+      : ((costData || []) as (ReportCostLine & { repair_id: string | null })[]).filter(
+          (line) => line.repair_id === repair.id,
+        );
+    const opened = openJobReport({
+      customerName: client.customer_name || "Customer",
+      accountId: client.account_id,
+      address: client.area,
+      jobType: repair.job_type ?? null,
+      status: repair.status,
+      technician: repair.technician,
+      jobDate: formatDate(repair.repair_date),
+      problem: repair.problem_description,
+      resolution: repair.resolution,
+      checklist: repair.checklist,
+      acceptedAt: repair.accepted_at ?? null,
+      arrivedAt: repair.arrived_at ?? null,
+      completedAt: repair.completed_at ?? null,
+      signedAt: repair.customer_signed_at ?? null,
+      photos: repair.photos,
+      costs,
+    });
+    if (!opened) setError("Allow pop-ups for this site to open the report.");
+  };
+
   const deleteRepair = async (repair: Repair) => {
     if (!window.confirm("Delete this repair record and its photos?")) return;
     setDeletingId(repair.id);
@@ -1700,13 +1741,18 @@ export default function ClientDetailPage() {
                       {repair.technician || "Technician not recorded"}
                     </small>
                   </div>
-                  <button
-                    className="iconButton"
-                    onClick={() => deleteRepair(repair)}
-                    disabled={deletingId === repair.id}
-                  >
-                    Delete
-                  </button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button className="iconButton" onClick={() => void printJobReport(repair)}>
+                      Job report (PDF)
+                    </button>
+                    <button
+                      className="iconButton"
+                      onClick={() => deleteRepair(repair)}
+                      disabled={deletingId === repair.id}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
                 {repair.resolution && (
                   <div className="resolution">
