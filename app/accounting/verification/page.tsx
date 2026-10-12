@@ -300,7 +300,7 @@ export default function PaymentVerificationPage() {
               ? `Bill ${billRef} is partly paid — ${formatPeso(left)} is still due.`
               : `Bill ${billRef} is now fully paid.`
             : toInstall
-              ? "Their account is now For installation and the job is in the technicians' list."
+              ? "The installation job was sent to the technicians and they were notified to get to work."
               : "Their plan is now set up.") +
           (result?.emailed ? " The customer was emailed." : " (No email was sent.)"),
       });

@@ -154,6 +154,11 @@ export default function AccountingPage() {
   const [billing, setBilling] = useState<BillingRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
 
+  // Payments the customers sent that Accounting has not checked yet.
+  const [waiting, setWaiting] = useState<
+    { id: string; client_id: string | null; amount_claimed: number | null; payment_method: string | null; service_request_id: string | null; created_at: string }[]
+  >([]);
+
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -161,6 +166,27 @@ export default function AccountingPage() {
   const [sortBy, setSortBy] = useState("balance");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [loadedAt, setLoadedAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!authorized) return;
+    let active = true;
+    void supabase
+      .from("payment_submissions")
+      .select("id, client_id, amount_claimed, payment_method, service_request_id, created_at")
+      .eq("status", "Pending")
+      .order("created_at", { ascending: true })
+      .limit(50)
+      .then(({ data }) => {
+        if (!active) return;
+        setWaiting(data || []);
+        setLoadedAt(Date.now());
+      });
+    return () => {
+      active = false;
+    };
+  }, [authorized, refreshing]);
   const [billingError, setBillingError] = useState<string | null>(null);
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
 
@@ -413,17 +439,13 @@ export default function AccountingPage() {
     const balance = stats?.balance || 0;
     setReminderResult(null);
     setReminderMessage(
-      `Hello ${client.customer_name || "Customer"}, this is a friendly reminder from PKC BIZOFT. Your current outstanding balance is ${formatPeso(balance)}. Please settle your account at your earliest convenience. Thank you.`
+      `Hello ${client.customer_name || "Customer"}, your balance is ${formatPeso(balance)}. Please pay in the app at your earliest convenience. Thank you.`
     );
     setReminderOpen(true);
   }
 
   async function sendCustomerReminder() {
     if (!selectedClient) return;
-    if (!selectedClient.mobile_number?.trim()) {
-      setReminderResult({ type: "error", message: "This customer does not have a mobile number saved." });
-      return;
-    }
     if (!reminderMessage.trim()) {
       setReminderResult({ type: "error", message: "Please enter a reminder message." });
       return;
@@ -433,27 +455,17 @@ export default function AccountingPage() {
     setReminderResult(null);
 
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Your session has expired. Please sign in again.");
-
-      const response = await fetch("/api/sms/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ clientId: selectedClient.id, message: reminderMessage.trim() }),
+      const { error } = await supabase.rpc("remind_customer", {
+        p_client: selectedClient.id,
+        p_message: reminderMessage.trim(),
       });
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "The SMS could not be sent.");
-
-      setReminderResult({
-        type: "success",
-        message: `SMS queued successfully for ${result.recipient || selectedClient.mobile_number}.`,
-      });
+      setReminderResult({ type: "success", message: "Reminder sent. The customer will see it in their app." });
     } catch (error) {
       setReminderResult({
         type: "error",
-        message: error instanceof Error ? error.message : "The SMS could not be sent.",
+        message: error instanceof Error ? error.message : "The reminder could not be sent.",
       });
     } finally {
       setSendingReminder(false);
@@ -473,7 +485,7 @@ export default function AccountingPage() {
           <div>
             <div className="crumb"><i /> PKC BIZOFT / ACCOUNTING</div>
             <h1>Accounting</h1>
-            <p>Monitor customer balances, billing, payments, and collection activity from one workspace.</p>
+            <p>Check that each payment really arrived. Confirming a new customer&apos;s payment sends the installation to the technicians.</p>
           </div>
           <div className="hero-btns" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
@@ -511,6 +523,40 @@ export default function AccountingPage() {
             <div><strong>Some accounting data needs attention.</strong><span>{billingError || paymentsError}</span></div>
           </div>
         )}
+
+        <section className={`todo ${waiting.length ? "has" : ""}`}>
+          <div className="todo-head">
+            <div>
+              <small>YOUR MAIN JOB</small>
+              <h2>
+                {waiting.length === 0
+                  ? "No payments waiting"
+                  : `${waiting.length} payment${waiting.length === 1 ? "" : "s"} to check`}
+              </h2>
+              <p>
+                {waiting.length === 0
+                  ? "Everything customers sent has been checked."
+                  : "Open your GCash or bank history, confirm the money arrived, then verify it. New customers go straight to the technicians."}
+              </p>
+            </div>
+            <Link href="/accounting/verification" className="todo-btn">
+              Check payments →
+            </Link>
+          </div>
+          {waiting.slice(0, 5).map((item) => {
+            const who = clients.find((client) => client.id === item.client_id);
+            const hours = Math.max(Math.round((loadedAt - new Date(item.created_at).getTime()) / 3_600_000), 0);
+            return (
+              <Link href="/accounting/verification" className="todo-row" key={item.id}>
+                <strong>{who?.customer_name || "Customer"}</strong>
+                <span>{item.service_request_id ? "New plan + installation" : "Bill payment"}</span>
+                <span>{item.payment_method || "—"}</span>
+                <b>{formatPeso(Number(item.amount_claimed || 0))}</b>
+                <em>{hours < 1 ? "just now" : hours < 24 ? `${hours}h waiting` : `${Math.floor(hours / 24)}d waiting`}</em>
+              </Link>
+            );
+          })}
+        </section>
 
         <section className="stats">
           <article><span className="stat-icon">👥</span><div><small>Customer accounts</small><strong>{loading ? "—" : clients.length}</strong><em>All registered accounts</em></div></article>
@@ -638,12 +684,12 @@ export default function AccountingPage() {
       {reminderOpen && selectedClient && (
         <div className="modal-backdrop" onMouseDown={() => !sendingReminder && setReminderOpen(false)}>
           <section className="modal" onMouseDown={(e) => e.stopPropagation()}>
-            <header><div><small>COLLECTION</small><h2>Send payment reminder</h2></div><button onClick={() => setReminderOpen(false)} disabled={sendingReminder}>×</button></header>
+            <header><div><small>COLLECTION</small><h2>Remind customer in the app</h2></div><button onClick={() => setReminderOpen(false)} disabled={sendingReminder}>×</button></header>
             <div className="recipient"><span className="avatar">{getInitials(selectedClient.customer_name)}</span><div><strong>{selectedClient.customer_name || "Customer"}</strong><small>{selectedClient.mobile_number || "No mobile number saved"}</small></div></div>
             <div className="reminder-balance"><small>Current outstanding</small><strong>{formatPeso(selectedFinancials.outstanding)}</strong><span>{formatPeso(selectedFinancials.overdue)} overdue</span></div>
-            <label className="field"><span>SMS message</span><textarea value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} maxLength={480} rows={6} disabled={sendingReminder} /><small>{reminderMessage.length}/480 characters</small></label>
+            <label className="field"><span>Message</span><textarea value={reminderMessage} onChange={(e) => setReminderMessage(e.target.value)} maxLength={300} rows={6} disabled={sendingReminder} /><small>{reminderMessage.length}/300 · one reminder per customer per hour</small></label>
             {reminderResult && <div className={`result ${reminderResult.type}`}>{reminderResult.message}</div>}
-            <footer><button className="secondary" onClick={() => setReminderOpen(false)} disabled={sendingReminder}>Cancel</button><button className="primary" onClick={() => void sendCustomerReminder()} disabled={sendingReminder || !selectedClient.mobile_number}>{sendingReminder ? "Sending…" : "Send SMS reminder"}</button></footer>
+            <footer><button className="secondary" onClick={() => setReminderOpen(false)} disabled={sendingReminder}>Cancel</button><button className="primary" onClick={() => void sendCustomerReminder()} disabled={sendingReminder || !selectedClient.user_id}>{sendingReminder ? "Sending…" : "Send reminder"}</button></footer>
           </section>
         </div>
       )}
@@ -663,11 +709,11 @@ const styles = `
 .brand div { font-size:14px; letter-spacing:.06em; }
 .brand strong { color:#fff; } .brand span { color: #677c8c; font-weight:700; }
 .top-actions { gap:18px; } .top-actions a { color:#7ebeff; text-decoration:none; font-size:12px; font-weight:800; }
-.secure { gap:8px; color:#7b909f; font-size:10px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; }
+.secure { gap:8px; color:#7b909f; font-size:13px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; }
 .secure i { width:7px;height:7px;border-radius:50%;background:#33d18c;box-shadow:0 0 12px #33d18c; }
 .shell { width:min(1500px,calc(100% - 48px)); margin:auto; padding:36px 0 50px; }
 .hero { justify-content:space-between; gap:25px; margin-bottom:24px; }
-.crumb { gap:8px; color:#4f86a9; font-size:9px; font-weight:900; letter-spacing:.13em; }
+.crumb { gap:8px; color:#4f86a9; font-size:12px; font-weight:900; letter-spacing:.13em; }
 .crumb i { width:6px;height:6px;border-radius:50%;background:#1b9cff; }
 .hero h1 { margin:9px 0 5px; font-size:34px; letter-spacing:-.04em; }
 .hero p { margin:0; color:#738998; font-size:13px; }
@@ -675,26 +721,27 @@ const styles = `
 .refresh { min-height:42px; padding:0 16px; border:1px solid #16486a; background:#092033; color:#6bc0ff; }
 .refresh span { margin-right:8px; font-size:17px; } .spin { display:inline-block;animation:spin .7s linear infinite; }
 .notice { display:flex;gap:12px;padding:13px 15px;margin-bottom:18px;border:1px solid #4a3515;border-radius:10px;background:#171107;color:#c2a15a; }
-.notice>b { width:23px;height:23px;display:grid;place-items:center;border-radius:7px;background:#2b1d08; } .notice div { display:grid;gap:3px; } .notice strong{font-size:11px}.notice span{font-size:10px;color: #957f53}
+.notice>b { width:23px;height:23px;display:grid;place-items:center;border-radius:7px;background:#2b1d08; } .notice div { display:grid;gap:3px; } .notice strong{font-size:13px}.notice span{font-size:13px;color: #957f53}
 .stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
 .stats article { min-height:108px; padding:18px; border:1px solid #172832; border-radius:13px; background:linear-gradient(145deg,#091218,#070d12); display:flex;gap:13px; }
 .stat-icon { width:38px;height:38px;display:grid;place-items:center;border:1px solid #124666;border-radius:10px;background:#092033;color:#55b8ff;font-weight:900;flex:0 0 auto; }
-.stats article div { min-width:0;display:grid;align-content:center;gap:3px; } .stats small{color: #708693;font-size: 9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.stats strong{font-size:19px;letter-spacing:-.03em}.stats em{font-style:normal;color: #71838e;font-size:9px}.accent-green .stat-icon{color:#48d997;border-color:#1a5c47;background:#09251c}.accent-orange .stat-icon{color:#f1bb5a;border-color:#604719;background:#211708}.accent-red .stat-icon{color:#ff717b;border-color:#60262b;background:#210b0e}
+.stats article div { min-width:0;display:grid;align-content:center;gap:3px; } .stats small{color: #708693;font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.stats strong{font-size:19px;letter-spacing:-.03em}.stats em{font-style:normal;color: #71838e;font-size:12px}.accent-green .stat-icon{color:#48d997;border-color:#1a5c47;background:#09251c}.accent-orange .stat-icon{color:#f1bb5a;border-color:#604719;background:#211708}.accent-red .stat-icon{color:#ff717b;border-color:#60262b;background:#210b0e}
 .panel { border:1px solid #172832; border-radius:14px; background:#080f14; overflow:hidden; }
-.panel-head { justify-content:space-between; padding:19px 20px 15px; border-bottom:1px solid #14232c; } .panel-head small,.drawer-top small,.drawer-section header small,.modal small{color:#4287b2;font-size: 9px;font-weight:900;letter-spacing:.13em}.panel-head h2{margin:5px 0 0;font-size:18px}.panel-head>strong{font-size:18px}.panel-head>strong span{color: #72848f;font-size:11px;font-weight:700}
+.panel-head { justify-content:space-between; padding:19px 20px 15px; border-bottom:1px solid #14232c; } .panel-head small,.drawer-top small,.drawer-section header small,.modal small{color:#4287b2;font-size:12px;font-weight:900;letter-spacing:.13em}.panel-head h2{margin:5px 0 0;font-size:18px}.panel-head>strong{font-size:18px}.panel-head>strong span{color: #72848f;font-size:13px;font-weight:700}
 .filters { gap:8px; padding:13px 14px; border-bottom:1px solid #14232c; flex-wrap:wrap; }
 .search { flex:1 1 280px; min-width:220px; height:39px;display:flex;align-items:center;gap:8px;padding:0 11px;border:1px solid #1c303b;border-radius:8px;background:#060c10;color: #627c8a; }
-.search input{width:100%;border:0;outline:0;background:transparent;color:#dbe8ef;font-size:11px}.search input::placeholder{color: #6b7e89}
-.filters select{height:39px;padding:0 11px;border:1px solid #1c303b;border-radius:8px;background:#0a1218;color:#8ca3b1;font-size:10px;outline:none;cursor:pointer}
-.quick-filters{gap:7px;padding:9px 14px;border-bottom:1px solid #14232c;overflow:auto}.quick-filters button{white-space:nowrap;padding:7px 10px;border:1px solid #1b303c;background:#0a1319;color:#708896;font-size:9px}.quick-filters button.active,.quick-filters button:hover{border-color:#155c86;background:#092237;color:#5ebeff}
-.table-wrap{overflow:auto} table{width:100%;border-collapse:collapse;min-width:850px}th{padding:11px 15px;text-align:left;color: #6f8490;font-size: 9px;letter-spacing:.12em;border-bottom:1px solid #172832;background:#071016;white-space:nowrap}td{padding:13px 15px;border-bottom:1px solid #102029;color:#9bb0bd;font-size:10px;vertical-align:middle}tbody tr{transition:.15s;background:#080f14;cursor:pointer}tbody tr:hover,tbody tr.selected{background:#0a1821}tbody tr.selected{box-shadow:inset 2px 0 #1a9fff}td small,.customer-cell small{display:block;margin-top:3px;color: #73858f;font-size:9px}.customer-cell{gap:10px}.customer-cell>div{min-width:0}.customer-cell strong{display:block;color:#d9e6ed;font-size:11px}.avatar{width:34px;height:34px;display:grid;place-items:center;flex:0 0 auto;border:1px solid #165074;border-radius:9px;background:#092237;color:#63beff;font-size:10px;font-weight:900}.avatar.large{width:48px;height:48px;font-size:13px}.badge{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid #263843;border-radius:999px;background:#0c151b;color:#7d919d;font-size: 9px;font-weight:900}.badge.good{border-color:#1a6048;background:#092219;color:#51d99b}.badge.danger{border-color:#6a2830;background:#220d10;color:#ff7b83}.badge.warning{border-color:#6a501e;background:#201707;color:#eabd58}.open-count{display:inline-grid;place-items:center;min-width:25px;height:25px;border:1px solid #223741;border-radius:7px;color:#b7cad4;background:#0b141a}.right{text-align:right}.balance{color:#e0edf3;font-size:11px}.danger-text{color:#ff777e!important}.good-text{color:#4bd99a!important}.row-open{padding:6px 9px;border:1px solid #1b3b50;background:#091923;color:#5cb9f7;font-size: 9px}
+.search input{width:100%;border:0;outline:0;background:transparent;color:#dbe8ef;font-size:13px}.search input::placeholder{color: #6b7e89}
+.filters select{height:39px;padding:0 11px;border:1px solid #1c303b;border-radius:8px;background:#0a1218;color:#8ca3b1;font-size:13px;outline:none;cursor:pointer}
+.quick-filters{gap:7px;padding:9px 14px;border-bottom:1px solid #14232c;overflow:auto}.quick-filters button{white-space:nowrap;padding:7px 10px;border:1px solid #1b303c;background:#0a1319;color:#708896;font-size:12px}.quick-filters button.active,.quick-filters button:hover{border-color:#155c86;background:#092237;color:#5ebeff}
+.table-wrap{overflow:auto} table{width:100%;border-collapse:collapse;min-width:850px}th{padding:11px 15px;text-align:left;color: #6f8490;font-size:12px;letter-spacing:.12em;border-bottom:1px solid #172832;background:#071016;white-space:nowrap}td{padding:13px 15px;border-bottom:1px solid #102029;color:#9bb0bd;font-size:13px;vertical-align:middle}tbody tr{transition:.15s;background:#080f14;cursor:pointer}tbody tr:hover,tbody tr.selected{background:#0a1821}tbody tr.selected{box-shadow:inset 2px 0 #1a9fff}td small,.customer-cell small{display:block;margin-top:3px;color: #73858f;font-size:12px}.customer-cell{gap:10px}.customer-cell>div{min-width:0}.customer-cell strong{display:block;color:#d9e6ed;font-size:13px}.avatar{width:34px;height:34px;display:grid;place-items:center;flex:0 0 auto;border:1px solid #165074;border-radius:9px;background:#092237;color:#63beff;font-size:13px;font-weight:900}.avatar.large{width:48px;height:48px;font-size:13px}.badge{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid #263843;border-radius:999px;background:#0c151b;color:#7d919d;font-size:12px;font-weight:900}.badge.good{border-color:#1a6048;background:#092219;color:#51d99b}.badge.danger{border-color:#6a2830;background:#220d10;color:#ff7b83}.badge.warning{border-color:#6a501e;background:#201707;color:#eabd58}.open-count{display:inline-grid;place-items:center;min-width:25px;height:25px;border:1px solid #223741;border-radius:7px;color:#b7cad4;background:#0b141a}.right{text-align:right}.balance{color:#e0edf3;font-size:13px}.danger-text{color:#ff777e!important}.good-text{color:#4bd99a!important}.row-open{padding:6px 9px;border:1px solid #1b3b50;background:#091923;color:#5cb9f7;font-size:12px}
 .empty{height:220px;text-align:center;color: #687d89}.empty .loader{margin:0 auto 10px}.loader{width:25px;height:25px;border:2px solid #17384f;border-top-color:#1598ff;border-radius:50%;animation:spin .8s linear infinite}
 .drawer-backdrop,.modal-backdrop{position:fixed;inset:0;z-index:60;background:rgba(1,5,8,.72);backdrop-filter:blur(4px);display:flex;justify-content:flex-end}
 .drawer{width:min(560px,100%);height:100%;background:#071016;border-left:1px solid #1b303b;box-shadow:-20px 0 70px rgba(0,0,0,.45);display:flex;flex-direction:column}
-.drawer-top{padding:20px;border-bottom:1px solid #172832}.drawer-top>div:first-child{justify-content:space-between}.drawer-top button,.modal header>button{width:34px;height:34px;border:1px solid #263943;border-radius:8px;background:#0a1318;color:#8298a5;font-size:20px;cursor:pointer}.identity{gap:12px;margin-top:16px}.identity h2{margin:0;font-size:20px}.identity p{margin:4px 0 0;color: #718691;font-size:10px}.drawer-status{gap:8px;margin-top:14px;color:#708693;font-size:9px}
-.drawer-body{flex:1;overflow:auto;padding:16px 20px}.mini-financials{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mini-financials>div,.progress-box{padding:12px;border:1px solid #182b35;border-radius:10px;background:#091218}.mini-financials small,.progress-box small{display:block;color: #718590;font-size: 9px}.mini-financials strong{display:block;margin-top:4px;font-size:14px}.progress-box{margin-top:9px}.progress-box>div{justify-content:space-between}.progress-box span{font-size:9px;color:#8aa0ad}.progress-box strong{color:#5ebeff;font-size:12px}.progress{height:6px!important;margin:9px 0;border-radius:99px;background:#142631!important;overflow:hidden}.progress i{display:block;height:100%;background:#1598ff;border-radius:99px}.drawer-section{margin-top:15px;padding:15px;border:1px solid #172832;border-radius:11px;background:#080f14}.drawer-section header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}.drawer-section h3{margin:4px 0 0;font-size:13px}.drawer-section header>span{min-width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:#0b1922;color:#63bcf7;font-size:9px}.bill-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #12232c}.bill-row:first-of-type{border-top:0}.bill-row div:last-child{text-align:right}.bill-row strong{display:block;color:#cfe0e8;font-size:10px}.bill-row small{display:block;margin-top:3px;color: #71858f;font-size: 9px}.bill-row .badge{margin-top:4px}.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.detail{padding:9px;border:1px solid #162a34;border-radius:8px;background:#09141a;min-width:0}.detail span{display:block;color: #70848f;font-size: 9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.detail strong{display:block;margin-top:4px;color:#bdd0da;font-size:9px;overflow-wrap:anywhere}.details-grid .detail:last-child:nth-child(odd){grid-column:1/-1}.compact .detail:last-child:nth-child(odd){grid-column:auto}.muted{margin:0;color: #73858f;font-size:9px}
-.drawer-actions{gap:8px;padding:14px 20px;border-top:1px solid #172832;background:#071016}.primary,.secondary{min-height:40px;padding:0 13px;font-size:9px}.primary{border:1px solid #0e72ad;background:#092237;color:#5ebeff}.secondary{border:1px solid #263843;background:#0a1318;color:#91a5b2}
-.modal-backdrop{align-items:center;justify-content:center;padding:18px}.modal{width:min(520px,100%);border:1px solid #203640;border-radius:14px;background:#080f14;box-shadow:0 25px 90px rgba(0,0,0,.6);overflow:hidden}.modal header{display:flex;justify-content:space-between;padding:19px;border-bottom:1px solid #182a34}.modal h2{margin:5px 0 0;font-size:18px}.recipient{gap:10px;margin:16px;padding:12px;border:1px solid #1a303b;border-radius:9px;background:#060c10}.recipient strong,.recipient small{display:block}.recipient strong{font-size:10px}.recipient small{margin-top:3px;color: #6f8590;font-size: 9px}.reminder-balance{margin:0 16px 15px;padding:14px;border:1px solid #463818;border-radius:9px;background:#171107}.reminder-balance small,.reminder-balance span{display:block;color:#9b8248;font-size: 9px}.reminder-balance strong{display:block;margin:4px 0;color:#efc05a;font-size:22px}.field{display:block;margin:0 16px}.field>span{display:block;margin-bottom:7px;color:#8299a6;font-size:9px;font-weight:900}.field textarea{width:100%;resize:vertical;min-height:125px;padding:11px;border:1px solid #1d333e;border-radius:9px;outline:none;background:#050b0f;color:#d8e6ed;font:11px/1.55 inherit}.field textarea:focus{border-color:#197cb6;box-shadow:0 0 0 2px rgba(25,124,182,.12)}.field small{display:block;margin-top:5px;text-align:right;color: #6f838e;font-size: 9px}.result{margin:12px 16px 0;padding:10px;border-radius:8px;font-size:9px}.result.success{border:1px solid #1a5c47;background:#092219;color:#54d99b}.result.error{border:1px solid #64272d;background:#210b0e;color:#ff7a82}.modal footer{display:flex;justify-content:flex-end;gap:8px;margin-top:17px;padding:14px 16px;border-top:1px solid #182a34;background:#071016}.modal button:disabled,.refresh:disabled{opacity:.5;cursor:not-allowed}
+.drawer-top{padding:20px;border-bottom:1px solid #172832}.drawer-top>div:first-child{justify-content:space-between}.drawer-top button,.modal header>button{width:34px;height:34px;border:1px solid #263943;border-radius:8px;background:#0a1318;color:#8298a5;font-size:20px;cursor:pointer}.identity{gap:12px;margin-top:16px}.identity h2{margin:0;font-size:20px}.identity p{margin:4px 0 0;color: #718691;font-size:13px}.drawer-status{gap:8px;margin-top:14px;color:#708693;font-size:12px}
+.drawer-body{flex:1;overflow:auto;padding:16px 20px}.mini-financials{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mini-financials>div,.progress-box{padding:12px;border:1px solid #182b35;border-radius:10px;background:#091218}.mini-financials small,.progress-box small{display:block;color: #718590;font-size:12px}.mini-financials strong{display:block;margin-top:4px;font-size:14px}.progress-box{margin-top:9px}.progress-box>div{justify-content:space-between}.progress-box span{font-size:12px;color:#8aa0ad}.progress-box strong{color:#5ebeff;font-size:12px}.progress{height:6px!important;margin:9px 0;border-radius:99px;background:#142631!important;overflow:hidden}.progress i{display:block;height:100%;background:#1598ff;border-radius:99px}.drawer-section{margin-top:15px;padding:15px;border:1px solid #172832;border-radius:11px;background:#080f14}.drawer-section header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}.drawer-section h3{margin:4px 0 0;font-size:13px}.drawer-section header>span{min-width:25px;height:25px;display:grid;place-items:center;border-radius:7px;background:#0b1922;color:#63bcf7;font-size:12px}.bill-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #12232c}.bill-row:first-of-type{border-top:0}.bill-row div:last-child{text-align:right}.bill-row strong{display:block;color:#cfe0e8;font-size:13px}.bill-row small{display:block;margin-top:3px;color: #71858f;font-size:12px}.bill-row .badge{margin-top:4px}.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.detail{padding:9px;border:1px solid #162a34;border-radius:8px;background:#09141a;min-width:0}.detail span{display:block;color: #70848f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.detail strong{display:block;margin-top:4px;color:#bdd0da;font-size:12px;overflow-wrap:anywhere}.details-grid .detail:last-child:nth-child(odd){grid-column:1/-1}.compact .detail:last-child:nth-child(odd){grid-column:auto}.muted{margin:0;color: #73858f;font-size:12px}
+.drawer-actions{gap:8px;padding:14px 20px;border-top:1px solid #172832;background:#071016}.primary,.secondary{min-height:40px;padding:0 13px;font-size:12px}.primary{border:1px solid #0e72ad;background:#092237;color:#5ebeff}.secondary{border:1px solid #263843;background:#0a1318;color:#91a5b2}
+.todo{margin-top:14px;padding:20px;border:1px solid #172832;border-radius:14px;background:#080f14}.todo.has{border-color:#1b5c7d;background:linear-gradient(135deg,#0a1c28,#080f14)}.todo-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}.todo-head small{color:#4287b2;font-size:12px;font-weight:900;letter-spacing:.13em}.todo-head h2{margin:6px 0 4px;font-size:26px}.todo-head p{margin:0;color:#8aa0ad;font-size:14px;line-height:1.5;max-width:640px}.todo-btn{padding:14px 22px;border:1px solid #0e72ad;border-radius:10px;background:#0b3a5c;color:#8fd3ff;font-size:15px;font-weight:900;text-decoration:none;white-space:nowrap}.todo-btn:hover{background:#0e4c78}.todo-row{display:grid;grid-template-columns:1.4fr 1.4fr .8fr .8fr .8fr;gap:10px;align-items:center;margin-top:10px;padding:12px 14px;border:1px solid #16303d;border-radius:10px;background:#09141a;color:#a8bdca;font-size:14px;text-decoration:none}.todo-row:hover{border-color:#1b5c7d}.todo-row strong{color:#e1eef5}.todo-row b{color:#efc05a}.todo-row em{color:#8aa0ad;font-style:normal;text-align:right}@media(max-width:760px){.todo-row{grid-template-columns:1fr 1fr}}
+.modal-backdrop{align-items:center;justify-content:center;padding:18px}.modal{width:min(520px,100%);border:1px solid #203640;border-radius:14px;background:#080f14;box-shadow:0 25px 90px rgba(0,0,0,.6);overflow:hidden}.modal header{display:flex;justify-content:space-between;padding:19px;border-bottom:1px solid #182a34}.modal h2{margin:5px 0 0;font-size:18px}.recipient{gap:10px;margin:16px;padding:12px;border:1px solid #1a303b;border-radius:9px;background:#060c10}.recipient strong,.recipient small{display:block}.recipient strong{font-size:13px}.recipient small{margin-top:3px;color: #6f8590;font-size:12px}.reminder-balance{margin:0 16px 15px;padding:14px;border:1px solid #463818;border-radius:9px;background:#171107}.reminder-balance small,.reminder-balance span{display:block;color:#9b8248;font-size:12px}.reminder-balance strong{display:block;margin:4px 0;color:#efc05a;font-size:22px}.field{display:block;margin:0 16px}.field>span{display:block;margin-bottom:7px;color:#8299a6;font-size:12px;font-weight:900}.field textarea{width:100%;resize:vertical;min-height:125px;padding:11px;border:1px solid #1d333e;border-radius:9px;outline:none;background:#050b0f;color:#d8e6ed;font:11px/1.55 inherit}.field textarea:focus{border-color:#197cb6;box-shadow:0 0 0 2px rgba(25,124,182,.12)}.field small{display:block;margin-top:5px;text-align:right;color: #6f838e;font-size:12px}.result{margin:12px 16px 0;padding:10px;border-radius:8px;font-size:12px}.result.success{border:1px solid #1a5c47;background:#092219;color:#54d99b}.result.error{border:1px solid #64272d;background:#210b0e;color:#ff7a82}.modal footer{display:flex;justify-content:flex-end;gap:8px;margin-top:17px;padding:14px 16px;border-top:1px solid #182a34;background:#071016}.modal button:disabled,.refresh:disabled{opacity:.5;cursor:not-allowed}
 .state-page{min-height:100vh;display:grid;place-items:center;align-content:center;gap:10px;background:#05090d;color:#78909e;font:12px var(--font-geist-sans),system-ui}.state-page .loader{margin:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}}
@@ -702,18 +749,18 @@ const styles = `
 @media(max-width:480px){.stats{grid-template-columns:1fr}.stats article:nth-child(5){grid-column:auto}.hero h1{font-size:28px}.mini-financials{grid-template-columns:1fr}.drawer-actions{flex-wrap:wrap}.drawer-actions button{flex:1}}
 
 /* ---- readability, header fix, tablet/phone layouts ---- */
-.crumb{font-size:10px}
+.crumb{font-size:13px}
 .hero p{font-size:14px}
-.stats small{font-size:10px}.stats em{font-size:11px}.stats strong{font-size:21px}
+.stats small{font-size:13px}.stats em{font-size:13px}.stats strong{font-size:21px}
 .panel-head>div{display:block}
 .panel-head small{display:block}
 .panel-head h2{font-size:19px}
 .search input{font-size:13px}
 .filters select{font-size:12px}
-.quick-filters button{font-size:11px;padding:8px 12px}
-th{font-size:10px}
+.quick-filters button{font-size:13px;padding:8px 12px}
+th{font-size:13px}
 td{font-size:12px}
-td small{font-size:11px}
+td small{font-size:13px}
 tbody tr{transition:background .2s ease}
 tbody tr:hover{background:rgba(27,156,255,.05)}
 .row-open{transition:transform .2s ease,background .2s ease}.row-open:hover{transform:translateX(2px);background:#0c2b45}
@@ -728,7 +775,7 @@ tbody tr:hover{background:rgba(27,156,255,.05)}
   tbody tr.selected{border-color:#155c86}
   tbody td{padding:0;border-bottom:0;min-width:0}
   tbody td:nth-child(1),tbody td:nth-child(2){grid-column:1/-1}
-  tbody td:nth-child(n+3):nth-child(-n+5)::before{display:block;margin-bottom:5px;color:#6f8490;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+  tbody td:nth-child(n+3):nth-child(-n+5)::before{display:block;margin-bottom:5px;color:#6f8490;font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
   tbody td:nth-child(3)::before{content:"Status"}
   tbody td:nth-child(4)::before{content:"Open bills"}
   tbody td:nth-child(5)::before{content:"Balance"}

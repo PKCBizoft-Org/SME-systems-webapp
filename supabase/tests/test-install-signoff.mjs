@@ -28,6 +28,7 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migra
 // The realtime publication does not exist in the sandbox: apply the rest.
 await db.exec(fs.readFileSync(path.join(dir, '20261012120000_pending_payment_notice_realtime.sql'), 'utf8').replace(/do \$\$[\s\S]*?end \$\$;/i, ''))
 await db.exec(fs.readFileSync(path.join(dir, '20261012140000_install_payment_remote_signoff.sql'), 'utf8'))
+await db.exec(fs.readFileSync(path.join(dir, '20261012170000_notify_technicians_new_installation.sql'), 'utf8'))
 
 const TECH = 'e0000000-0000-0000-0000-000000000071'
 await db.exec(`
@@ -66,6 +67,11 @@ const SR = (await one(`select id from public.service_requests where client_id = 
 const job = (await one(`insert into public.repair_records (client_id, status, problem_description, job_type, service_request_id) values ($1, 'Pending', 'New installation', 'installation', $2) returning id`, [ID.c2, SR])).id
 await t('a new installation job sends a notice', async () => {
   if (!/Request sent to the technicians/.test(await sentText())) throw new Error('no notice for the customer')
+})
+await t('every technician of the company is told to get to work, nobody else', async () => {
+  const sent = (await q(`select body from net.sent`)).map((r) => r.body).filter((b) => /New installation job/.test(JSON.stringify(b)))
+  eq(sent.length, 1)
+  eq(sent[0].user_id, TECH)
 })
 
 section('3. Customer not at home: sign in the app')

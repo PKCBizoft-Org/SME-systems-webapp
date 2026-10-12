@@ -19,7 +19,12 @@ const SECTIONS: { key: StaffSection; label: string; href: string; roles: string[
 // session indicator look and behave the same everywhere. A section only shows
 // up for roles that are allowed to open it.
 export function StaffHeader({ current, roles }: { current: StaffSection; roles: string[] }) {
-  const visible = SECTIONS.filter((section) => section.roles.some((role) => roles.includes(role)));
+  // Accounting only handles money, so that is the only tab they get.
+  const accountingOnly =
+    roles.includes("accounting") && !["admin", "technician", "inventory"].some((role) => roles.includes(role));
+  const visible = SECTIONS.filter((section) =>
+    accountingOnly ? section.key === "accounting" : section.roles.some((role) => roles.includes(role)),
+  );
 
   return (
     <>
