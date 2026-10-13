@@ -193,6 +193,7 @@ export function FutureFX() {
     const canvas = canvasRef.current;
     if (!canvas || calm) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (document.documentElement.classList.contains("lite")) return;
 
     canvas.classList.add("fxOn");
     const stop = startConstellation(canvas, pointer.current);

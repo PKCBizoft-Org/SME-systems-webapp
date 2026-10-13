@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { FutureFX } from "./components/FutureFX";
+import StyledJsxRegistry from "./registry";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,10 +37,20 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
+      <head>
+        {/* Marks weaker phones (little memory, few cores, data saver) so heavy effects are skipped. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var n=navigator,c=n.connection||{};if((n.deviceMemory&&n.deviceMemory<=4)||(n.hardwareConcurrency&&n.hardwareConcurrency<=4)||c.saveData){document.documentElement.classList.add('lite')}}catch(e){}})();",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <StyledJsxRegistry>{children}</StyledJsxRegistry>
         <FutureFX />
       </body>
     </html>

@@ -728,8 +728,9 @@ export default function AccountingPage() {
                   <Detail label="Cycle" value={selectedClient.billing_cycle} />
                   <Detail label="Billing day" value={selectedClient.billing_day ?? (selectedClient.install_date ? `${Math.min(new Date(`${selectedClient.install_date}T00:00:00`).getDate(), 28)} (install day)` : null)} />
                   <Detail label="Due day" value={selectedClient.due_day ?? "7 days after the bill"} />
-                  <Detail label="Disconnect" value={selectedClient.disconnect_day ?? "Flagged 7 days after due"} />
-                  <Detail label="Terminate" value={selectedClient.terminate_day ?? "Decided by admin"} />
+                  <Detail label="Grace period" value="3 days after the due date" />
+                  <Detail label="Disconnect" value={selectedClient.disconnect_day ?? "The day after the grace period ends"} />
+                  <Detail label="Terminate" value={selectedClient.terminate_day ?? "Automatic, 30 days after disconnection"} />
                 </div>
               </section>
             </div>

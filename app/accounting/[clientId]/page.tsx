@@ -52,6 +52,7 @@ type BillingRecord = {
   billing_cycle: string | null;
   billing_period_start: string | null;
   billing_period_end: string | null;
+  grace_until?: string | null;
   disconnect_date: string | null;
   terminate_date: string | null;
   original_amount: number | null;
@@ -102,7 +103,7 @@ const CLIENT_COLUMNS = `
 const BILLING_COLUMNS = `
   id, tenant_id, client_id, bill_id, status, bill_type, bill_date,
   due_date, amount_due, billing_cycle, billing_period_start,
-  billing_period_end, disconnect_date, terminate_date, original_amount,
+  billing_period_end, grace_until, disconnect_date, terminate_date, original_amount,
   discount_amount, final_amount, discount_reason, paid_at
 `;
 
@@ -865,8 +866,9 @@ export default function AccountingCustomerPage() {
                   <Detail label="Cycle" value={client.billing_cycle || "Monthly"} />
                   <Detail label="Billing day" value={client.billing_day ?? (client.install_date ? `${Math.min(new Date(`${client.install_date}T00:00:00`).getDate(), 28)} (install day)` : null)} />
                   <Detail label="Due day" value={client.due_day ?? "7 days after the bill"} />
-                  <Detail label="Disconnect" value={client.disconnect_day ?? "Flagged 7 days after due"} />
-                  <Detail label="Terminate" value={client.terminate_day ?? "Decided by admin"} />
+                  <Detail label="Grace period" value="3 days after the due date" />
+                  <Detail label="Disconnect" value={client.disconnect_day ?? "The day after the grace period ends"} />
+                  <Detail label="Terminate" value={client.terminate_day ?? "Automatic, 30 days after disconnection"} />
                   <Detail label="Next bill" value={nextBillText(client, billing)} wide />
                 </div>
               </section>
@@ -929,6 +931,9 @@ export default function AccountingCustomerPage() {
                     <th>Type</th>
                     <th>Bill date</th>
                     <th>Due date</th>
+                    <th>Grace until</th>
+                    <th>Disconnect</th>
+                    <th>Terminate</th>
                     <th>Billing period</th>
                     <th className="right">Amount</th>
                     <th className="right">Balance</th>
@@ -950,6 +955,9 @@ export default function AccountingCustomerPage() {
                         <td>{bill.bill_type || "—"}</td>
                         <td>{formatDate(bill.bill_date)}</td>
                         <td>{formatDate(bill.due_date)}</td>
+                        <td>{formatDate(bill.grace_until)}</td>
+                        <td>{formatDate(bill.disconnect_date)}</td>
+                        <td>{formatDate(bill.terminate_date)}</td>
                         <td>
                           {bill.billing_period_start && bill.billing_period_end
                             ? `${formatDate(bill.billing_period_start)} – ${formatDate(bill.billing_period_end)}`
@@ -974,7 +982,7 @@ export default function AccountingCustomerPage() {
                   })}
                   {filteredBills.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="empty">
+                      <td colSpan={12} className="empty">
                         No billing records found.
                       </td>
                     </tr>

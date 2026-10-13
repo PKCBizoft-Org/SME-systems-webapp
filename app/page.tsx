@@ -265,6 +265,13 @@ export default function HomePage() {
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Weaker phones skip the 4-second intro animation and go straight to the page.
+    if (document.documentElement.classList.contains("lite")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIntroVisible(false);
+      return;
+    }
+
     const finishIntro = () => {
       setIntroExiting(true);
       window.setTimeout(() => setIntroVisible(false), 720);
@@ -295,7 +302,8 @@ export default function HomePage() {
         (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
       // Feature detection needs the browser, so it can only run after mount.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setWebglAvailable(Boolean(gl && !gl.isContextLost()));
+      // The 3D globe is too heavy for weaker phones; they get the flat fallback.
+      setWebglAvailable(Boolean(gl && !gl.isContextLost()) && !document.documentElement.classList.contains("lite"));
       gl?.getExtension("WEBGL_lose_context")?.loseContext();
     } catch {
       setWebglAvailable(false);
