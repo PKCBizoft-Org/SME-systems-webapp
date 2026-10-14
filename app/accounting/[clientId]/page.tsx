@@ -5,7 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
-import { planLabel } from "@/lib/plans";
+import { INSTALL_FEE, planLabel } from "@/lib/plans";
+import { BILL_TYPES_BY_HAND, billingDayText, nextBillDate, SCHEDULE_TEXT } from "@/lib/billingSchedule";
 import { StaffHeader } from "../../components/StaffHeader";
 import { StaffMotion } from "../../components/StaffMotion";
 import { PkcLoader } from "../../components/PkcLoader";
@@ -157,17 +158,15 @@ function badgeClass(value: string) {
 function nextBillText(client: Client, bills: BillingRecord[]) {
   if (!client.plan_name?.trim()) return "No plan yet, so nothing to bill";
   if (!client.install_date) return "Not installed yet";
-  const day = Math.min(client.billing_day ?? new Date(`${client.install_date}T00:00:00`).getDate(), 28);
   const latest = bills
+    .filter((bill) => (bill.bill_type || "Monthly") === "Monthly")
     .map((bill) => bill.billing_period_start)
     .filter((value): value is string => !!value)
     .sort()
     .at(-1);
-  const base = new Date(`${latest ?? client.install_date}T00:00:00`);
-  let next = new Date(base.getFullYear(), base.getMonth(), day);
-  if (next <= base) next = new Date(base.getFullYear(), base.getMonth() + 1, day);
-  const iso = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
-  return latest ? formatDate(iso) : `${formatDate(iso)} (first month was paid with the plan)`;
+  const next = nextBillDate(client.billing_day, client.install_date.slice(0, 10), latest ?? null, phToday());
+  if (!next) return "—";
+  return latest ? formatDate(next) : `${formatDate(next)} (first month was paid with the plan)`;
 }
 
 function jobLabel(type: string | null) {
@@ -238,6 +237,15 @@ export default function AccountingCustomerPage() {
   const [recError, setRecError] = useState("");
   const [recWaiting, setRecWaiting] = useState(0);
   const [flash, setFlash] = useState<string | null>(null);
+
+  // Adding an Installation Fee or Adjustment bill by hand (monthly bills are automatic).
+  const [addOpen, setAddOpen] = useState(false);
+  const [addType, setAddType] = useState<string>(BILL_TYPES_BY_HAND[0]);
+  const [addAmount, setAddAmount] = useState("");
+  const [addDue, setAddDue] = useState("");
+  const [addNote, setAddNote] = useState("");
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState("");
 
   const loadAccount = useCallback(
     async (showRefresh = false) => {
@@ -528,6 +536,60 @@ export default function AccountingCustomerPage() {
     }
   }
 
+  function openAddBill() {
+    setAddType(BILL_TYPES_BY_HAND[0]);
+    setAddAmount(INSTALL_FEE.toFixed(2));
+    setAddDue("");
+    setAddNote("");
+    setAddError("");
+    setFlash(null);
+    setAddOpen(true);
+  }
+
+  function chooseAddType(type: string) {
+    setAddType(type);
+    setAddAmount(type === "Installation Fee" ? INSTALL_FEE.toFixed(2) : "");
+  }
+
+  async function submitAddBill() {
+    if (!client || addBusy) return;
+    const amount = Number(addAmount.replace(/,/g, ""));
+    if (!Number.isFinite(amount) || amount <= 0) return setAddError("Enter the amount.");
+    if (addType === "Adjustment" && !addNote.trim()) return setAddError("Say what the adjustment is for.");
+
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return setAddError("Your session has expired. Please sign in again.");
+
+    setAddBusy(true);
+    setAddError("");
+    try {
+      const response = await fetch("/api/accounting/add-bill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          clientId: client.id,
+          billType: addType,
+          amount,
+          dueDate: addDue || undefined,
+          note: addNote.trim(),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result?.error || "The bill could not be added.");
+
+      setAddOpen(false);
+      setFlash(
+        `Added ${addType} bill ${result?.result?.bill_id || ""} for ${formatPeso(amount)}, due ${formatDate(result?.result?.due_date)}. The customer was told.`,
+      );
+      void loadAccount(true);
+    } catch (error) {
+      setAddError(error instanceof Error ? error.message : "The bill could not be added.");
+    } finally {
+      setAddBusy(false);
+    }
+  }
+
   function openReminder() {
     if (!client) return;
     setReminderResult(null);
@@ -790,6 +852,9 @@ export default function AccountingCustomerPage() {
                     <p>Invoices that still have a remaining balance.</p>
                   </div>
                   <span className="count">{openBills.length}</span>
+                  <button className="row-action" onClick={openAddBill}>
+                    Add bill
+                  </button>
                 </header>
                 <div className="table-wrap">
                   <table>
@@ -864,11 +929,11 @@ export default function AccountingCustomerPage() {
                 </header>
                 <div className="details-grid">
                   <Detail label="Cycle" value={client.billing_cycle || "Monthly"} />
-                  <Detail label="Billing day" value={client.billing_day ?? (client.install_date ? `${Math.min(new Date(`${client.install_date}T00:00:00`).getDate(), 28)} (install day)` : null)} />
-                  <Detail label="Due day" value={client.due_day ?? "7 days after the bill"} />
-                  <Detail label="Grace period" value="3 days after the due date" />
-                  <Detail label="Disconnect" value={client.disconnect_day ?? "The day after the grace period ends"} />
-                  <Detail label="Terminate" value={client.terminate_day ?? "Automatic, 30 days after disconnection"} />
+                  <Detail label="Billed on" value={billingDayText(client.billing_day)} />
+                  <Detail label="Due" value={SCHEDULE_TEXT.due} />
+                  <Detail label="Grace period" value={SCHEDULE_TEXT.grace} />
+                  <Detail label="Disconnect" value={SCHEDULE_TEXT.disconnect} />
+                  <Detail label="Terminate" value={SCHEDULE_TEXT.terminate} />
                   <Detail label="Next bill" value={nextBillText(client, billing)} wide />
                 </div>
               </section>
@@ -1128,6 +1193,76 @@ export default function AccountingCustomerPage() {
                 disabled={sendingReminder || !client.user_id}
               >
                 {sendingReminder ? "Sending…" : "Send reminder"}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
+
+      {addOpen && (
+        <div className="modal-backdrop" onMouseDown={() => !addBusy && setAddOpen(false)}>
+          <section className="modal" onMouseDown={(e) => e.stopPropagation()}>
+            <header>
+              <div>
+                <small>BILLING</small>
+                <h2>Add a bill</h2>
+              </div>
+              <button onClick={() => setAddOpen(false)} disabled={addBusy}>
+                ×
+              </button>
+            </header>
+
+            <div className="recipient">
+              <span className="avatar">{getInitials(client.customer_name)}</span>
+              <div>
+                <strong>{client.customer_name || "Customer"}</strong>
+                <small>Monthly bills are created automatically. The bill number is assigned for you.</small>
+              </div>
+            </div>
+
+            <div className="form-grid">
+              <label className="field">
+                <span>BILL TYPE</span>
+                <select value={addType} onChange={(e) => chooseAddType(e.target.value)} disabled={addBusy}>
+                  {BILL_TYPES_BY_HAND.map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>AMOUNT (₱)</span>
+                <input value={addAmount} onChange={(e) => setAddAmount(e.target.value)} inputMode="decimal" disabled={addBusy} />
+              </label>
+              <label className="field">
+                <span>DUE DATE (OPTIONAL)</span>
+                <input type="date" value={addDue} min={phToday()} onChange={(e) => setAddDue(e.target.value)} disabled={addBusy} />
+              </label>
+            </div>
+            <p style={{ margin: "4px 0 0", opacity: 0.7, fontSize: 13 }}>
+              Left blank, it is due at the end of the month, and never less than 7 days from today. Grace period,
+              disconnection and termination follow the same days as a monthly bill.
+            </p>
+
+            <label className="field">
+              <span>{addType === "Adjustment" ? "WHAT IS THIS FOR? (REQUIRED)" : "NOTE (OPTIONAL, KEPT IN THE AUDIT LOG)"}</span>
+              <textarea
+                value={addNote}
+                onChange={(e) => setAddNote(e.target.value)}
+                rows={2}
+                maxLength={300}
+                disabled={addBusy}
+                style={{ minHeight: 60 }}
+              />
+            </label>
+
+            {addError && <div className="result error">{addError}</div>}
+
+            <footer>
+              <button className="secondary" onClick={() => setAddOpen(false)} disabled={addBusy}>
+                Cancel
+              </button>
+              <button className="primary" onClick={() => void submitAddBill()} disabled={addBusy}>
+                {addBusy ? "Adding…" : "Add bill"}
               </button>
             </footer>
           </section>

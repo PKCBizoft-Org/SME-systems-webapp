@@ -31,9 +31,9 @@ export async function seed(db) {
       ('${ID.tenant}', 'G1_P500', 500, '500 Mbps', false);
 
     insert into public.clients (id, tenant_id, customer_name, plan_name, account_status, installation_status, install_date, user_id, email, mobile_number, billing_day) values
-      ('${ID.c1}', '${ID.tenant}', 'Active Customer', 'G1_P750', 'Active', 'Installed', current_date - 60, '${ID.u1}', 'u1@pkc.test', '09170000001', 5),
+      ('${ID.c1}', '${ID.tenant}', 'Active Customer', 'G1_P750', 'Active', 'Installed', current_date - 60, '${ID.u1}', 'u1@pkc.test', '09170000001', 1),
       ('${ID.c2}', '${ID.tenant}', 'New Customer', null, 'Inactive', null, null, '${ID.u2}', 'u2@pkc.test', '09170000002', null),
-      ('${ID.c3}', '${ID.tenant}', 'Other Customer', 'G1_P750', 'Active', 'Installed', current_date - 90, '${ID.u3}', 'u3@pkc.test', '09170000003', 5);
+      ('${ID.c3}', '${ID.tenant}', 'Other Customer', 'G1_P750', 'Active', 'Installed', current_date - 90, '${ID.u3}', 'u3@pkc.test', '09170000003', 1);
 
     insert into public.client_services (tenant_id, client_id, plan_id, status, installation_status, install_date, started_at)
       select '${ID.tenant}', '${ID.c1}', id, 'active', 'Installed', current_date - 60, now() - interval '60 days'
@@ -42,12 +42,12 @@ export async function seed(db) {
 }
 
 /** Adds a bill and returns its id. */
-export async function addBill(db, { client = ID.c1, billId, amount = 750, dueOffset = 3, status = 'Unpaid', periodStartOffset = -27 }) {
+export async function addBill(db, { client = ID.c1, billId, amount = 750, dueOffset = 3, status = 'Unpaid', periodStartOffset = -27, periodEndOffset = null }) {
   const { rows } = await db.query(
     `insert into public.billing (tenant_id, client_id, bill_id, status, bill_type, bill_date, due_date, amount_due, original_amount, final_amount, billing_period_start, billing_period_end)
-     values ($1, $2, $3, $4, 'Monthly', current_date + $5::int, current_date + $6::int, $7, $7, $7, current_date + $5::int, current_date + $5::int + 29)
+     values ($1, $2, $3, $4, 'Monthly', current_date + $5::int, current_date + $6::int, $7, $7, $7, current_date + $5::int, current_date + coalesce($8::int, $5::int + 29))
      returning id`,
-    [ID.tenant, client, billId, status, periodStartOffset, dueOffset, amount],
+    [ID.tenant, client, billId, status, periodStartOffset, dueOffset, amount, periodEndOffset],
   )
   return rows[0].id
 }

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const dir = path.dirname(fileURLToPath(import.meta.url))
-const all = '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261009240000_db_hygiene.sql,20261010110000_cancel_bill_payment.sql,20261012140000_install_payment_remote_signoff.sql,20261012200000_install_needs_plan_billing_day.sql,20261012210000_require_arrival_before_done.sql'
+const all = '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261009240000_db_hygiene.sql,20261010110000_cancel_bill_payment.sql,20261012140000_install_payment_remote_signoff.sql,20261012200000_install_needs_plan_billing_day.sql,20261012210000_require_arrival_before_done.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql'
 const suites = ['test-bills', 'test-referrals', 'test-automation', 'test-hygiene', 'test-staff-view', 'test-technician-stats', 'test-modem-serial', 'test-ticket-chat', 'test-insights-permissions', 'test-dispatch-outages', 'test-truck-errors-lockout', 'test-job-handback', 'test-join-requests', 'test-install-signoff', 'test-accounting-summary']
 
 let failed = 0

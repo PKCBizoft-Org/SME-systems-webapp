@@ -31,6 +31,7 @@ await db.exec(fs.readFileSync(path.join(dir, '20261012140000_install_payment_rem
 await db.exec(fs.readFileSync(path.join(dir, '20261012170000_notify_technicians_new_installation.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012200000_install_needs_plan_billing_day.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012210000_require_arrival_before_done.sql'), 'utf8'))
+await db.exec(fs.readFileSync(path.join(dir, '20261014085900_billing_day_new_installs_on_the_1st.sql'), 'utf8'))
 
 const TECH = 'e0000000-0000-0000-0000-000000000071'
 await db.exec(`
@@ -136,8 +137,7 @@ await t('signing finishes the job and switches the account on', async () => {
   const c = await one(`select account_status, installation_status from public.clients where id = $1`, [ID.c2])
   eq(c.account_status, 'Active')
   eq(c.installation_status, 'Installed')
-  const day = (await one(`select least(extract(day from current_date)::int, 28) d`)).d
-  eq((await one(`select billing_day from public.clients where id = $1`, [ID.c2])).billing_day, day)
+  eq((await one(`select billing_day from public.clients where id = $1`, [ID.c2])).billing_day, 1, 'new customers are billed on the 1st')
   eq((await q(`select 1 from public.repair_photos where repair_id = $1 and photo_type = 'signature'`, [job])).length, 1)
 })
 await t('it cannot be signed twice', async () => {
