@@ -188,9 +188,9 @@ const SCREENS: Record<TabId, (props: { onPlay?: () => void }) => ReactElement> =
 
 export function PhoneDemo() {
   const [active, setActive] = useState<TabId>("home");
-  const [touring, setTouring] = useState(true);
+  const [touring, setTouring] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(true);
 
   // Gentle auto-tour through the screens until the visitor takes over.
   useEffect(() => {
@@ -248,11 +248,27 @@ export function PhoneDemo() {
                 src="/media/pkc-promo-vertical.mp4"
                 poster="/media/pkc-promo-vertical.jpg"
                 autoPlay
+                muted
                 playsInline
                 controls
-                loop
+                onEnded={() => {
+                  setPlaying(false);
+                  setTouring(true);
+                }}
+                onError={() => {
+                  setPlaying(false);
+                  setTouring(true);
+                }}
               />
-              <button type="button" className={styles.storyClose} onClick={() => setPlaying(false)} aria-label="Close the story">
+              <button
+                type="button"
+                className={styles.storyClose}
+                onClick={() => {
+                  setPlaying(false);
+                  setTouring(true);
+                }}
+                aria-label="Close the story"
+              >
                 ✕
               </button>
             </div>
@@ -282,7 +298,7 @@ export function PhoneDemo() {
       </div>
 
       <p className={styles.caption}>
-        Tap the glowing ▶ to watch a 25 second story, or tap around. Sample screens, not real data.
+        Tap the glowing ▶ to replay the 25 second story, or tap around. Sample screens, not real data.
       </p>
     </div>
   );

@@ -334,11 +334,11 @@ export default function WhoWeArePage() {
           </span>
         </a>
         <div className="links">
-          <a href="/">Home</a>
+          <a href="/#network">Network</a>
+          <a href="/#systems">Systems</a>
           <a className="active" href="/who-we-are">
             Who We Are
           </a>
-          <a href="/#systems">Systems</a>
           <a href="/#features">Capabilities</a>
         </div>
         <div className="navRight">
@@ -360,14 +360,14 @@ export default function WhoWeArePage() {
           </button>
         </div>
         <div className={`mobileMenu ${mobileMenuOpen ? "open" : ""}`}>
-          <a href="/" onClick={() => setMobileMenuOpen(false)}>
-            HOME <b>01</b>
-          </a>
-          <a href="/who-we-are" onClick={() => setMobileMenuOpen(false)}>
-            WHO WE ARE <b>02</b>
+          <a href="/#network" onClick={() => setMobileMenuOpen(false)}>
+            NETWORK <b>01</b>
           </a>
           <a href="/#systems" onClick={() => setMobileMenuOpen(false)}>
-            SYSTEMS <b>03</b>
+            SYSTEMS <b>02</b>
+          </a>
+          <a href="/who-we-are" onClick={() => setMobileMenuOpen(false)}>
+            WHO WE ARE <b>03</b>
           </a>
           <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
             CAPABILITIES <b>04</b>

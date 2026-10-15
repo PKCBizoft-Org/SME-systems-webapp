@@ -123,7 +123,7 @@ export default async function DownloadPage() {
 
   return (
     <div className={shared.page}>
-      <SiteHeader />
+      <SiteHeader current="/download" />
 
       <main className={styles.main}>
         {/* ---------- hero ---------- */}

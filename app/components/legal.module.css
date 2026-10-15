@@ -3,7 +3,8 @@
 .nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px;align-items:center}
 .nav a{color:rgba(203,230,237,.75);text-decoration:none;font-size:13px;padding:8px 12px;border:1px solid rgba(76,232,255,.18);border-radius:8px}
 .nav a.on{color:#4ce8ff;border-color:rgba(76,232,255,.5);background:rgba(76,232,255,.08)}
-.nav .home{margin-right:auto;border-color:transparent;padding-left:0}
+.nav .home{margin-right:auto;border-color:transparent;padding-left:0;display:inline-flex;align-items:center;gap:8px;color:#eaf8ff;font-weight:800;letter-spacing:.08em}
+.nav .home b{color:#4ce8ff}
 .kicker{color:#4ce8ff;letter-spacing:.18em;font-size:11px}
 .title{font-family:var(--font-display),system-ui,sans-serif;font-size:32px;margin:6px 0 4px}
 .updated{color:rgba(203,230,237,.5);font-size:13px;margin-bottom:22px}
