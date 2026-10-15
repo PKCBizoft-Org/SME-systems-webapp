@@ -1,47 +1,11 @@
-import Link from "next/link";
 import styles from "./site-pages.module.css";
+import { SiteNav, NAV_LINKS } from "./SiteNav";
 
-// Header shared by the standalone public pages (404, download).
-// Plain <img> on purpose: it is a 40px static logo, and next/image would add
-// a loader and layout shift for no gain here.
-// Same links, same order as the home page navbar.
-export const NAV_LINKS = [
-  { href: "/#network", label: "Network" },
-  { href: "/#systems", label: "Systems" },
-  { href: "/who-we-are", label: "Who We Are" },
-  { href: "/#features", label: "Capabilities" },
-];
+export { NAV_LINKS };
 
+// Header shared by the standalone public pages (404, download). One navbar, in SiteNav.
 export function SiteHeader({ current }: { current?: string }) {
-  return (
-    <header className={styles.header}>
-      <Link href="/" className={styles.brand} aria-label="PKC BIZOFT home">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/pkc-logo.webp" alt="" className={styles.brandLogo} width={40} height={40} />
-        <span className={styles.brandText}>
-          PKC <span>BIZOFT</span>
-        </span>
-      </Link>
-
-      <nav className={styles.headerLinks} aria-label="Primary">
-        {NAV_LINKS.map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`${styles.headerLink} ${l.href === current ? styles.headerLinkOn : ""} ${styles.hideSmall}`}
-          >
-            {l.label}
-          </Link>
-        ))}
-        <Link href="/download" className={`${styles.headerLink} ${current === "/download" ? styles.headerLinkOn : ""}`}>
-          Get the app
-        </Link>
-        <Link href="/login" className={styles.enterButton}>
-          Enter system ↗
-        </Link>
-      </nav>
-    </header>
-  );
+  return <SiteNav current={current} />;
 }
 
 export function SiteFooter() {

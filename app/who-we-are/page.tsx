@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CardFX } from "../components/CardFX";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "../components/IntroFX";
 import { ProfileDialog, type ProfileDetails } from "../components/ProfileDialog";
+import { SiteNav } from "../components/SiteNav";
 import { StoryVideo } from "../components/StoryVideo";
 
 const PKC_LOGO =
@@ -139,7 +140,6 @@ export default function WhoWeArePage() {
     };
   }
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const timers = [
@@ -325,58 +325,7 @@ export default function WhoWeArePage() {
         <i style={{ transform: `scaleX(${scrollProgress})` }} />
       </div>
 
-      <nav className="nav" aria-label="Primary navigation">
-        <a className="brand" href="/" aria-label="PKC BIZOFT home">
-          <img src={PKC_LOGO} alt="PKC BIZOFT" />
-          <span>
-            <strong>PKC</strong>
-            <small>BIZOFT</small>
-          </span>
-        </a>
-        <div className="links">
-          <a href="/#network">Network</a>
-          <a href="/#systems">Systems</a>
-          <a className="active" href="/who-we-are">
-            Who We Are
-          </a>
-          <a href="/#features">Capabilities</a>
-        </div>
-        <div className="navRight">
-          <span className="live">
-            <i /> TEAM ONLINE
-          </span>
-          <a className="enter" href="/login">
-            ENTER SYSTEM ↗
-          </a>
-          <button
-            className={`menuButton ${mobileMenuOpen ? "open" : ""}`}
-            type="button"
-            onClick={() => setMobileMenuOpen((v) => !v)}
-            aria-label="Toggle navigation"
-            aria-expanded={mobileMenuOpen}
-          >
-            <span />
-            <span />
-          </button>
-        </div>
-        <div className={`mobileMenu ${mobileMenuOpen ? "open" : ""}`}>
-          <a href="/#network" onClick={() => setMobileMenuOpen(false)}>
-            NETWORK <b>01</b>
-          </a>
-          <a href="/#systems" onClick={() => setMobileMenuOpen(false)}>
-            SYSTEMS <b>02</b>
-          </a>
-          <a href="/who-we-are" onClick={() => setMobileMenuOpen(false)}>
-            WHO WE ARE <b>03</b>
-          </a>
-          <a href="/#features" onClick={() => setMobileMenuOpen(false)}>
-            CAPABILITIES <b>04</b>
-          </a>
-          <a href="/login" onClick={() => setMobileMenuOpen(false)}>
-            ENTER SYSTEM <b>↗</b>
-          </a>
-        </div>
-      </nav>
+      <SiteNav current="/who-we-are" />
 
       <section className="hero" data-reveal>
         <div className="heroField" aria-hidden="true">
