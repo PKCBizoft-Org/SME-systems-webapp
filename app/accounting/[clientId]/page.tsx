@@ -1,7 +1,7 @@
 /* Enhanced Accounting Customer Account page — replace the existing customer page.tsx */
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
@@ -108,6 +108,17 @@ const BILLING_COLUMNS = `
   discount_amount, final_amount, discount_reason, paid_at
 `;
 
+type ProofSubmission = {
+  id: string;
+  created_at: string;
+  payment_method: string | null;
+  reference_number: string | null;
+  amount_claimed: number | null;
+  status: string | null;
+  proof_path: string | null;
+  reject_reason: string | null;
+};
+
 const PAYMENT_COLUMNS = `
   id, tenant_id, client_id, billing_id, payment_id, receipt_number,
   amount_paid, payment_date, payment_method
@@ -150,7 +161,7 @@ function billStatus(bill: BillingRecord, paid: number) {
 function badgeClass(value: string) {
   const v = value.trim().toLowerCase();
   if (/^(paid|active|installed|completed|done|recorded)/.test(v)) return "good";
-  if (/(overdue|suspend|cancel|terminat|disconnect)/.test(v)) return "danger";
+  if (/(overdue|suspend|cancel|terminat|disconnect|inactive)/.test(v)) return "danger";
   if (/(partial|due|for install|schedul|progress|assigned|pending|awaiting|open|not recorded)/.test(v)) return "warning";
   return "neutral";
 }
@@ -203,6 +214,11 @@ export default function AccountingCustomerPage() {
   const [billing, setBilling] = useState<BillingRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [technician, setTechnician] = useState<string | null>(null);
+  const [fullAddress, setFullAddress] = useState<string | null>(null);
+  const [proofs, setProofs] = useState<ProofSubmission[]>([]);
+  const [proofOpen, setProofOpen] = useState<string | null>(null);
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
   const [costs, setCosts] = useState<CostLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -269,6 +285,15 @@ export default function AccountingCustomerPage() {
         setClient(clientResult.data as Client);
 
         // Who is on the job and what the repairs cost: extras, the page works without them.
+        void supabase
+          .from("payment_submissions")
+          .select("id, created_at, payment_method, reference_number, amount_claimed, status, proof_path, reject_reason")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false })
+          .then(({ data }) => setProofs((data || []) as ProofSubmission[]));
+        void supabase.rpc("client_full_address", { p_client: clientId }).then(({ data }) => {
+          setFullAddress(typeof data === "string" && data ? data : null);
+        });
         void supabase.rpc("account_technician", { p_client: clientId }).then(({ data }) => {
           setTechnician(typeof data === "string" && data ? data : null);
         });
@@ -590,6 +615,26 @@ export default function AccountingCustomerPage() {
     }
   }
 
+  async function toggleProof(submission: ProofSubmission) {
+    if (proofOpen === submission.id) {
+      setProofOpen(null);
+      return;
+    }
+    setProofOpen(submission.id);
+    setProofUrl(null);
+    setProofError(null);
+    if (!submission.proof_path) {
+      setProofError("The customer did not attach a receipt.");
+      return;
+    }
+    const { data, error } = await supabase.storage.from("payment-proofs").createSignedUrl(submission.proof_path, 300);
+    if (error || !data?.signedUrl) {
+      setProofError(error?.message || "Unable to open the receipt image.");
+      return;
+    }
+    setProofUrl(data.signedUrl);
+  }
+
   function openReminder() {
     if (!client) return;
     setReminderResult(null);
@@ -685,7 +730,7 @@ export default function AccountingCustomerPage() {
               <h1>{client.customer_name || "Unnamed customer"}</h1>
               <p>
                 {client.account_id || "No account ID"} ·{" "}
-                {client.area || "No area"} · {planLabel(client.plan_name) || "No plan"}
+                {client.area || "No purok"} · {planLabel(client.plan_name) || "No plan"}
               </p>
             </div>
           </div>
@@ -928,13 +973,23 @@ export default function AccountingCustomerPage() {
                   </div>
                 </header>
                 <div className="details-grid">
-                  <Detail label="Cycle" value={client.billing_cycle || "Monthly"} />
-                  <Detail label="Billed on" value={billingDayText(client.billing_day)} />
-                  <Detail label="Due" value={SCHEDULE_TEXT.due} />
-                  <Detail label="Grace period" value={SCHEDULE_TEXT.grace} />
-                  <Detail label="Disconnect" value={SCHEDULE_TEXT.disconnect} />
-                  <Detail label="Terminate" value={SCHEDULE_TEXT.terminate} />
-                  <Detail label="Next bill" value={nextBillText(client, billing)} wide />
+                  {client.plan_name?.trim() && client.install_date ? (
+                    <>
+                      <Detail label="Cycle" value={client.billing_cycle || "Monthly"} />
+                      <Detail label="Billed on" value={billingDayText(client.billing_day)} />
+                      <Detail label="Due" value={SCHEDULE_TEXT.due} />
+                      <Detail label="Grace period" value={SCHEDULE_TEXT.grace} />
+                      <Detail label="Disconnect" value={SCHEDULE_TEXT.disconnect} />
+                      <Detail label="Terminate" value={SCHEDULE_TEXT.terminate} />
+                      <Detail label="Next bill" value={nextBillText(client, billing)} wide />
+                    </>
+                  ) : (
+                    <Detail
+                      label="Not started"
+                      value="The billing cycle starts once the plan is approved and the installation is done."
+                      wide
+                    />
+                  )}
                 </div>
               </section>
 
@@ -951,15 +1006,14 @@ export default function AccountingCustomerPage() {
                   <Detail label="Mobile" value={client.mobile_number} />
                   <Detail label="Email" value={client.email} />
                   <Detail label="Plan" value={planLabel(client.plan_name) || "No plan yet"} />
-                  <Detail label="Area" value={client.area} />
+                  <Detail label="Purok" value={client.area} />
                   <Detail
                     label="Installation"
                     value={formatDate(client.install_date)}
                   />
                   <Detail label="Technician" value={technician || client.technicians} />
-                  <Detail label="PPPoE" value={client.pppoe_name} />
                   <Detail label="Referral code" value={client.referral_code} />
-                  <Detail label="Address" value={client.address} wide />
+                  <Detail label="Address" value={fullAddress || client.address} wide />
                 </div>
               </section>
             </aside>
@@ -1119,6 +1173,85 @@ export default function AccountingCustomerPage() {
                     <tr>
                       <td colSpan={6} className="empty">
                         No payment records found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {activeSection === "payments" && (
+          <section className="panel full">
+            <header className="panel-head">
+              <div>
+                <small>PROOF OF PAYMENT</small>
+                <h2>Receipts sent by the customer</h2>
+                <p>Every receipt this customer uploaded in the app, newest first.</p>
+              </div>
+              <span className="count">{proofs.length}</span>
+            </header>
+            <div className="table-wrap">
+              <table className="wide-table">
+                <thead>
+                  <tr>
+                    <th>Sent</th>
+                    <th>Method</th>
+                    <th>Reference</th>
+                    <th>Status</th>
+                    <th className="right">Amount</th>
+                    <th className="right">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proofs.map((proof) => (
+                    <Fragment key={proof.id}>
+                      <tr>
+                        <td>{formatDate(proof.created_at)}</td>
+                        <td>
+                          <span className="method">{proof.payment_method || "—"}</span>
+                        </td>
+                        <td>{proof.reference_number || "—"}</td>
+                        <td>
+                          <span className={`badge ${badgeClass(proof.status || "Pending")}`}>
+                            {proof.status || "Pending"}
+                          </span>
+                          {proof.reject_reason ? <small>{proof.reject_reason}</small> : null}
+                        </td>
+                        <td className="right payment-amount">{formatPeso(Number(proof.amount_claimed || 0))}</td>
+                        <td className="right">
+                          <button className="secondary" onClick={() => void toggleProof(proof)}>
+                            {proofOpen === proof.id ? "Hide receipt" : "View receipt"}
+                          </button>
+                        </td>
+                      </tr>
+                      {proofOpen === proof.id && (
+                        <tr>
+                          <td colSpan={6}>
+                            {proofError ? (
+                              <p>{proofError}</p>
+                            ) : proofUrl ? (
+                              <a href={proofUrl} target="_blank" rel="noreferrer">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={proofUrl}
+                                  alt="Customer payment receipt"
+                                  style={{ maxWidth: "min(420px, 100%)", borderRadius: 10, border: "1px solid #172832" }}
+                                />
+                              </a>
+                            ) : (
+                              <p>Opening the receipt…</p>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                  {proofs.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="empty">
+                        The customer has not sent any receipts.
                       </td>
                     </tr>
                   )}

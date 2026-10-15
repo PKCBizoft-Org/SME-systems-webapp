@@ -173,7 +173,7 @@ const safeFileName = (name: string) =>
 const statusClass = (value?: string | null) => {
   const v = (value || "").toLowerCase();
   if (["paid", "completed", "active"].includes(v)) return "good";
-  if (["overdue", "terminated", "cancelled"].includes(v)) return "bad";
+  if (["overdue", "terminated", "cancelled", "inactive"].includes(v)) return "bad";
   return "warn";
 };
 

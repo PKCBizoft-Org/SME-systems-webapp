@@ -131,7 +131,7 @@ function getBillStatus(bill: BillingRecord, paid: number) {
 
 function statusClass(status: string) {
   if (status === "Paid" || status === "Active") return "good";
-  if (status === "Overdue" || status === "Suspended") return "danger";
+  if (status === "Overdue" || status === "Suspended" || status === "Inactive") return "danger";
   if (status === "Partial") return "warning";
   return "neutral";
 }
@@ -186,15 +186,20 @@ export default function AccountingPage() {
 
   // Who is on the selected customer's job (the account's own field is only filled when it is finished).
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   useEffect(() => {
     if (!selectedClientId) return;
     let active = true;
     void supabase.rpc("account_technician", { p_client: selectedClientId }).then(({ data }) => {
       if (active) setSelectedTech(typeof data === "string" && data ? data : null);
     });
+    void supabase.rpc("client_full_address", { p_client: selectedClientId }).then(({ data }) => {
+      if (active) setSelectedAddress(typeof data === "string" && data ? data : null);
+    });
     return () => {
       active = false;
       setSelectedTech(null);
+      setSelectedAddress(null);
     };
   }, [selectedClientId]);
   const [search, setSearch] = useState("");
@@ -702,17 +707,21 @@ export default function AccountingPage() {
                   <Detail label="Mobile" value={selectedClient.mobile_number} />
                   <Detail label="Email" value={selectedClient.email} />
                   <Detail label="Plan" value={selectedClient.plan_name} />
-                  <Detail label="Area" value={selectedClient.area} />
+                  <Detail label="Purok" value={selectedClient.area} />
                   <Detail label="Installation" value={formatDate(selectedClient.install_date)} />
                   <Detail label="Technician" value={selectedTech || selectedClient.technicians} />
-                  <Detail label="Address" value={selectedClient.address} />
+                  <Detail label="Address" value={selectedAddress || selectedClient.address} />
                 </div>
               </section>
 
               <section className="drawer-section">
                 <header><div><small>BILLING SCHEDULE</small><h3>Account cycle</h3></div></header>
                 <div className="details-grid compact">
-                  <Detail label="Billed on" value={billingDayText(selectedClient.billing_day)} />
+                  {selectedClient.plan_name?.trim() && selectedClient.install_date ? (
+                    <Detail label="Billed on" value={billingDayText(selectedClient.billing_day)} />
+                  ) : (
+                    <Detail label="Not started" value="Starts once the plan is approved and installed." />
+                  )}
                 </div>
               </section>
             </div>

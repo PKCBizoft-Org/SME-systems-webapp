@@ -87,6 +87,7 @@ function statusClass(status: string | null) {
   if (
     value === 'cancelled' ||
     value === 'terminated' ||
+    value === 'inactive' ||
     value === 'overdue'
   ) {
     return 'status statusBad'
