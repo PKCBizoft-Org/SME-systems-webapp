@@ -464,3 +464,8 @@ html.lite .fxGlow,
 html.lite .fxCanvas {
   display: none !important;
 }
+
+/* The cookie notice waits until an intro has finished so it never covers it. */
+body:has(.introScreen, .whoIntro) [aria-label="Cookie notice"] {
+  display: none;
+}

@@ -18,13 +18,16 @@ export default function CookiesPage() {
           <tbody>
             <tr><th>Name / kind</th><th>What it does</th><th>How long</th></tr>
             <tr><td>Sign-in session (Supabase)</td><td>Keeps you signed in and keeps your account secure.</td><td>Until you sign out or the session expires.</td></tr>
-            <tr><td>Staff verification</td><td>Remembers that a staff member passed the emailed-code step on this device.</td><td>Short, then asks again.</td></tr>
-            <tr><td>Sign-in attempt counter</td><td>Counts wrong passwords so an account can lock for a while.</td><td>A short time.</td></tr>
-            <tr><td>Cookie notice choice</td><td>Remembers that you have seen this notice so we do not show it every visit.</td><td>Until you clear your browser data.</td></tr>
-            <tr><td>Display settings</td><td>Remembers things like reduced motion or lighter mode.</td><td>Until you clear your browser data.</td></tr>
+            <tr><td>Cookie notice choice</td><td>Remembers that you have seen this notice so we do not show it on every visit.</td><td>Until you clear your browser data.</td></tr>
+            <tr><td>Display settings</td><td>Remembers that the site should run in its lighter mode on slower devices.</td><td>Until you clear your browser data.</td></tr>
           </tbody>
         </table>
         <p>These are strictly necessary for the site to work, so they are used without asking. They are not used to follow you around the web.</p>
+        <p>
+          Some safety checks are kept in our own database instead of your browser, for example the count of wrong passwords (5 wrong
+          tries in 15 minutes lock the account for 15 minutes) and the emailed-code step for staff. See the{" "}
+          <a href="/privacy" className={styles.link}>Privacy Policy</a> for those.
+        </p>
       </section>
 
       <section className={styles.sec}>
@@ -41,7 +44,7 @@ export default function CookiesPage() {
           You can clear cookies and site data in your browser settings at any time. Blocking the essential ones will stop sign-in from
           working. If we ever add optional cookies (for example analytics), we will ask for your permission first and update this notice.
         </p>
-        <p>The mobile app does not use browser cookies. It keeps your sign-in and settings in secure storage on your phone.</p>
+        <p>The mobile app does not use browser cookies. It keeps your sign-in and settings in the app&rsquo;s private storage on your phone.</p>
       </section>
     </LegalLayout>
   );

@@ -20,7 +20,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 const METHODS = ["GCash", "Bank Transfer", "Cash"] as const;
 const AUTO_TOUR_MS = 4200;
 
-function HomeScreen() {
+function HomeScreen({ onPlay }: { onPlay?: () => void }) {
   return (
     <>
       <div className={styles.greeting}>
@@ -48,6 +48,13 @@ function HomeScreen() {
       <div className={styles.listRow}>
         <i /> Latest repair visit <b>Completed</b>
       </div>
+      <button type="button" className={styles.storyButton} onClick={onPlay}>
+        <span aria-hidden="true">▶</span>
+        <span>
+          <strong>11:47 PM. Which would you tap?</strong>
+          <small>Watch the 25 second story</small>
+        </span>
+      </button>
     </>
   );
 }
@@ -170,7 +177,7 @@ function ProfileScreen() {
   );
 }
 
-const SCREENS: Record<TabId, () => ReactElement> = {
+const SCREENS: Record<TabId, (props: { onPlay?: () => void }) => ReactElement> = {
   home: HomeScreen,
   requests: RequestsScreen,
   payment: PaymentScreen,
@@ -182,17 +189,18 @@ export function PhoneDemo() {
   const [active, setActive] = useState<TabId>("home");
   const [touring, setTouring] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [playing, setPlaying] = useState(false);
 
   // Gentle auto-tour through the screens until the visitor takes over.
   useEffect(() => {
-    if (!touring || paused) return;
+    if (!touring || paused || playing) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const timer = window.setTimeout(() => {
       setActive((current) => TABS[(TABS.findIndex((tab) => tab.id === current) + 1) % TABS.length].id);
     }, AUTO_TOUR_MS);
     return () => window.clearTimeout(timer);
-  }, [active, touring, paused]);
+  }, [active, touring, paused, playing]);
 
   const Screen = SCREENS[active];
 
@@ -224,8 +232,30 @@ export function PhoneDemo() {
             id={`demo-panel-${active}`}
             aria-labelledby={`demo-tab-${active}`}
           >
-            <Screen />
+            <Screen
+              onPlay={() => {
+                setTouring(false);
+                setPlaying(true);
+              }}
+            />
           </div>
+
+          {playing ? (
+            <div className={styles.storyLayer}>
+              <video
+                className={styles.storyVideo}
+                src="/media/pkc-promo-vertical.mp4"
+                poster="/media/pkc-promo-vertical.jpg"
+                autoPlay
+                playsInline
+                controls
+                loop
+              />
+              <button type="button" className={styles.storyClose} onClick={() => setPlaying(false)} aria-label="Close the story">
+                ✕
+              </button>
+            </div>
+          ) : null}
 
           <div className={styles.tabBar} role="tablist" aria-label="App sections">
             {TABS.map((tab) => (

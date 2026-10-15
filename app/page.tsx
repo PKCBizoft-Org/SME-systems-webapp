@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { PromoVideo } from "./components/PromoVideo";
 import { CardFX } from "./components/CardFX";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -778,8 +777,6 @@ export default function HomePage() {
         </div>
       </section>
 
-
-      <PromoVideo />
 
       <section className="systems storySection" id="systems" data-story-section="systems">
         <div className="sectionHeading">

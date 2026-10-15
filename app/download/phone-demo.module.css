@@ -443,3 +443,62 @@
 @keyframes pulseDot {
   50% { opacity: 0.35; }
 }
+
+.storyButton {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(76, 232, 255, 0.4);
+  background: rgba(76, 232, 255, 0.1);
+  color: #eaf8ff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.storyButton > span:first-child {
+  color: #4ce8ff;
+  font-size: 14px;
+}
+
+.storyButton strong {
+  display: block;
+  font-size: 10px;
+}
+
+.storyButton small {
+  display: block;
+  font-size: 8px;
+  color: #8fb3c4;
+}
+
+.storyLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storyVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.storyClose {
+  position: absolute;
+  top: 34px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+}

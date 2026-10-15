@@ -29,7 +29,7 @@ export default function TermsPage() {
         <ul>
           <li>Applying for a plan does not guarantee service. We approve applications based on coverage and availability at your address.</li>
           <li>Our technicians visit the address you gave. You agree to allow safe access and to be present, or to sign off in the app if you are not home.</li>
-          <li>The installation fee and the first month&rsquo;s plan are paid together when you apply. Equipment we install (such as the modem) stays our property unless we tell you otherwise in writing.</li>
+          <li>The installation fee (currently PHP 750) and the first month&rsquo;s plan are paid together when you apply. Equipment we install (such as the modem) stays our property unless we tell you otherwise in writing.</li>
           <li>Speeds shown (for example 50, 80, 120 or 200 Mbps) are maximum plan speeds. Actual speed varies with your device, Wi-Fi, weather, network load and other things outside our control.</li>
           <li>We may pause the service for maintenance, repairs or outages. We will try to post notices in the app.</li>
         </ul>
@@ -53,7 +53,7 @@ export default function TermsPage() {
         <h2>4. Referrals</h2>
         <p>
           If you invite a friend with your referral code, you may earn a reward (currently PHP 250 per qualifying referral, after
-          your friend&rsquo;s installation and first payment are confirmed) and a 0.5% discount on your monthly bill. Withdrawals carry a
+          your friend&rsquo;s installation and first payment are confirmed). Withdrawals carry a
           PHP 5 fee. We may change or end the referral program, and we may refuse or cancel rewards we reasonably believe came from
           false, duplicate or self-referred accounts.
         </p>

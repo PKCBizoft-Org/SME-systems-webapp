@@ -90,11 +90,6 @@ const REFERRAL_TERMS = [
     text: "The reward is added once your referral is installed and their payment is confirmed. Signing up alone does not count.",
   },
   {
-    value: "0.5%",
-    title: "Monthly bill discount",
-    text: "A separate discount on your own monthly bill for qualifying referrers.",
-  },
-  {
     value: "₱5",
     title: "Transfer fee",
     text: "Deducted from each withdrawal of your referral balance.",

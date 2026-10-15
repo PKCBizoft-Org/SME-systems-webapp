@@ -25,6 +25,7 @@ export default function PrivacyPage() {
             <tr><td>Installation and repair records: photos, checklists, modem serial number, signatures, ratings and chat messages</td><td>To do and prove the work, and to improve service.</td></tr>
             <tr><td>Referral details (codes, who referred whom, reward and withdrawal records)</td><td>To run the referral program.</td></tr>
             <tr><td>Phone push notification token, app version, crash and error reports</td><td>To send notices and fix bugs.</td></tr>
+            <tr><td>IP address and device type, handled by our hosting and database providers when you use the site or app</td><td>To deliver the service and keep it safe.</td></tr>
             <tr><td>Sign-in attempts and audit records</td><td>To stop abuse and protect accounts.</td></tr>
             <tr><td>Technicians only: live location while the Jobs screen is open</td><td>To dispatch the nearest technician and show arrival.</td></tr>
           </tbody>
@@ -74,7 +75,7 @@ export default function PrivacyPage() {
           <li>Passwords are hashed. Connections use HTTPS.</li>
           <li>Access is limited by role. Staff accounts need a password, an emailed code and a second password.</li>
           <li>Payment approval, reminders and account changes are recorded in an audit log.</li>
-          <li>Accounts lock for a time after repeated wrong passwords.</li>
+          <li>An account locks for 15 minutes after 5 wrong passwords within 15 minutes.</li>
         </ul>
         <p>
           No system is perfectly secure. If a breach seriously affects you, we will tell you and the National Privacy Commission as the
