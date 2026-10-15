@@ -42,6 +42,13 @@ export async function POST(request: NextRequest) {
     if (incoming[key] !== undefined && incoming[key] !== null) metadata[key] = incoming[key]
   }
 
+  // Proof that the customer agreed to the Terms and Privacy Policy; the time is set here, not by the phone.
+  if (incoming.terms_accepted !== true) {
+    return NextResponse.json({ error: 'Please accept the Terms and Conditions and the Privacy Policy to create an account.' }, { status: 400 })
+  }
+  metadata.terms_accepted_at = new Date().toISOString()
+  metadata.terms_version = '2026-10-15'
+
   // The mobile number doubles as the GCash / online payment number.
   const rawMobile = typeof metadata.mobile_number === 'string' ? metadata.mobile_number.replace(/[\s-]/g, '') : ''
   if (!/^(\+63|0)9\d{9}$/.test(rawMobile)) {

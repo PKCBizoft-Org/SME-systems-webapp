@@ -1,5 +1,7 @@
 "use client";
 
+ 
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -39,6 +41,7 @@ export default function SignupPage() {
   // password field, and it needs an explicit choice (keep it or strengthen it).
   const [pwTouched, setPwTouched] = useState(false);
   const [keepWeak, setKeepWeak] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -256,6 +259,8 @@ export default function SignupPage() {
         "Please complete your Region, Province, City/Municipality, and Barangay.",
       );
     if (!p) return setError("Please enter your Purok or street.");
+    if (!agreed)
+      return setError("Please accept the Terms and Conditions and the Privacy Policy to continue.");
     setSubmitting(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -273,6 +278,8 @@ export default function SignupPage() {
             city_municipality_code: cityCode,
             province_code: provinceCode,
             region_code: regionCode,
+            terms_accepted_at: new Date().toISOString(),
+            terms_version: "2026-10-15",
           },
         },
       });
@@ -809,6 +816,21 @@ export default function SignupPage() {
                   <small>Authentication is handled through Supabase.</small>
                 </div>
               </div>
+
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", margin: "4px 0 12px", fontSize: 13, lineHeight: 1.5, color: "rgba(203,230,237,.85)" }}>
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  style={{ marginTop: 3, width: 18, height: 18, flex: "none" }}
+                />
+                <span>
+                  I am at least 18 and I agree to the{" "}
+                  <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "#4ce8ff" }}>Terms and Conditions</a> and the{" "}
+                  <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "#4ce8ff" }}>Privacy Policy</a>, including how my
+                  details, location and photos are used to provide the service.
+                </span>
+              </label>
 
               <button
                 type="submit"

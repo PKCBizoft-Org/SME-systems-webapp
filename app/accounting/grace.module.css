@@ -1,0 +1,16 @@
+.panel{margin-top:14px;padding:20px;border:1px solid #172832;border-radius:14px;background:#080f14;color:#eaf7ff}
+.head small{color:#5ebeff;letter-spacing:.08em;font-size:11px}
+.head h2{margin:4px 0 6px;font-size:18px}
+.head p{margin:0 0 14px;color:#8298a5;font-size:13px;line-height:1.5}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tab{min-height:38px;padding:0 12px;border:1px solid #263843;border-radius:8px;background:#0a1318;color:#91a5b2;font-size:13px;cursor:pointer}
+.tab.on{border-color:#0e72ad;background:#092237;color:#5ebeff}
+.row{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #12212a;font-size:13px}
+.row a{color:#eaf7ff;font-weight:600;text-decoration:none}
+.row small{display:block;color:#687d89;font-size:11px}
+.amt{font-weight:700;text-align:right}
+.btn{min-height:34px;padding:0 12px;border:1px solid #0e72ad;border-radius:8px;background:#092237;color:#5ebeff;font-size:12px;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+.empty{padding:14px 0;color:#687d89;font-size:13px}
+.note{margin-top:10px;font-size:12px;color:#8298a5}
+@media(max-width:640px){.row{grid-template-columns:1fr 1fr}.amt{text-align:left}}

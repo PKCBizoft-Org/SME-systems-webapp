@@ -1060,6 +1060,10 @@ export default function LoginPage() {
         <span>PKC BIZOFT</span>
         <span className="footerDot" />
         <span>© 2026</span>
+        <span className="footerDot" />
+        <a href="/terms" style={{ color: "inherit" }}>TERMS</a>
+        <a href="/privacy" style={{ color: "inherit" }}>PRIVACY</a>
+        <a href="/cookies" style={{ color: "inherit" }}>COOKIES</a>
       </footer>
 
       <style jsx>{`

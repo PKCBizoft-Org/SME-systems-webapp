@@ -146,6 +146,7 @@ await t('only the right staff can process', async () => {
 section('6. Reward notification')
 await t('the referrer is told when a friend\'s install earns a reward', async () => {
   await db.exec(`delete from public.referral_rewards; delete from public.referral_withdrawals; delete from public.referrals;`)
+  await db.exec(`update public.clients set plan_name = 'G1_P750', installation_status = 'Installed' where id = '${ID.c2}'`)
   // Build the verified submission through a real request so the foreign keys hold.
   const req = await one(`insert into public.service_requests (user_id, client_id, request_type, requested_plan, status) values ($1, $2, 'plan_change', 'G1_P750', 'Completed') returning id`, [ID.u2, ID.c2])
   await db.query(`delete from public.payment_submissions where client_id = $1`, [ID.c2])

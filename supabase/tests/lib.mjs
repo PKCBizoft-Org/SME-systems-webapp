@@ -35,7 +35,7 @@ const PRELUDE = `
   grant all on storage.objects, storage.buckets to authenticated, service_role;
   grant execute on function storage.foldername(text) to anon, authenticated, service_role;
 
-  create table auth.users (id uuid primary key default gen_random_uuid(), email text);
+  create table auth.users (id uuid primary key default gen_random_uuid(), email text, created_at timestamptz not null default now());
   create function auth.uid() returns uuid language sql stable as $$
     select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
                     (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'))::uuid

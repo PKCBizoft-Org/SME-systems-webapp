@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { PromoVideo } from "./components/PromoVideo";
 import { CardFX } from "./components/CardFX";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -265,13 +266,6 @@ export default function HomePage() {
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Weaker phones skip the 4-second intro animation and go straight to the page.
-    if (document.documentElement.classList.contains("lite")) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIntroVisible(false);
-      return;
-    }
-
     const finishIntro = () => {
       setIntroExiting(true);
       window.setTimeout(() => setIntroVisible(false), 720);
@@ -785,6 +779,8 @@ export default function HomePage() {
       </section>
 
 
+      <PromoVideo />
+
       <section className="systems storySection" id="systems" data-story-section="systems">
         <div className="sectionHeading">
           <div>
@@ -976,6 +972,10 @@ export default function HomePage() {
           <a href="#systems">SYSTEMS</a>
           <a href="#features">CAPABILITIES</a>
           <a href="/who-we-are">WHO WE ARE</a>
+          <a href="/terms">TERMS</a>
+          <a href="/privacy">PRIVACY</a>
+          <a href="/cookies">COOKIES</a>
+          <a href="/guide">GUIDE</a>
         </div>
         <div className="footerMeta">
           <span>PRIVATE / BUSINESS OPERATIONS</span>

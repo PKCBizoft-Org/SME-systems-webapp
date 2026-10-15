@@ -45,6 +45,7 @@ export function CardFX({
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (document.documentElement.classList.contains("lite")) return;
 
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     let current: HTMLElement | null = null;

@@ -28,5 +28,15 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
-  return <footer className={styles.footer}>PKC BIZOFT · Business operations platform</footer>;
+  return (
+    <footer className={styles.footer}>
+      PKC BIZOFT · Business operations platform
+      <div style={{ marginTop: 8, display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+        <a href="/terms" style={{ color: "inherit" }}>Terms</a>
+        <a href="/privacy" style={{ color: "inherit" }}>Privacy</a>
+        <a href="/cookies" style={{ color: "inherit" }}>Cookies</a>
+        <a href="/guide" style={{ color: "inherit" }}>Guide</a>
+      </div>
+    </footer>
+  );
 }

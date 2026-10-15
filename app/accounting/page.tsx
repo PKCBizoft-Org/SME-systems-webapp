@@ -1,6 +1,7 @@
 
 "use client";
 
+import { GraceStages } from "./GraceStages";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StaffHeader } from "../components/StaffHeader";
 import { StaffMotion } from "../components/StaffMotion";
@@ -527,7 +528,7 @@ export default function AccountingPage() {
           <div>
             <div className="crumb"><i /> PKC BIZOFT / ACCOUNTING</div>
             <h1>Accounting</h1>
-            <p>Check that each payment really arrived. Confirming a new customer&apos;s payment sends the installation to the technicians.</p>
+            <p>Verify payments and follow up on late accounts.</p>
           </div>
           <div className="hero-btns" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-start" }}>
             <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
@@ -621,9 +622,9 @@ export default function AccountingPage() {
           })}
         </section>
 
+        <GraceStages />
+
         <section className="stats">
-          <article><span className="stat-icon">👥</span><div><small>Customer accounts</small><strong>{loading ? "—" : clients.length}</strong><em>All registered accounts</em></div></article>
-          <article><span className="stat-icon">₱</span><div><small>Total billed</small><strong>{loading ? "—" : formatPeso(totals.billed)}</strong><em>{billing.length} billing records</em></div></article>
           <article className="accent-green"><span className="stat-icon">✓</span><div><small>Total collected</small><strong>{loading ? "—" : formatPeso(totals.paid)}</strong><em>{payments.length} payments</em></div></article>
           <article className="accent-orange"><span className="stat-icon">◐</span><div><small>Outstanding</small><strong>{loading ? "—" : formatPeso(totals.outstanding)}</strong><em>{totals.openBills} open bills</em></div></article>
           <article className="accent-red"><span className="stat-icon">!</span><div><small>Overdue</small><strong>{loading ? "—" : formatPeso(totals.overdue)}</strong><em>Needs collection follow-up</em></div></article>
@@ -641,13 +642,6 @@ export default function AccountingPage() {
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option>All</option><option>Active</option><option>Suspended</option><option>Inactive</option></select>
               <select value={areaFilter} onChange={(e) => setAreaFilter(e.target.value)}><option>All areas</option>{areas.map((area) => <option key={area}>{area}</option>)}</select>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}><option value="balance">Highest balance</option><option value="overdue">Highest overdue</option><option value="open">Most open bills</option><option value="name">Name A–Z</option></select>
-            </div>
-
-            <div className="quick-filters">
-              <button className={statusFilter === "All" ? "active" : ""} onClick={() => setStatusFilter("All")}>All</button>
-              <button className={statusFilter === "Active" ? "active" : ""} onClick={() => setStatusFilter("Active")}>Active</button>
-              <button onClick={() => setSortBy("overdue")}>Overdue first</button>
-              <button onClick={() => setSortBy("balance")}>Balance first</button>
             </div>
 
             <div className="table-wrap">
@@ -693,12 +687,6 @@ export default function AccountingPage() {
                 <div><small>Collected</small><strong className="good-text">{formatPeso(selectedFinancials.paid)}</strong></div>
               </section>
 
-              <section className="progress-box">
-                <div><span>Collection progress</span><strong>{selectedFinancials.progress}%</strong></div>
-                <div className="progress"><i style={{ width: `${selectedFinancials.progress}%` }} /></div>
-                <small>{formatPeso(selectedFinancials.paid)} collected of {formatPeso(selectedFinancials.billed)}</small>
-              </section>
-
               <section className="drawer-section">
                 <header><div><small>COLLECTION</small><h3>Open bills</h3></div><span>{selectedFinancials.open}</span></header>
                 {selectedBills.filter((bill) => (paymentMap.get(bill.id) || 0) < getBillAmount(bill)).slice(0, 5).map((bill) => {
@@ -717,8 +705,6 @@ export default function AccountingPage() {
                   <Detail label="Area" value={selectedClient.area} />
                   <Detail label="Installation" value={formatDate(selectedClient.install_date)} />
                   <Detail label="Technician" value={selectedTech || selectedClient.technicians} />
-                  <Detail label="PPPoE" value={selectedClient.pppoe_name} />
-                  <Detail label="Referral" value={selectedClient.referral_code} />
                   <Detail label="Address" value={selectedClient.address} />
                 </div>
               </section>
@@ -726,12 +712,7 @@ export default function AccountingPage() {
               <section className="drawer-section">
                 <header><div><small>BILLING SCHEDULE</small><h3>Account cycle</h3></div></header>
                 <div className="details-grid compact">
-                  <Detail label="Cycle" value={selectedClient.billing_cycle} />
                   <Detail label="Billed on" value={billingDayText(selectedClient.billing_day)} />
-                  <Detail label="Due" value={SCHEDULE_TEXT.due} />
-                  <Detail label="Grace period" value={SCHEDULE_TEXT.grace} />
-                  <Detail label="Disconnect" value={SCHEDULE_TEXT.disconnect} />
-                  <Detail label="Terminate" value={SCHEDULE_TEXT.terminate} />
                 </div>
               </section>
             </div>
@@ -821,7 +802,7 @@ const styles = `
 .refresh span { margin-right:8px; font-size:17px; } .spin { display:inline-block;animation:spin .7s linear infinite; }
 .notice { display:flex;gap:12px;padding:13px 15px;margin-bottom:18px;border:1px solid #4a3515;border-radius:10px;background:#171107;color:#c2a15a; }
 .notice>b { width:23px;height:23px;display:grid;place-items:center;border-radius:7px;background:#2b1d08; } .notice div { display:grid;gap:3px; } .notice strong{font-size:13px}.notice span{font-size:13px;color: #957f53}
-.stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+.stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
 .stats article { min-height:108px; padding:18px; border:1px solid #172832; border-radius:13px; background:linear-gradient(145deg,#091218,#070d12); display:flex;gap:13px; }
 .stat-icon { width:38px;height:38px;display:grid;place-items:center;border:1px solid #124666;border-radius:10px;background:#092033;color:#55b8ff;font-weight:900;flex:0 0 auto; }
 .stats article div { min-width:0;display:grid;align-content:center;gap:3px; } .stats small{color: #708693;font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.stats strong{font-size:19px;letter-spacing:-.03em}.stats em{font-style:normal;color: #71838e;font-size:12px}.accent-green .stat-icon{color:#48d997;border-color:#1a5c47;background:#09251c}.accent-orange .stat-icon{color:#f1bb5a;border-color:#604719;background:#211708}.accent-red .stat-icon{color:#ff717b;border-color:#60262b;background:#210b0e}
@@ -844,7 +825,7 @@ const styles = `
 .state-page{min-height:100vh;display:grid;place-items:center;align-content:center;gap:10px;background:#05090d;color:#78909e;font:12px var(--font-geist-sans),system-ui}.state-page .loader{margin:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:760px){.shell{width:min(100% - 24px,1500px);padding-top:24px}.topbar{padding:0 15px}.top-actions a{display:none}.hero{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr 1fr}.stats article{min-height:94px}.stats article:nth-child(5){grid-column:1/-1}.filters select{flex:1}.drawer{width:100%}.details-grid{grid-template-columns:1fr}.details-grid .detail:last-child:nth-child(odd){grid-column:auto}}
+@media(max-width:760px){.shell{width:min(100% - 24px,1500px);padding-top:24px}.topbar{padding:0 15px}.top-actions a{display:none}.hero{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr}.stats article{min-height:94px}.stats article:nth-child(5){grid-column:1/-1}.filters select{flex:1}.drawer{width:100%}.details-grid{grid-template-columns:1fr}.details-grid .detail:last-child:nth-child(odd){grid-column:auto}}
 @media(max-width:480px){.stats{grid-template-columns:1fr}.stats article:nth-child(5){grid-column:auto}.hero h1{font-size:28px}.mini-financials{grid-template-columns:1fr}.drawer-actions{flex-wrap:wrap}.drawer-actions button{flex:1}}
 
 /* ---- readability, header fix, tablet/phone layouts ---- */

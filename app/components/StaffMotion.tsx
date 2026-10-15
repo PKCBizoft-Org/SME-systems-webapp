@@ -18,6 +18,7 @@ export function StaffMotion({ targets, lift = [] }: { targets: string[]; lift?: 
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (document.documentElement.classList.contains("lite")) return;
 
     const seen = new WeakSet<Element>();
     let raf = 0;

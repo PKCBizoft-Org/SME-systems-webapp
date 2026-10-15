@@ -439,13 +439,26 @@ img {
 }
 
 /* Weaker phones (see the script in layout.tsx): no looping animations, blur or glass effects. */
-html.lite *,
-html.lite *::before,
-html.lite *::after {
+/* The home page intro is the default first impression, so it is left alone and plays for everyone. */
+html.lite :not(.introScreen):not(.introScreen *),
+html.lite :not(.introScreen):not(.introScreen *)::before,
+html.lite :not(.introScreen):not(.introScreen *)::after {
   animation-iteration-count: 1 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.12s !important;
+  transition-delay: 0s !important;
+  text-shadow: none !important;
+}
+/* Loading spinners keep turning so people can tell the page is busy. */
+html.lite [class*="spinner"],
+html.lite [class*="loader"],
+html.lite [class*="Loader"] {
+  animation-duration: 0.9s !important;
+  animation-iteration-count: infinite !important;
 }
 html.lite .fxGlow,
 html.lite .fxCanvas {

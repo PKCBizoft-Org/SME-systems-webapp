@@ -697,8 +697,7 @@ export default function ClientsPage() {
             <h1>Client Directory</h1>
 
             <p className="subtitle">
-              Manage customer records, installation details,
-              plans, and account status.
+              Customer records, plans and account status.
             </p>
           </div>
 
@@ -749,15 +748,6 @@ export default function ClientsPage() {
               <div className="statLabel">OVERDUE</div>
               <div className="statValue"><CountUp value={overdueClients} /></div>
               <div className="statHint">Needs attention</div>
-            </div>
-          </div>
-
-          <div className="statCard">
-            <div className="statIcon">📍</div>
-            <div>
-              <div className="statLabel">AREAS</div>
-              <div className="statValue"><CountUp value={areas.length} /></div>
-              <div className="statHint">Unique service areas</div>
             </div>
           </div>
         </div>
@@ -1505,7 +1495,7 @@ const styles = `
   .statsGrid {
     display: grid;
     grid-template-columns:
-      repeat(4, minmax(0, 1fr));
+      repeat(3, minmax(0, 1fr));
     gap: 13px;
     margin-bottom: 15px;
   }

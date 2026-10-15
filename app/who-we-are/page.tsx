@@ -764,6 +764,9 @@ export default function WhoWeArePage() {
           <a href="/#systems">SYSTEMS</a>
           <a href="/#features">CAPABILITIES</a>
           <a href="/login">ENTER SYSTEM</a>
+          <a href="/terms">TERMS</a>
+          <a href="/privacy">PRIVACY</a>
+          <a href="/cookies">COOKIES</a>
         </div>
         <span className="copyright">© 2026 PKC</span>
       </footer>
