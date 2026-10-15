@@ -27,6 +27,14 @@ function HomeScreen({ onPlay }: { onPlay?: () => void }) {
         <small>WELCOME BACK</small>
         <strong>Sample Customer</strong>
       </div>
+      <button type="button" className={styles.storyButton} onClick={onPlay} aria-label="Play the 25 second story">
+        <span className={styles.storyPlay} aria-hidden="true">▶</span>
+        <span className={styles.storyText}>
+          <em>WATCH THE STORY</em>
+          <strong>11:47 PM. Which would you tap?</strong>
+          <small>25 seconds · tap to play</small>
+        </span>
+      </button>
       <div className={styles.card}>
         <div className={styles.cardRow}>
           <span className={styles.label}>ACCOUNT</span>
@@ -48,13 +56,6 @@ function HomeScreen({ onPlay }: { onPlay?: () => void }) {
       <div className={styles.listRow}>
         <i /> Latest repair visit <b>Completed</b>
       </div>
-      <button type="button" className={styles.storyButton} onClick={onPlay}>
-        <span aria-hidden="true">▶</span>
-        <span>
-          <strong>11:47 PM. Which would you tap?</strong>
-          <small>Watch the 25 second story</small>
-        </span>
-      </button>
     </>
   );
 }
@@ -281,7 +282,7 @@ export function PhoneDemo() {
       </div>
 
       <p className={styles.caption}>
-        Tap around. Sample screens, not real data.
+        Tap the glowing ▶ to watch a 25 second story, or tap around. Sample screens, not real data.
       </p>
     </div>
   );
