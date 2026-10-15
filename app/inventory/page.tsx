@@ -76,6 +76,7 @@ type Modal =
   | { kind: 'item'; item: Item | null }
   | { kind: 'move'; item: Item | null; type: MovementType }
   | { kind: 'kits' }
+  | { kind: 'bulk' }
   | null
 
 const CATEGORIES: { value: Category; label: string; icon: string }[] = [
@@ -395,6 +396,11 @@ export default function InventoryPage() {
                   {isAdmin ? '± Record movement' : '🔧 Log materials used'}
                 </button>
                 {isAdmin && (
+                  <button type="button" className={styles.btn} onClick={() => setModal({ kind: 'bulk' })}>
+                    📦 Bulk add / restock
+                  </button>
+                )}
+                {isAdmin && (
                   <button
                     type="button"
                     className={`${styles.btn} ${styles.btnPrimary}`}
@@ -712,6 +718,20 @@ export default function InventoryPage() {
           tenantId={tenantId}
           onClose={() => setModal(null)}
           onChanged={(message) => {
+            setNotice(message)
+            load(true)
+          }}
+        />
+      )}
+
+      {modal?.kind === 'bulk' && (
+        <BulkModal
+          items={activeItems}
+          tenantId={tenantId}
+          email={email}
+          onClose={() => setModal(null)}
+          onSaved={(message) => {
+            setModal(null)
             setNotice(message)
             load(true)
           }}
@@ -1284,6 +1304,271 @@ function MoveModal({
           <button type="button" className={styles.btn} onClick={onClose} disabled={busy}>Cancel</button>
           <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={busy}>
             {busy ? 'Saving…' : 'Save movement'}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  )
+}
+
+type NewRow = { name: string; category: Category; unit: Unit; qty: string; reorder: string }
+
+const blankRow = (): NewRow => ({ name: '', category: 'other', unit: 'pc', qty: '', reorder: '' })
+
+// Many items at once: receive stock into existing items, or create several new items.
+// Everything still goes through the ledger (one stock_in per item), saved in a single request.
+function BulkModal({
+  items,
+  tenantId,
+  email,
+  onClose,
+  onSaved,
+}: {
+  items: Item[]
+  tenantId: string | null
+  email: string
+  onClose: () => void
+  onSaved: (message: string) => void
+}) {
+  const supabase = useMemo(() => createClient(), [])
+  const [mode, setMode] = useState<'restock' | 'new'>('restock')
+  const [quantities, setQuantities] = useState<Record<string, string>>({})
+  const [reference, setReference] = useState('')
+  const [rows, setRows] = useState<NewRow[]>([blankRow(), blankRow(), blankRow()])
+  const [busy, setBusy] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  const setRow = (index: number, patch: Partial<NewRow>) =>
+    setRows((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)))
+
+  async function saveRestock() {
+    const entries = items
+      .map((item) => ({ item, qty: Number(quantities[item.id] || 0) }))
+      .filter((entry) => quantities[entry.item.id] !== undefined && quantities[entry.item.id] !== '')
+    if (entries.some((entry) => !Number.isFinite(entry.qty) || entry.qty < 0)) {
+      return setFormError('Quantities must be 0 or more.')
+    }
+    const received = entries.filter((entry) => entry.qty > 0)
+    if (received.length === 0) return setFormError('Type a quantity next to at least one item.')
+
+    setBusy(true)
+    const { error } = await supabase.from('inventory_movements').insert(
+      received.map((entry) => ({
+        item_id: entry.item.id,
+        movement_type: 'stock_in',
+        quantity_change: entry.qty,
+        reference: reference.trim() || 'Bulk restock',
+        created_by_email: email || null,
+      })),
+    )
+    setBusy(false)
+    if (error) return setFormError(error.message)
+    onSaved(`Stock received for ${received.length} item${received.length === 1 ? '' : 's'}.`)
+  }
+
+  async function saveNew() {
+    const filled = rows.filter((row) => row.name.trim())
+    if (filled.length === 0) return setFormError('Type a name on at least one row.')
+    for (const row of filled) {
+      const qty = row.qty.trim() === '' ? 0 : Number(row.qty)
+      const reorder = row.reorder.trim() === '' ? 0 : Number(row.reorder)
+      if (!Number.isFinite(qty) || qty < 0 || !Number.isFinite(reorder) || reorder < 0) {
+        return setFormError(`Check the numbers on "${row.name.trim()}".`)
+      }
+    }
+    if (!tenantId) return setFormError('Your account is not linked to a company yet.')
+
+    setBusy(true)
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .insert(
+          filled.map((row) => ({
+            tenant_id: tenantId,
+            name: row.name.trim(),
+            category: row.category,
+            unit: row.unit,
+            reorder_level: row.reorder.trim() === '' ? 0 : Number(row.reorder),
+          })),
+        )
+        .select('id')
+      if (error) throw error
+
+      // The insert returns rows in the same order, so opening stock lines up with each row.
+      const opening = (data || [])
+        .map((created, index) => ({ id: created.id as string, qty: filled[index].qty.trim() === '' ? 0 : Number(filled[index].qty) }))
+        .filter((entry) => entry.qty > 0)
+      if (opening.length > 0) {
+        const { error: moveError } = await supabase.from('inventory_movements').insert(
+          opening.map((entry) => ({
+            item_id: entry.id,
+            movement_type: 'stock_in',
+            quantity_change: entry.qty,
+            reference: 'Opening stock',
+            created_by_email: email || null,
+          })),
+        )
+        if (moveError) throw moveError
+      }
+      onSaved(`${filled.length} item${filled.length === 1 ? '' : 's'} added.`)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : (err as { message?: string })?.message || 'Could not save.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function save(event: React.FormEvent) {
+    event.preventDefault()
+    setFormError('')
+    void (mode === 'restock' ? saveRestock() : saveNew())
+  }
+
+  return (
+    <ModalShell
+      title="Bulk add or restock"
+      subtitle="Do many items in one go. Every change is still saved to the ledger."
+      onClose={onClose}
+    >
+      <form className={styles.form} onSubmit={save}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className={`${styles.btn} ${mode === 'restock' ? styles.btnPrimary : ''}`}
+            onClick={() => setMode('restock')}
+          >
+            📥 Restock existing
+          </button>
+          <button
+            type="button"
+            className={`${styles.btn} ${mode === 'new' ? styles.btnPrimary : ''}`}
+            onClick={() => setMode('new')}
+          >
+            + Add new items
+          </button>
+        </div>
+
+        {mode === 'restock' ? (
+          <>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="bulk-ref">Reference for all (optional)</label>
+              <input
+                id="bulk-ref"
+                className={styles.input}
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder="Supplier / PO #"
+              />
+            </div>
+            <div style={{ maxHeight: '45vh', overflow: 'auto', display: 'grid', gap: 6 }}>
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: 10, alignItems: 'center' }}
+                >
+                  <div>
+                    <strong>{item.name}</strong>
+                    <div style={{ opacity: 0.6, fontSize: 12 }}>
+                      {fmtQty(num(item.quantity_on_hand))} {unitLabel(item.unit)} on hand
+                    </div>
+                  </div>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder={`+ ${unitLabel(item.unit)}`}
+                    aria-label={`Quantity received for ${item.name}`}
+                    value={quantities[item.id] ?? ''}
+                    onChange={(e) => setQuantities((current) => ({ ...current, [item.id]: e.target.value }))}
+                  />
+                </div>
+              ))}
+              {items.length === 0 && <div style={{ opacity: 0.6 }}>No items yet. Use Add new items.</div>}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ maxHeight: '45vh', overflow: 'auto', display: 'grid', gap: 10 }}>
+              {rows.map((row, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                    gap: 8,
+                    paddingBottom: 10,
+                    borderBottom: '1px solid rgba(255,255,255,.08)',
+                  }}
+                >
+                  <input
+                    className={styles.input}
+                    style={{ gridColumn: '1 / -1' }}
+                    placeholder="Item name"
+                    aria-label={`Name, row ${index + 1}`}
+                    value={row.name}
+                    onChange={(e) => setRow(index, { name: e.target.value })}
+                  />
+                  <select
+                    className={`${styles.select} ${styles.input}`}
+                    aria-label={`Category, row ${index + 1}`}
+                    value={row.category}
+                    onChange={(e) => setRow(index, { category: e.target.value as Category })}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    className={`${styles.select} ${styles.input}`}
+                    aria-label={`Unit, row ${index + 1}`}
+                    value={row.unit}
+                    onChange={(e) => setRow(index, { unit: e.target.value as Unit })}
+                  >
+                    {UNITS.map((u) => (
+                      <option key={u.value} value={u.value}>{u.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="Opening stock"
+                    aria-label={`Opening stock, row ${index + 1}`}
+                    value={row.qty}
+                    onChange={(e) => setRow(index, { qty: e.target.value })}
+                  />
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="Reorder level"
+                    aria-label={`Reorder level, row ${index + 1}`}
+                    value={row.reorder}
+                    onChange={(e) => setRow(index, { reorder: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+            <div>
+              <button type="button" className={styles.btn} onClick={() => setRows((current) => [...current, blankRow(), blankRow(), blankRow()])}>
+                + 3 more rows
+              </button>
+            </div>
+          </>
+        )}
+
+        {formError && <div className={styles.formError} role="alert">{formError}</div>}
+
+        <div className={styles.formFooter}>
+          <button type="button" className={styles.btn} onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={busy}>
+            {busy ? 'Saving…' : mode === 'restock' ? 'Receive stock' : 'Add items'}
           </button>
         </div>
       </form>
