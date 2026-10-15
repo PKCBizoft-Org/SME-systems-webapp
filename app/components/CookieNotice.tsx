@@ -57,6 +57,24 @@ export function CookieNotice() {
         boxShadow: "0 10px 40px rgba(0,0,0,.5)",
       }}
     >
+      <svg
+        width="26"
+        height="26"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        style={{ float: "left", margin: "2px 12px 4px 0" }}
+      >
+        <path
+          d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-4-4 4 4 0 0 1-4-4 2 2 0 0 1-2-2z"
+          fill="#c98a4b"
+          stroke="#4ce8ff"
+          strokeWidth="1"
+        />
+        <circle cx="8" cy="10" r="1.4" fill="#5a3410" />
+        <circle cx="12" cy="15" r="1.4" fill="#5a3410" />
+        <circle cx="16" cy="13" r="1.2" fill="#5a3410" />
+        <circle cx="8.5" cy="15.5" r="1" fill="#5a3410" />
+      </svg>
       We use only essential cookies to keep you signed in and your account safe. No ads, no tracking. Read our{" "}
       <a href="/cookies" style={{ color: "#4ce8ff" }}>Cookie Notice</a>,{" "}
       <a href="/privacy" style={{ color: "#4ce8ff" }}>Privacy Policy</a> and{" "}
