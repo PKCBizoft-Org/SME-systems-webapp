@@ -553,7 +553,7 @@ export default function PaymentVerificationPage() {
                       <dt>Amount paid</dt>
                       <dd className={mismatch ? styles.bad : undefined}>
                         {formatPeso(s.amount_claimed)}
-                        {mismatch && !bill && <em> (plan is {formatPeso(request?.requested_amount)})</em>}
+                        {mismatch && !bill && <em> (expected payment is {formatPeso(request?.requested_amount)})</em>}
                         {mismatch && bill && <em> (more than the {formatPeso(bill.balance)} owed)</em>}
                         {bill && !mismatch && bucket === "pending" && Number(s.amount_claimed || 0) < Number(bill.balance || 0) && (
                           <em> (partial payment)</em>

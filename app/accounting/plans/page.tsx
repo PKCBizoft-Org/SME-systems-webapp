@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatPeso } from "@/lib/format";
-import { INSTALL_FEE } from "@/lib/plans";
 import { StaffHeader } from "../../components/StaffHeader";
 import { PkcLoader } from "../../components/PkcLoader";
 import styles from "../verification/verification.module.css";
@@ -22,6 +21,9 @@ export default function PlansPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [installFee, setInstallFee] = useState(750);
+  const [feeEditing, setFeeEditing] = useState(false);
+  const [feeInput, setFeeInput] = useState("");
 
   // One form for both: editing an existing plan, or adding a new one.
   const [editing, setEditing] = useState<Plan | "new" | null>(null);
@@ -42,7 +44,10 @@ export default function PlansPage() {
     const response = await fetch("/api/accounting/plans", { headers: { Authorization: `Bearer ${access}` } });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) setMessage({ kind: "error", text: result?.error || "Unable to load plans." });
-    else setPlans(result.plans || []);
+    else {
+      setPlans(result.plans || []);
+      if (typeof result.installFee === "number") setInstallFee(result.installFee);
+    }
     setLoading(false);
   }, [router, token]);
 
@@ -55,7 +60,7 @@ export default function PlansPage() {
       const { data: memberships } = await supabase.from("tenant_users").select("role").eq("user_id", data.session.user.id);
       const mine = (memberships || []).map((m) => m.role).filter((r): r is string => Boolean(r));
       if (cancelled) return;
-      if (!mine.includes("admin")) return router.replace("/accounting");
+      if (!mine.includes("admin") && !mine.includes("accounting")) return router.replace("/accounting");
       setRoles(mine);
       setChecking(false);
     }
@@ -84,6 +89,31 @@ export default function PlansPage() {
       setPrice(String(plan.price));
       setSpeed(plan.speed || "");
       setActive(plan.active);
+    }
+  }
+
+  async function saveFee() {
+    if (busy) return;
+    const fee = Number(feeInput);
+    if (feeInput.trim() === "" || !Number.isFinite(fee) || fee <= 0) return setMessage({ kind: "error", text: "Enter the installation fee in pesos (above zero)." });
+    const access = await token();
+    if (!access) return setMessage({ kind: "error", text: "Your session expired. Please sign in again." });
+    setBusy(true);
+    try {
+      const response = await fetch("/api/accounting/plans", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` },
+        body: JSON.stringify({ installFee: fee }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result?.error || "Could not save the installation fee.");
+      setMessage({ kind: "ok", text: `Installation fee is now ${formatPeso(fee)}. New applications use it.` });
+      setFeeEditing(false);
+      await load();
+    } catch (error) {
+      setMessage({ kind: "error", text: error instanceof Error ? error.message : "Could not save the installation fee." });
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -140,7 +170,7 @@ export default function PlansPage() {
             <p>
               The internet plans customers can apply for in the app. A new price applies to new bills and new applications;
               bills already issued keep their price. A plan&apos;s name cannot change once it exists.
-              Every new installation also has a one-time {formatPeso(INSTALL_FEE)} installation fee.
+              The one-time installation fee below is what new customers pay when they apply.
             </p>
           </div>
           <button className={styles.verify} onClick={() => open("new")}>
@@ -155,6 +185,32 @@ export default function PlansPage() {
         )}
 
         <div className={styles.list}>
+          <article className={styles.card}>
+            <header>
+              <div>
+                <strong>Installation fee</strong>
+                <small>One-time, paid by new customers when they apply</small>
+              </div>
+            </header>
+            <dl>
+              <div>
+                <dt>Amount</dt>
+                <dd>{formatPeso(installFee)}</dd>
+              </div>
+            </dl>
+            <div className={styles.actions}>
+              <button
+                className={styles.ghost}
+                onClick={() => {
+                  setMessage(null);
+                  setFeeInput(String(installFee));
+                  setFeeEditing(true);
+                }}
+              >
+                Edit
+              </button>
+            </div>
+          </article>
           {plans.map((plan) => (
             <article key={plan.id} className={styles.card}>
               <header>
@@ -184,6 +240,30 @@ export default function PlansPage() {
           {plans.length === 0 && <div className={styles.empty}>No plans yet. Add the first one.</div>}
         </div>
       </div>
+
+      {feeEditing && (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => !busy && setFeeEditing(false)}>
+          <div className={styles.modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h2>Edit installation fee</h2>
+            <input
+              className={styles.noteBox}
+              placeholder="Installation fee in pesos"
+              value={feeInput}
+              inputMode="decimal"
+              onChange={(e) => setFeeInput(e.target.value)}
+            />
+            {message?.kind === "error" && <div className={styles.modalError}>{message.text}</div>}
+            <div className={styles.modalActions}>
+              <button className={styles.ghost} disabled={busy} onClick={() => setFeeEditing(false)}>
+                Cancel
+              </button>
+              <button className={styles.verify} disabled={busy} onClick={() => void saveFee()}>
+                {busy ? "Saving…" : "Save fee"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editing && (
         <div className={styles.modalBackdrop} role="presentation" onClick={() => !busy && setEditing(null)}>

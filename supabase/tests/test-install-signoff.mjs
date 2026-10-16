@@ -28,6 +28,7 @@ const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migra
 // The realtime publication does not exist in the sandbox: apply the rest.
 await db.exec(fs.readFileSync(path.join(dir, '20261012120000_pending_payment_notice_realtime.sql'), 'utf8').replace(/do \$\$[\s\S]*?end \$\$;/i, ''))
 await db.exec(fs.readFileSync(path.join(dir, '20261012140000_install_payment_remote_signoff.sql'), 'utf8'))
+await db.exec(fs.readFileSync(path.join(dir, '20261016090000_installation_fee_only.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012170000_notify_technicians_new_installation.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012200000_install_needs_plan_billing_day.sql'), 'utf8'))
 await db.exec(fs.readFileSync(path.join(dir, '20261012210000_require_arrival_before_done.sql'), 'utf8'))
@@ -48,17 +49,18 @@ const one = async (s, p) => (await q(s, p))[0]
 const call = (user, s, p) => asUser(db, user, () => db.query(s, p)).then((r) => r.rows)
 const sentText = async () => (await q(`select body from net.sent`)).map((r) => JSON.stringify(r.body)).join(' ')
 
-section('1. A new customer pays the plan and the installation fee')
+section('1. A new customer pays the installation fee only')
 const proof = (user, client) => `${user}/${client}/p.jpg`
 const apply = (user, client, plan, amount, ref) =>
-  call(user, `select public.submit_plan_purchase($1, $2, $3, 'Manual', 'GCash', $4, null, null, null, '09170000002', null, $5, null) id`, [client, plan, amount, ref, proof(user, client)])
+  call(user, `select public.submit_plan_purchase_v2($1, $2, $3, 'Manual', 'GCash', $4, null, null, null, '09170000002', null, $5, null) id`, [client, plan, amount, ref, proof(user, client)])
 await t('the plan price alone is refused for a new customer', async () => {
-  await rejects(() => apply(ID.u2, ID.c2, 'G1_P750', 750, 'GC-NEW-1'), /does not match the selected plan/)
+  await rejects(() => apply(ID.u2, ID.c2, 'G1_P1000', 1000, 'GC-NEW-1'), /does not match the selected plan/)
+  await rejects(() => apply(ID.u2, ID.c2, 'G1_P750', 1500, 'GC-NEW-1'), /does not match the selected plan/)
 })
-await t('plan + 750 is accepted and recorded as the amount to verify', async () => {
-  const id = (await apply(ID.u2, ID.c2, 'G1_P750', 1500, 'GC-NEW-2'))[0].id
-  eq(Number((await one(`select requested_amount from public.service_requests where id = $1`, [id])).requested_amount), 1500)
-  eq(Number((await one(`select amount_claimed from public.payment_submissions where service_request_id = $1`, [id])).amount_claimed), 1500)
+await t('the installation fee alone (750) is accepted and recorded as the amount to verify', async () => {
+  const id = (await apply(ID.u2, ID.c2, 'G1_P1000', 750, 'GC-NEW-2'))[0].id
+  eq(Number((await one(`select requested_amount from public.service_requests where id = $1`, [id])).requested_amount), 750)
+  eq(Number((await one(`select amount_claimed from public.payment_submissions where service_request_id = $1`, [id])).amount_claimed), 750)
 })
 await t('an active customer still pays only the plan price', async () => {
   const id = (await apply(ID.u3, ID.c3, 'G1_P1000', 1000, 'GC-ACT-1'))[0].id
@@ -151,5 +153,48 @@ await t('the technician can take the request back', async () => {
   eq((await one(`select status from public.repair_records where id = $1`, [j2])).status, 'In Progress')
   await rejects(() => call(TECH, `select public.cancel_signature_request($1)`, [j2]), /not waiting/)
 })
+
+section('4. The fee setting and old app builds')
+const U4 = 'c0000000-0000-0000-0000-000000000004', C4 = 'd0000000-0000-0000-0000-000000000004'
+const U5 = 'c0000000-0000-0000-0000-000000000005', C5 = 'd0000000-0000-0000-0000-000000000005'
+
+for (const [u, c, n] of [[U4, C4, 4], [U5, C5, 5]]) {
+  await db.query(`insert into auth.users (id, email) values ($1, $2)`, [u, `u${n}@pkc.test`])
+  await db.query(
+    `insert into public.clients (id, tenant_id, customer_name, account_status, user_id, email, mobile_number) values ($1, $2, $3, 'Inactive', $4, $5, $6)`,
+    [c, ID.tenant, `New Customer ${n}`, u, `u${n}@pkc.test`, `0917000000${n}`],
+  )
+  await db.query(
+    `insert into public.client_services (tenant_id, client_id, plan_id, status, installation_status)
+     select $1, $2, id, 'pending', 'Pending' from public.internet_plans where plan_name = 'G1_P1000' and tenant_id = $1`,
+    [ID.tenant, c],
+  )
+}
+const legacyApply = (user, client, plan, amount, ref) =>
+  call(user, `select public.submit_plan_purchase($1, $2, $3, 'Manual', 'GCash', $4, null, null, null, '09170000002', null, $5, null) id`, [client, plan, amount, ref, proof(user, client)])
+await db.query(`update public.tenants set install_fee = 800 where id = $1`, [ID.tenant])
+
+await t('signed-in users cannot look up any business fee directly, only their own', async () => {
+  await rejects(() => call(ID.u1, `select public.install_fee($1::uuid)`, [ID.tenant2]), /permission denied/)
+  eq(Number((await call(ID.u1, `select public.get_install_fee() fee`))[0].fee), 800)
+  eq(Number((await call(ID.acc2, `select public.get_install_fee() fee`))[0].fee), 750, 'the other company keeps its own fee')
+})
+await t('the new app must pay the fee Accounting set', async () => {
+  await rejects(() => apply(U4, C4, 'G1_P1000', 750, 'GC-FEE-1'), /should be 800/)
+  const id = (await apply(U4, C4, 'G1_P1000', 800, 'GC-FEE-2'))[0].id
+  eq(Number((await one(`select requested_amount from public.service_requests where id = $1`, [id])).requested_amount), 800)
+})
+await t('a new customer on an old app build is told to update, whatever they pay', async () => {
+  await rejects(() => legacyApply(U5, C5, 'G1_P1000', 1750, 'GC-OLD-1'), /update the PKC app/)
+  await rejects(() => legacyApply(U5, C5, 'G1_P1000', 1000, 'GC-OLD-2'), /update the PKC app/)
+  eq((await q(`select 1 from public.service_requests where client_id = $1`, [C5])).length, 0)
+})
+await t('an existing customer still changes plan through the old function at the plan price', async () => {
+  await rejects(() => legacyApply(ID.u1, ID.c1, 'G1_P1000', 1750, 'GC-CHG-1'), /should be 1000/)
+  const id = (await legacyApply(ID.u1, ID.c1, 'G1_P1000', 1000, 'GC-CHG-2'))[0].id
+  eq(Number((await one(`select requested_amount from public.service_requests where id = $1`, [id])).requested_amount), 1000)
+})
+
+await db.query(`update public.tenants set install_fee = 750 where id = $1`, [ID.tenant])
 
 summary()

@@ -177,7 +177,7 @@ function nextBillText(client: Client, bills: BillingRecord[]) {
     .at(-1);
   const next = nextBillDate(client.billing_day, client.install_date.slice(0, 10), latest ?? null, phToday());
   if (!next) return "—";
-  return latest ? formatDate(next) : `${formatDate(next)} (first month was paid with the plan)`;
+  return latest ? formatDate(next) : `${formatDate(next)} (first plan bill, after installation)`;
 }
 
 function jobLabel(type: string | null) {
@@ -256,6 +256,7 @@ export default function AccountingCustomerPage() {
 
   // Adding an Installation Fee or Adjustment bill by hand (monthly bills are automatic).
   const [addOpen, setAddOpen] = useState(false);
+  const [installFee, setInstallFee] = useState(INSTALL_FEE);
   const [addType, setAddType] = useState<string>(BILL_TYPES_BY_HAND[0]);
   const [addAmount, setAddAmount] = useState("");
   const [addDue, setAddDue] = useState("");
@@ -353,6 +354,13 @@ export default function AccountingCustomerPage() {
     },
     [clientId],
   );
+
+  useEffect(() => {
+    // The fee is a setting Accounting can change; INSTALL_FEE is only the fallback.
+    void supabase.rpc("get_install_fee").then(({ data }) => {
+      if (typeof data === "number" || typeof data === "string") setInstallFee(Number(data));
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -563,7 +571,7 @@ export default function AccountingCustomerPage() {
 
   function openAddBill() {
     setAddType(BILL_TYPES_BY_HAND[0]);
-    setAddAmount(INSTALL_FEE.toFixed(2));
+    setAddAmount(installFee.toFixed(2));
     setAddDue("");
     setAddNote("");
     setAddError("");
@@ -573,7 +581,7 @@ export default function AccountingCustomerPage() {
 
   function chooseAddType(type: string) {
     setAddType(type);
-    setAddAmount(type === "Installation Fee" ? INSTALL_FEE.toFixed(2) : "");
+    setAddAmount(type === "Installation Fee" ? installFee.toFixed(2) : "");
   }
 
   async function submitAddBill() {

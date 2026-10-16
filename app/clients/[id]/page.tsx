@@ -1238,7 +1238,7 @@ export default function ClientDetailPage() {
           <div className="stat">
             <span>SERVICE PLAN</span>
             <strong>{planLabel(client.plan_name) || "—"}</strong>
-            <small>{client.plan_name ? `${client.plan_name} · ` : ""}Current subscription</small>
+            <small>{client.plan_name ? `${planLabel(client.plan_name)} · ` : ""}Current subscription</small>
           </div>
           <div className="stat">
             <span>INSTALLATION</span>

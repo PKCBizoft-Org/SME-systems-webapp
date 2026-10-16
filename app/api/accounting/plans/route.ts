@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCaller, isSessionVerified } from '@/lib/serverSecurity'
 
-// The plans a business sells. Only admins change prices. The customer app reads
+// The plans a business sells and the one-time installation fee. Admins and accounting change prices. The customer app reads
 // the active ones live (list_plans), new bills use the current price, and bills
 // already issued keep the price they were issued at.
 
@@ -17,11 +17,11 @@ async function adminTenant(request: NextRequest) {
     .from('tenant_users')
     .select('tenant_id')
     .eq('user_id', caller.user.id)
-    .eq('role', 'admin')
+    .in('role', ['admin', 'accounting'])
     .limit(1)
     .maybeSingle()
   if (!data?.tenant_id) {
-    return { error: NextResponse.json({ error: 'Only an admin can manage plans.' }, { status: 403 }) }
+    return { error: NextResponse.json({ error: 'Only admin or accounting can manage plans.' }, { status: 403 }) }
   }
   return { caller, tenantId: data.tenant_id as string }
 }
@@ -42,7 +42,37 @@ export async function GET(request: NextRequest) {
   const counts: Record<string, number> = {}
   for (const row of clients || []) if (row.plan_name) counts[row.plan_name] = (counts[row.plan_name] || 0) + 1
 
-  return NextResponse.json({ plans: (plans || []).map((p) => ({ ...p, customers: counts[p.plan_name] || 0 })) })
+  const { data: tenant } = await ctx.caller.admin.from('tenants').select('install_fee').eq('id', ctx.tenantId).maybeSingle()
+
+  return NextResponse.json({
+    plans: (plans || []).map((p) => ({ ...p, customers: counts[p.plan_name] || 0 })),
+    installFee: Number(tenant?.install_fee ?? 750),
+  })
+}
+
+// The one-time installation fee new customers pay when they apply.
+export async function PUT(request: NextRequest) {
+  const ctx = await adminTenant(request)
+  if ('error' in ctx) return ctx.error
+
+  const body = await request.json().catch(() => ({}))
+  const fee = Number(body.installFee)
+  if (!Number.isFinite(fee) || fee <= 0 || fee > 100000 || Math.round(fee * 100) !== fee * 100) {
+    return NextResponse.json({ error: 'Enter an installation fee above zero, up to 100,000 (up to 2 decimals).' }, { status: 400 })
+  }
+
+  const { data: before } = await ctx.caller.admin.from('tenants').select('install_fee').eq('id', ctx.tenantId).maybeSingle()
+  const { error } = await ctx.caller.admin.from('tenants').update({ install_fee: fee }).eq('id', ctx.tenantId)
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  await ctx.caller.admin.from('audit_log').insert({
+    tenant_id: ctx.tenantId,
+    changed_by_email: ctx.caller.user.email || 'Unknown',
+    field_name: 'install_fee_updated',
+    old_value: String(before?.install_fee ?? ''),
+    new_value: `PHP ${fee}`,
+  })
+  return NextResponse.json({ ok: true })
 }
 
 export async function POST(request: NextRequest) {

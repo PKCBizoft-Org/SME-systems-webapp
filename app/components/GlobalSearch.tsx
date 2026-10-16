@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { formatPeso } from "@/lib/format";
+import { planLabel } from "@/lib/plans";
 import styles from "./global-search.module.css";
 
 type Hit = { key: string; group: string; title: string; detail: string; href: string };
@@ -77,7 +78,7 @@ export function GlobalSearch({ roles }: { roles: string[] }) {
           key: `c-${c.id}`,
           group: "Customers",
           title: c.customer_name || "Unnamed customer",
-          detail: [c.account_id, c.mobile_number, c.plan_name].filter(Boolean).join(" · "),
+          detail: [c.account_id, c.mobile_number, planLabel(c.plan_name)].filter(Boolean).join(" · "),
           href: customerHref(c.id),
         });
       }

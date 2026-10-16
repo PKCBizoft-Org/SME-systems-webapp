@@ -1,4 +1,4 @@
-/** One-time installation fee, in pesos, charged on top of the first month. */
+/** One-time installation fee, in pesos, the only amount collected when a new customer applies. */
 export const INSTALL_FEE = 750;
 
 // Plans are stored by price code (G1_P750); people know them by speed.

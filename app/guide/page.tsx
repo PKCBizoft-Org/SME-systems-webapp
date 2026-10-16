@@ -9,7 +9,7 @@ type Step = [string, string];
 
 const CUSTOMER: Step[] = [
   ["Create your account", "Open the app or the website, choose Sign up, fill in your name, email, mobile number and address, then enter the 6-digit code we email you. Read and accept the Terms and Privacy Policy."],
-  ["Apply for a plan", "On Home, tap Apply for a Plan, pick a speed (50, 80, 120 or 200 Mbps) and pay the plan plus the installation fee. Send the GCash or bank reference number and a photo of your proof."],
+  ["Apply for a plan", "On Home, tap Apply for a Plan, pick a speed (50, 80, 120 or 200 Mbps) and pay the one-time installation fee. Your plan is billed after installation, due on the last day of the month. Send the GCash or bank reference number and a photo of your proof."],
   ["Wait for approval", "Accounting checks your payment. You will get a notice, and the progress card on Home shows each step: payment checked, technician assigned, technician arrived, started working, completed."],
   ["Installation day", "A technician comes to your address. If you are not home, you can sign off in the app afterwards. Billing starts after sign-off."],
   ["Pay your bills", "Open Plan & Bills. Your bill shows its dates: pay by the last day of the month, grace until the 4th, disconnection on the 5th. Tap Pay, choose GCash or bank, upload your proof. Accounting confirms it."],

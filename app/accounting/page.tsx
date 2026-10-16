@@ -566,7 +566,7 @@ export default function AccountingPage() {
                     <a role="menuitem" href="/accounting/reports">
                       ▤ Reports
                     </a>
-                    {staffRoles.includes("admin") && (
+                    {(staffRoles.includes("admin") || staffRoles.includes("accounting")) && (
                       <a role="menuitem" href="/accounting/plans">
                         ₱ Plans &amp; prices
                       </a>
@@ -618,7 +618,7 @@ export default function AccountingPage() {
             return (
               <Link href="/accounting/verification" className="todo-row" key={item.id}>
                 <strong>{who?.customer_name || "Customer"}</strong>
-                <span>{item.service_request_id ? "New plan + installation" : "Bill payment"}</span>
+                <span>{item.service_request_id ? "Plan application payment" : "Bill payment"}</span>
                 <span>{item.payment_method || "—"}</span>
                 <b>{formatPeso(Number(item.amount_claimed || 0))}</b>
                 <em>{hours < 1 ? "just now" : hours < 24 ? `${hours}h waiting` : `${Math.floor(hours / 24)}d waiting`}</em>
@@ -682,7 +682,7 @@ export default function AccountingPage() {
             <div className="drawer-top">
               <div><small>ACCOUNT OVERVIEW</small><button onClick={() => setSelectedClientId(null)} aria-label="Close">×</button></div>
               <div className="identity"><span className="avatar large">{getInitials(selectedClient.customer_name)}</span><div><h2>{selectedClient.customer_name || "Unnamed customer"}</h2><p>{selectedClient.account_id || "No account ID"} · {selectedClient.area || "No area"}</p></div></div>
-              <div className="drawer-status"><span className={`badge ${statusClass(selectedClient.account_status || "Unknown")}`}>{selectedClient.account_status || "Unknown"}</span><span>{selectedClient.plan_name || "No plan"}</span></div>
+              <div className="drawer-status"><span className={`badge ${statusClass(selectedClient.account_status || "Unknown")}`}>{selectedClient.account_status || "Unknown"}</span><span>{planLabel(selectedClient.plan_name) || "No plan"}</span></div>
             </div>
 
             <div className="drawer-body">
@@ -706,7 +706,7 @@ export default function AccountingPage() {
                 <div className="details-grid">
                   <Detail label="Mobile" value={selectedClient.mobile_number} />
                   <Detail label="Email" value={selectedClient.email} />
-                  <Detail label="Plan" value={selectedClient.plan_name} />
+                  <Detail label="Plan" value={planLabel(selectedClient.plan_name)} />
                   <Detail label="Purok" value={selectedClient.area} />
                   <Detail label="Installation" value={formatDate(selectedClient.install_date)} />
                   <Detail label="Technician" value={selectedTech || selectedClient.technicians} />
