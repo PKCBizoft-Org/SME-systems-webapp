@@ -58,10 +58,15 @@
 
 .nav {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 4px;
   min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 
@@ -71,6 +76,8 @@
 
 .link {
   position: relative;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
   padding: 9px 15px;
   border-radius: 999px;
   color: #8aa3b3;
@@ -137,6 +144,41 @@
 @keyframes sessionPulse {
   0% { box-shadow: 0 0 0 0 rgba(54, 224, 161, 0.55); }
   70%, 100% { box-shadow: 0 0 0 8px rgba(54, 224, 161, 0); }
+}
+
+/* At tablet widths, give the tabs a full-width row so the logo, search and
+   session controls cannot crowd or cover the first link. */
+@media (max-width: 1000px) {
+  .bar {
+    grid-template-columns: auto minmax(160px, 1fr) auto;
+    grid-template-areas:
+      "brand search session"
+      "nav nav nav";
+    gap: 8px 14px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .brand {
+    grid-area: brand;
+  }
+
+  .nav {
+    grid-area: nav;
+    width: 100%;
+  }
+
+  .searchSlot {
+    grid-area: search;
+  }
+
+  .searchSlot input {
+    width: 100%;
+  }
+
+  .session {
+    grid-area: session;
+  }
 }
 
 /* Tablet: shorter session pill */
