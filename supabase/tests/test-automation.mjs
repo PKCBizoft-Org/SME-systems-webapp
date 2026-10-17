@@ -8,7 +8,7 @@ await applyMigrations(
   db,
   (
     process.env.MIGRATIONS ||
-    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql'
+    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql,20261017110000_disconnection_push.sql'
   ).split(','),
 )
 await seed(db)
@@ -143,6 +143,7 @@ await t('an unpaid bill past due becomes Overdue and the account is flagged afte
   ok(r.overdue >= 1, 'marked overdue')
   eq((await one(`select status from public.billing where id = $1`, [old])).status, 'Overdue')
   eq((await one(`select disconnection_flag f from public.clients where id = $1`, [ID.c1])).f, true)
+  eq((await pushes()).filter((b) => b.title === 'Your service is due for disconnection' && b.user_id === ID.u1).length, 1, 'customer told once')
 })
 await t('paying it lifts the flag immediately, and the next run keeps it lifted', async () => {
   const bill = (await one(`select id from public.billing where bill_id = 'SAM-LATE'`)).id
