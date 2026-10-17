@@ -22,8 +22,8 @@ export function billingDayText(billingDay: number | null | undefined) {
 
 /**
  * The next day a monthly bill will be issued (YYYY-MM-DD). One bill per calendar month, issued on the
- * billing day, never before the day after installation. A month already billed is skipped, and a bill
- * that is due this month but not issued yet goes out tonight.
+ * billing day. The install month is billed too, on the install day when that is later. A month already
+ * billed is skipped, and a bill that is due this month but not issued yet goes out tonight.
  */
 export function nextBillDate(
   billingDay: number | null | undefined,
@@ -35,10 +35,11 @@ export function nextBillDate(
   let [year, month] = today.split("-").map(Number);
   for (let i = 0; i < 14; i += 1) {
     const monthKey = `${year}-${String(month).padStart(2, "0")}`;
-    const candidate = `${monthKey}-${String(day).padStart(2, "0")}`;
+    const scheduled = `${monthKey}-${String(day).padStart(2, "0")}`;
+    const candidate = scheduled < installDate ? installDate : scheduled;
     const billed = !!latestPeriodStart && latestPeriodStart.slice(0, 7) >= monthKey;
     const issueOn = candidate < today && monthKey === today.slice(0, 7) ? today : candidate;
-    if (!billed && issueOn >= today && candidate > installDate) return issueOn;
+    if (!billed && issueOn >= today && monthKey >= installDate.slice(0, 7)) return issueOn;
     month += 1;
     if (month > 12) {
       month = 1;

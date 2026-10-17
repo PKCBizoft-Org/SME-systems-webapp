@@ -8,7 +8,7 @@ await applyMigrations(
   db,
   (
     process.env.MIGRATIONS ||
-    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql'
+    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql'
   ).split(','),
 )
 await seed(db)
@@ -119,6 +119,21 @@ await t('an account whose bill already covers this month is not billed a second 
   await db.query(`update public.clients set billing_day = 1 where id = $1`, [ID.c1])
   eq((await run()).generated, 0)
   eq((await one(`select count(*)::int n from public.billing where client_id = $1`, [ID.c1])).n, before)
+})
+
+await t('the install month is billed too: installed today, the bill goes out today for this month, due on its last day', async () => {
+  await db.query(`delete from public.billing where client_id = $1 and bill_id ~ '^SAM-[0-9]+$'`, [ID.c1])
+  await db.query(`update public.clients set install_date = current_date + 1 where id = $1`, [ID.c1])
+  eq((await run()).generated, 0, 'not before the installation')
+  await db.query(`update public.clients set install_date = current_date where id = $1`, [ID.c1])
+  eq((await run()).generated, 1)
+  const b = await one(`select bill_date = current_date today, billing_period_start = date_trunc('month', current_date)::date s,
+                              due_date = (date_trunc('month', current_date) + interval '1 month' - interval '1 day')::date due, final_amount
+                       from public.billing where client_id = $1 and bill_id ~ '^SAM-[0-9]+$'`, [ID.c1])
+  eq(b.today, true, 'billed on the install day'); eq(b.s, true, 'covers this month'); eq(b.due, true, 'due on the last day')
+  eq(Number(b.final_amount), 750, 'full monthly price')
+  eq((await run()).generated, 0, 'only once')
+  await db.query(`update public.clients set install_date = current_date - 60 where id = $1`, [ID.c1])
 })
 
 section('3. Overdue bills and disconnection flags')

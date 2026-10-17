@@ -38,7 +38,7 @@ export default function TermsPage() {
       <section className={styles.sec}>
         <h2>3. Bills, payment and disconnection</h2>
         <ul>
-          <li>One monthly bill is issued for each calendar month. New customers are billed on the 1st; some existing customers are billed on the 25th.</li>
+          <li>One monthly bill is issued for each calendar month. New customers are billed on the 1st; some existing customers are billed on the 25th. The month you are installed in is billed too, in full, due on its last day.</li>
           <li><b>Due date:</b> the last day of the month.</li>
           <li><b>Grace period:</b> until the 4th of the next month. Your service stays on.</li>
           <li><b>Disconnection:</b> on the 5th of the next month, an account with an unpaid bill can be disconnected.</li>

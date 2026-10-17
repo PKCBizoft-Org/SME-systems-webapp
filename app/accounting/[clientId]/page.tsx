@@ -177,7 +177,7 @@ function nextBillText(client: Client, bills: BillingRecord[]) {
     .at(-1);
   const next = nextBillDate(client.billing_day, client.install_date.slice(0, 10), latest ?? null, phToday());
   if (!next) return "—";
-  return latest ? formatDate(next) : `${formatDate(next)} (first plan bill, after installation)`;
+  return latest ? formatDate(next) : `${formatDate(next)} (first bill, for the month of installation)`;
 }
 
 function jobLabel(type: string | null) {
