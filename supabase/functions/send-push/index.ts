@@ -68,7 +68,23 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${bearer}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: { token, notification: { title, body: body ?? "" }, android: { priority: "HIGH" } },
+        message: {
+          token,
+          notification: { title, body: body ?? "" },
+          // High priority wakes the phone from Doze; the "pkc-alerts" channel (made by the app) pops up with
+          // sound. Phones on an app version without that channel fall back to the default one.
+          android: {
+            priority: "HIGH",
+            ttl: "86400s",
+            notification: {
+              channel_id: "pkc-alerts",
+              default_sound: true,
+              default_vibrate_timings: true,
+              notification_priority: "PRIORITY_MAX",
+              visibility: "PUBLIC",
+            },
+          },
+        },
       }),
     });
     if (res.ok) {

@@ -15,9 +15,15 @@ function ordinal(n: number) {
   return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 }
 
-/** "1st of the month" (new customers) or "25th of the month" (customers installed before the change). */
-export function billingDayText(billingDay: number | null | undefined) {
-  return `${ordinal(Math.min(billingDay ?? 1, 28))} of the month`;
+/** Billing day for a new install: installed on the 1st-14th -> the 15th, on the 15th or later -> the 25th. */
+export function billingDayFor(installDate: string | null | undefined) {
+  const day = Number((installDate ?? "").slice(8, 10));
+  return day && day < 15 ? 15 : 25;
+}
+
+/** "15th of the month". Without a stored billing day, the install-date rule decides. */
+export function billingDayText(billingDay: number | null | undefined, installDate?: string | null) {
+  return `${ordinal(Math.min(billingDay ?? billingDayFor(installDate), 28))} of the month`;
 }
 
 /**
@@ -31,7 +37,7 @@ export function nextBillDate(
   latestPeriodStart: string | null,
   today: string,
 ) {
-  const day = Math.min(billingDay ?? 1, 28);
+  const day = Math.min(billingDay ?? billingDayFor(installDate), 28);
   let [year, month] = today.split("-").map(Number);
   for (let i = 0; i < 14; i += 1) {
     const monthKey = `${year}-${String(month).padStart(2, "0")}`;

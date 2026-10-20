@@ -8,7 +8,7 @@ await applyMigrations(
   db,
   (
     process.env.MIGRATIONS ||
-    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql,20261017110000_disconnection_push.sql'
+    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261012200000_install_needs_plan_billing_day.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql,20261017110000_disconnection_push.sql,20261020090000_billing_day_15_25_and_more_pushes.sql'
   ).split(','),
 )
 await seed(db)
@@ -240,6 +240,55 @@ await t('only accounting or admin of the same company can add a bill, never to t
 await t('the audit log records who added the bill', async () => {
   const a = await one(`select changed_by_email e, new_value v from public.audit_log where field_name = 'bill_added' and client_id = $1 order by changed_at desc limit 1`, [ID.c1])
   eq(a.e, 'acc@pkc.test'); ok(/Extra cable/.test(a.v), 'note kept')
+})
+
+section('4c. Billing day from the install date, active accounts only')
+await t('installed on the 1st-14th -> billed on the 15th, on the 15th or later -> the 25th', async () => {
+  const r = await one(`select public.billing_day_for('2026-10-01') a, public.billing_day_for('2026-10-14') b,
+                              public.billing_day_for('2026-10-15') c, public.billing_day_for('2026-10-31') d`)
+  eq([r.a, r.b, r.c, r.d].join(','), '15,15,25,25')
+})
+await t('finishing an installation sets the billing day from the install date', async () => {
+  await db.query(`update public.clients set billing_day = null, plan_name = 'G1_P750', install_date = date_trunc('month', current_date)::date + 4 where id = $1`, [ID.c2])
+  await db.query(`alter table public.repair_records add column if not exists arrived_at timestamptz`)
+  await db.query(`insert into public.repair_records (client_id, job_type, status, problem_description, arrived_at) values ($1, 'installation', 'Assigned', 'New install', now())`, [ID.c2])
+  await db.query(`update public.repair_records set status = 'Completed' where client_id = $1 and job_type = 'installation'`, [ID.c2])
+  eq((await one(`select billing_day from public.clients where id = $1`, [ID.c2])).billing_day, 15)
+  ok((await pushes()).some((b) => b.title === 'Your installation is done' && b.user_id === ID.u2), 'customer told the job is done')
+})
+await t('an account that is not Active is never billed', async () => {
+  await db.query(`delete from public.billing where client_id = $1 and bill_id ~ '^SAM-[0-9]+$'`, [ID.c1])
+  await db.query(`update public.clients set account_status = 'Inactive', billing_day = 1 where id = $1`, [ID.c1])
+  await run()
+  eq((await q(`select 1 from public.billing where client_id = $1 and bill_id ~ '^SAM-[0-9]+$'`, [ID.c1])).length, 0, 'inactive: no bill')
+  await db.query(`update public.clients set account_status = 'Active' where id = $1`, [ID.c1])
+  await run()
+  eq((await q(`select 1 from public.billing where client_id = $1 and bill_id ~ '^SAM-[0-9]+$'`, [ID.c1])).length, 1, 'active again: billed')
+})
+await t('accounting can change the billing day (audited); customers cannot; only the 1st-28th', async () => {
+  await as(ID.acc, `select public.set_billing_day($1, 15)`, [ID.c1])
+  eq((await one(`select billing_day from public.clients where id = $1`, [ID.c1])).billing_day, 15)
+  ok((await one(`select count(*)::int n from public.audit_log where client_id = $1 and field_name = 'billing_day' and new_value = '15'`, [ID.c1])).n === 1, 'audited')
+  await rejects(() => as(ID.acc, `select public.set_billing_day($1, 29)`, [ID.c1]), /1st to the 28th/)
+  await rejects(() => as(ID.u1, `select public.set_billing_day($1, 25)`, [ID.c1]), /Only accounting or admin/)
+  await as(ID.acc, `select public.set_billing_day($1, 1)`, [ID.c1])
+})
+
+section('4d. Notifications')
+await t('bill reminders are pushed 5 days before, on the due date and the day after, once each, for any amount', async () => {
+  const soon = await addBill(db, { client: ID.c1, billId: 'SAM-P5', amount: 1, dueOffset: 5, periodStartOffset: -26 })
+  const today = await addBill(db, { client: ID.c1, billId: 'SAM-P0', amount: 750, dueOffset: 0, periodStartOffset: -32 })
+  const late = await addBill(db, { client: ID.c1, billId: 'SAM-P1', amount: 750, dueOffset: -1, periodStartOffset: -36 })
+  await run()
+  await run()
+  const mine = (await pushes()).filter((b) => b.user_id === ID.u1)
+  eq(mine.filter((b) => b.title === 'Bill due in 5 days' && /SAM-P5/.test(b.body)).length, 1, 'due in 5 days, PHP 1')
+  eq(mine.filter((b) => b.title === 'Bill due today' && /SAM-P0/.test(b.body)).length, 1, 'due today')
+  eq(mine.filter((b) => b.title === 'Bill overdue' && /SAM-P1/.test(b.body)).length, 1, 'day after')
+  await db.query(`update public.billing set status = 'Cancelled' where id = any($1)`, [[soon, today, late]])
+})
+await t('Accounting is told about every payment sent for checking', async () => {
+  ok((await pushes()).some((b) => b.title === 'Payment to check' && b.user_id === ID.acc), 'accountant pushed')
 })
 
 section('5. Access')

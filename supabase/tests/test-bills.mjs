@@ -330,10 +330,12 @@ await t('a verified payment cannot be cancelled', async () => {
   await rejects(() => as(ID.u3, `select public.cancel_bill_payment($1)`, [sub]), /already verified/)
 })
 await t('cancelling does not send a rejection push', async () => {
-  const before = (await pushes()).length
+  // Submitting tells Accounting ("Payment to check"); cancelling must not tell the customer anything.
+  const rejections = async () => (await pushes()).filter((b) => b.title === 'Payment was not accepted').length
+  const before = await rejections()
   const sub = await submitBill(ID.u1, C2, 100)
   await as(ID.u1, `select public.cancel_bill_payment($1)`, [sub])
-  eq((await pushes()).length, before, 'no push')
+  eq(await rejections(), before, 'no push')
 })
 
 process.exit(summary() ? 1 : 0)

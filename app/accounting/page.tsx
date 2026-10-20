@@ -718,7 +718,7 @@ export default function AccountingPage() {
                 <header><div><small>BILLING SCHEDULE</small><h3>Account cycle</h3></div></header>
                 <div className="details-grid compact">
                   {selectedClient.plan_name?.trim() && selectedClient.install_date ? (
-                    <Detail label="Billed on" value={billingDayText(selectedClient.billing_day)} />
+                    <Detail label="Billed on" value={billingDayText(selectedClient.billing_day, selectedClient.install_date)} />
                   ) : (
                     <Detail label="Not started" value="Starts once the plan is approved and installed." />
                   )}

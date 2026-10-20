@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
 import { INSTALL_FEE, planLabel } from "@/lib/plans";
-import { BILL_TYPES_BY_HAND, billingDayText, nextBillDate, SCHEDULE_TEXT } from "@/lib/billingSchedule";
+import { BILL_TYPES_BY_HAND, billingDayFor, billingDayText, nextBillDate, SCHEDULE_TEXT } from "@/lib/billingSchedule";
 import { StaffHeader } from "../../components/StaffHeader";
 import { StaffMotion } from "../../components/StaffMotion";
 import { PkcLoader } from "../../components/PkcLoader";
@@ -262,6 +262,7 @@ export default function AccountingCustomerPage() {
   const [addDue, setAddDue] = useState("");
   const [addNote, setAddNote] = useState("");
   const [addBusy, setAddBusy] = useState(false);
+  const [dayBusy, setDayBusy] = useState(false);
   const [addError, setAddError] = useState("");
 
   const loadAccount = useCallback(
@@ -620,6 +621,22 @@ export default function AccountingCustomerPage() {
       setAddError(error instanceof Error ? error.message : "The bill could not be added.");
     } finally {
       setAddBusy(false);
+    }
+  }
+
+  async function changeBillingDay(day: number) {
+    if (!client || dayBusy) return;
+    setDayBusy(true);
+    setFlash(null);
+    try {
+      const { error } = await supabase.rpc("set_billing_day", { p_client: client.id, p_day: day });
+      if (error) throw new Error(error.message);
+      setClient({ ...client, billing_day: day });
+      setFlash(`Monthly bills now show on the ${billingDayText(day)}.`);
+    } catch (error) {
+      setFlash(error instanceof Error ? error.message : "The billing day could not be changed.");
+    } finally {
+      setDayBusy(false);
     }
   }
 
@@ -984,7 +1001,21 @@ export default function AccountingCustomerPage() {
                   {client.plan_name?.trim() && client.install_date ? (
                     <>
                       <Detail label="Cycle" value={client.billing_cycle || "Monthly"} />
-                      <Detail label="Billed on" value={billingDayText(client.billing_day)} />
+                      <div className="detail">
+                        <span>Billed on</span>
+                        <select
+                          aria-label="Billing day"
+                          value={client.billing_day ?? billingDayFor(client.install_date)}
+                          onChange={(e) => void changeBillingDay(Number(e.target.value))}
+                          disabled={dayBusy}
+                        >
+                          {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
+                            <option key={day} value={day}>
+                              {billingDayText(day)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <Detail label="Due" value={SCHEDULE_TEXT.due} />
                       <Detail label="Grace period" value={SCHEDULE_TEXT.grace} />
                       <Detail label="Disconnect" value={SCHEDULE_TEXT.disconnect} />
