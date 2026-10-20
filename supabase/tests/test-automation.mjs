@@ -8,7 +8,7 @@ await applyMigrations(
   db,
   (
     process.env.MIGRATIONS ||
-    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261012200000_install_needs_plan_billing_day.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql,20261017110000_disconnection_push.sql,20261020090000_billing_day_15_25_and_more_pushes.sql,20261020110000_billing_review_fixes.sql,20261020120000_pending_payment_hold_3_days.sql'
+    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261012200000_install_needs_plan_billing_day.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql,20261017110000_disconnection_push.sql,20261020090000_billing_day_15_25_and_more_pushes.sql,20261020110000_billing_review_fixes.sql,20261020120000_pending_payment_hold_3_days.sql,20261020130000_pending_hold_tied_to_bill.sql'
   ).split(','),
 )
 await seed(db)
@@ -318,22 +318,22 @@ await t('a customer whose payment is waiting for Accounting is not flagged for d
   await run()
   eq((await one(`select disconnection_flag f from public.clients where id = $1`, [ID.c3])).f, false, 'lifted when nothing is owed')
 })
-await t('a payment left unchecked for more than 3 days no longer holds off disconnection', async () => {
+await t('a pending payment holds off disconnection only for 3 days after the disconnection date, even if resubmitted', async () => {
   await db.query(`update public.billing set status = 'Cancelled' where client_id = $1`, [ID.c3])
   await db.query(`update public.clients set disconnection_flag = false where id = $1`, [ID.c3])
   await db.query(
     `insert into public.billing (tenant_id, client_id, bill_id, status, bill_type, bill_date, due_date, grace_until, disconnect_date, terminate_date, amount_due, original_amount, final_amount, billing_period_start, billing_period_end)
-     values ($1, $2, 'SAM-STALE', 'Unpaid', 'Monthly', current_date - 20, current_date - 5, current_date - 1, current_date, current_date + 30, 750, 750, 750, current_date - 330, current_date - 310)`,
+     values ($1, $2, 'SAM-STALE', 'Unpaid', 'Monthly', current_date - 23, current_date - 8, current_date - 4, current_date - 3, current_date + 27, 750, 750, 750, current_date - 330, current_date - 310)`,
     [ID.tenant, ID.c3],
   )
   const bill = (await one(`select id from public.billing where bill_id = 'SAM-STALE'`)).id
   await db.query(
     `insert into public.payment_submissions (tenant_id, client_id, user_id, billing_id, amount_claimed, payment_method, reference_number, payment_date, proof_path, status, created_at)
-     values ($1, $2, $3, $4, 750, 'GCash', 'GC-STALE-1', current_date - 4, 'x/z.jpg', 'Pending', now() - interval '4 days')`,
+     values ($1, $2, $3, $4, 750, 'GCash', 'GC-STALE-1', current_date, 'x/z.jpg', 'Pending', now())`,
     [ID.tenant, ID.c3, ID.u3, bill],
   )
   await run()
-  eq((await one(`select disconnection_flag f from public.clients where id = $1`, [ID.c3])).f, true, 'flagged: the claim is 4 days old')
+  eq((await one(`select disconnection_flag f from public.clients where id = $1`, [ID.c3])).f, true, 'flagged: a brand-new claim no longer helps 3 days after the disconnection date')
   await db.query(`update public.payment_submissions set status = 'Rejected', reject_reason = 'Unreadable' where reference_number = 'GC-STALE-1'`)
   await db.query(`update public.billing set status = 'Cancelled' where id = $1`, [bill])
   await run()
