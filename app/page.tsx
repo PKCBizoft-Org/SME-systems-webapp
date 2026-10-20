@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { CardFX } from "./components/CardFX";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import type { GlobeMethods } from "react-globe.gl";
 import type { MeshPhongMaterial } from "three";
@@ -251,10 +251,49 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
   }
 }
 
+const CLOCK_FORMAT = new Intl.DateTimeFormat("en-PH", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+
+// Ticks every second on its own, so the rest of the (very large) home page does not re-render with it.
+function LiveClock() {
+  const [time, setTime] = useState("");
+  useEffect(() => {
+    const update = () => setTime(CLOCK_FORMAT.format(new Date()));
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return <span className="clock">{time || "--:--:--"} PHT</span>;
+}
+
+// Globe settings and accessors live outside the component: new function identities on every render
+// make react-globe.gl rebuild its points, rings, arcs and HTML markers.
+const pointColor = (d: object) => (isCorePoint(d) ? "#a9fbff" : "#35e7ff");
+const pointAltitude = (d: object) => (isCorePoint(d) ? 0.075 : 0.052);
+const pointRadius = (d: object) => (isCorePoint(d) ? 0.7 : 0.48);
+const ringColor = (d: object) => (isCorePoint(d) ? "#71f4ff" : "#36e6ff");
+const ringMaxRadius = (d: object) => (isCorePoint(d) ? 4.5 : 3.1);
+const arcColor = () => ["rgba(86,239,255,.95)", "rgba(86,239,255,.12)"];
+const pathPointLat = (p: number[]) => p[0];
+const pathPointLng = (p: number[]) => p[1];
+const pathColor = () => "#2fe5ff";
+const htmlVisibility = (el: HTMLElement, visible: boolean) => {
+  el.style.opacity = visible ? "1" : "0";
+};
+const GEO_ICONS: Record<string, string> = {
+  wifi: '<svg viewBox="0 0 24 24"><path d="M3 8.5a15.4 15.4 0 0 1 18 0"/><path d="M6.5 12a10.5 10.5 0 0 1 11 0"/><path d="M10 15.3a5.7 5.7 0 0 1 4 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>',
+  cloud:
+    '<svg viewBox="0 0 24 24"><path d="M7.5 18.5h9.2a4.3 4.3 0 0 0 .4-8.6A6 6 0 0 0 5.7 8.8 4.8 4.8 0 0 0 7.5 18.5Z"/></svg>',
+  server:
+    '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M10 7h6M10 17h6"/></svg>',
+  shield:
+    '<svg viewBox="0 0 24 24"><path d="M12 3 19 6v5.5c0 4.8-2.9 7.9-7 9.5-4.1-1.6-7-4.7-7-9.5V6l7-3Z"/><path d="m9.3 12 1.8 1.8 3.7-4"/></svg>',
+  globe:
+    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.8 12h16.4M12 3.5c2.2 2.3 3.2 5.1 3.2 8.5s-1 6.2-3.2 8.5c-2.2-2.3-3.2-5.1-3.2-8.5s1-6.2 3.2-8.5Z"/></svg>',
+};
+
 export default function HomePage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const [activeFeature, setActiveFeature] = useState(0);
-  const [time, setTime] = useState("");
   const [storySection, setStorySection] = useState("network");
   const [introVisible, setIntroVisible] = useState(true);
   const [introExiting, setIntroExiting] = useState(false);
@@ -289,36 +328,28 @@ export default function HomePage() {
   }, [introVisible]);
 
   useEffect(() => {
+    // The 3D globe is too heavy for weaker phones; they get the flat fallback straight away. Creating a
+    // WebGL context just to test for it can block the page for most of a second on weak hardware, so
+    // lite devices never do it, and others only after the intro (LagWatch may switch to lite by then).
+    if (document.documentElement.classList.contains("lite")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWebglAvailable(false);
+      return;
+    }
+    if (introVisible) return;
     try {
       const canvas = document.createElement("canvas");
-      const gl = (canvas.getContext("webgl", { failIfMajorPerformanceCaveat: false }) as WebGLRenderingContext | null) ||
-        (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
-      // Feature detection needs the browser, so it can only run after mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      // The 3D globe is too heavy for weaker phones; they get the flat fallback.
+      // failIfMajorPerformanceCaveat: no globe on slow software-only WebGL either.
+      const gl = (canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true }) as WebGLRenderingContext | null) ||
+        (canvas.getContext("experimental-webgl", { failIfMajorPerformanceCaveat: true }) as WebGLRenderingContext | null);
       setWebglAvailable(Boolean(gl && !gl.isContextLost()) && !document.documentElement.classList.contains("lite"));
       gl?.getExtension("WEBGL_lose_context")?.loseContext();
     } catch {
       setWebglAvailable(false);
     }
-  }, []);
+  }, [introVisible]);
 
-  useEffect(() => {
-    const update = () =>
-      setTime(
-        new Intl.DateTimeFormat("en-PH", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        }).format(new Date()),
-      );
-    update();
-    const timer = window.setInterval(update, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
+  const configureGlobe = useCallback(() => {
     const globe = globeRef.current;
     if (!globe) return;
     const controls = globe.controls();
@@ -333,6 +364,17 @@ export default function HomePage() {
     material.emissive?.set("#032b3d");
     material.emissiveIntensity = 1.25;
     material.shininess = 18;
+  }, []);
+
+  const htmlElement = useCallback((obj: object) => {
+    const d = obj as NetworkPoint;
+    const element = document.createElement("div");
+    element.innerHTML = `<span class="geoAnchor"></span><span class="geoHalo"></span><span class="geoLine"></span><span class="geoArrow"></span><button class="geoCard" type="button" aria-label="Inspect ${d.label}"><div class="geoIcon"><span class="iconMount"></span></div><div class="geoText"><strong>${d.label}</strong><small>${d.sub}</small><div class="geoMeta"><em><i></i>${d.status}</em><b>${d.metric}</b></div><span class="geoAction">INSPECT NODE ↗</span></div></button>`;
+    const card = element.querySelector(".geoCard") as HTMLButtonElement | null;
+    if (card) card.addEventListener("click", () => setSelectedNode(d));
+    const mount = element.querySelector(".iconMount");
+    if (mount) mount.innerHTML = GEO_ICONS[d.icon] || GEO_ICONS.globe;
+    return element;
   }, []);
 
   useEffect(() => {
@@ -401,6 +443,7 @@ export default function HomePage() {
         });
       }
     };
+    if (!window.matchMedia("(pointer: fine)").matches) return;
     window.addEventListener("pointermove", move, { passive: true });
     return () => {
       window.removeEventListener("pointermove", move);
@@ -408,30 +451,6 @@ export default function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    let frame = 0;
-
-    const updateScroll = () => {
-      frame = 0;
-      const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
-      const progress = Math.min(window.scrollY / maxScroll, 1);
-      document.documentElement.style.setProperty("--story-scroll", `${progress}`);
-    };
-
-    const handleScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(updateScroll);
-    };
-
-    updateScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
 
   return (
     <main className={`page ${introVisible ? "hasIntro" : "introComplete"}`}>
@@ -540,7 +559,7 @@ export default function HomePage() {
           <a href="#features">Capabilities</a>
         </div>
         <div className="navRight">
-          <span className="clock">{time || "--:--:--"} PHT</span>
+          <LiveClock />
           <a className="appButton" href={APP_DOWNLOAD_URL}>
             <Icon name="download" size={13} />
             GET THE APP
@@ -672,11 +691,12 @@ export default function HomePage() {
                 <div className="globeFallbackLine lineB" />
                 <div className="globeFallbackLabel">NETWORK CORE <b>WEBGL OFF</b></div>
               </div>
-            ) : webglAvailable === null ? (
+            ) : webglAvailable === null || introVisible ? (
               <div className="globeLoading" aria-hidden="true"><span /><b>INITIALIZING NETWORK CORE</b></div>
             ) : (
               <Globe
               ref={globeRef}
+              onGlobeReady={configureGlobe}
               width={680}
               height={680}
               backgroundColor="rgba(0,0,0,0)"
@@ -689,20 +709,14 @@ export default function HomePage() {
                             pointsData={NETWORK_POINTS}
               pointLat="lat"
               pointLng="lng"
-              pointColor={(d: object) =>
-                isCorePoint(d) ? "#a9fbff" : "#35e7ff"
-              }
-              pointAltitude={(d: object) =>
-                isCorePoint(d) ? 0.075 : 0.052
-              }
-              pointRadius={(d: object) => (isCorePoint(d) ? 0.7 : 0.48)}
+              pointColor={pointColor}
+              pointAltitude={pointAltitude}
+              pointRadius={pointRadius}
               ringsData={NETWORK_POINTS}
               ringLat="lat"
               ringLng="lng"
-              ringColor={(d: object) =>
-                isCorePoint(d) ? "#71f4ff" : "#36e6ff"
-              }
-              ringMaxRadius={(d: object) => (isCorePoint(d) ? 4.5 : 3.1)}
+              ringColor={ringColor}
+              ringMaxRadius={ringMaxRadius}
               ringPropagationSpeed={1.3}
               ringRepeatPeriod={1150}
               arcsData={ROUTE_ARCS}
@@ -710,7 +724,7 @@ export default function HomePage() {
               arcStartLng="startLng"
               arcEndLat="endLat"
               arcEndLng="endLng"
-              arcColor={() => ["rgba(86,239,255,.95)", "rgba(86,239,255,.12)"]}
+              arcColor={arcColor}
               arcAltitudeAutoScale={0.34}
               arcStroke={1.1}
               arcDashLength={0.45}
@@ -718,9 +732,9 @@ export default function HomePage() {
               arcDashAnimateTime={1800}
               pathsData={ROUTES}
               pathPoints="coords"
-              pathPointLat={(p: number[]) => p[0]}
-              pathPointLng={(p: number[]) => p[1]}
-              pathColor={() => "#2fe5ff"}
+              pathPointLat={pathPointLat}
+              pathPointLng={pathPointLng}
+              pathColor={pathColor}
               pathStroke={0.7}
               pathDashLength={0.24}
               pathDashGap={1.5}
@@ -730,35 +744,8 @@ export default function HomePage() {
               htmlLng="lng"
               htmlAltitude={0.13}
               htmlTransitionDuration={0}
-              htmlElement={(obj: object) => {
-                const d = obj as NetworkPoint;
-                const element = document.createElement("div");
-                element.innerHTML = `<span class="geoAnchor"></span><span class="geoHalo"></span><span class="geoLine"></span><span class="geoArrow"></span><button class="geoCard" type="button" aria-label="Inspect ${d.label}"><div class="geoIcon"><span class="iconMount"></span></div><div class="geoText"><strong>${d.label}</strong><small>${d.sub}</small><div class="geoMeta"><em><i></i>${d.status}</em><b>${d.metric}</b></div><span class="geoAction">INSPECT NODE ↗</span></div></button>`;
-                const card = element.querySelector(".geoCard") as HTMLButtonElement | null;
-                if (card) card.addEventListener("click", () => setSelectedNode(d));
-                const mount = element.querySelector(".iconMount");
-                if (mount) {
-                  const icons: Record<string, string> = {
-                    wifi: '<svg viewBox="0 0 24 24"><path d="M3 8.5a15.4 15.4 0 0 1 18 0"/><path d="M6.5 12a10.5 10.5 0 0 1 11 0"/><path d="M10 15.3a5.7 5.7 0 0 1 4 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>',
-                    cloud:
-                      '<svg viewBox="0 0 24 24"><path d="M7.5 18.5h9.2a4.3 4.3 0 0 0 .4-8.6A6 6 0 0 0 5.7 8.8 4.8 4.8 0 0 0 7.5 18.5Z"/></svg>',
-                    server:
-                      '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M10 7h6M10 17h6"/></svg>',
-                    shield:
-                      '<svg viewBox="0 0 24 24"><path d="M12 3 19 6v5.5c0 4.8-2.9 7.9-7 9.5-4.1-1.6-7-4.7-7-9.5V6l7-3Z"/><path d="m9.3 12 1.8 1.8 3.7-4"/></svg>',
-                    globe:
-                      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.8 12h16.4M12 3.5c2.2 2.3 3.2 5.1 3.2 8.5s-1 6.2-3.2 8.5c-2.2-2.3-3.2-5.1-3.2-8.5s1-6.2 3.2-8.5Z"/></svg>',
-                  };
-                  mount.innerHTML = icons[d.icon] || icons.globe;
-                }
-                return element;
-              }}
-              htmlElementVisibilityModifier={(
-                el: HTMLElement,
-                visible: boolean,
-              ) => {
-                el.style.opacity = visible ? "1" : "0";
-              }}
+              htmlElement={htmlElement}
+              htmlElementVisibilityModifier={htmlVisibility}
               enablePointerInteraction
               />
             )}
