@@ -8,7 +8,7 @@ await applyMigrations(
   db,
   (
     process.env.MIGRATIONS ||
-    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261012200000_install_needs_plan_billing_day.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql,20261017110000_disconnection_push.sql,20261020090000_billing_day_15_25_and_more_pushes.sql'
+    '20261009220000_bill_payments.sql,20261009230000_referral_payouts.sql,20261012200000_install_needs_plan_billing_day.sql,20261013170000_billing_grace_termination.sql,20261013190000_billing_schedule_final.sql,20261014085900_billing_day_new_installs_on_the_1st.sql,20261014090000_billing_video_schedule.sql,20261017090000_bill_the_install_month.sql,20261017110000_disconnection_push.sql,20261020090000_billing_day_15_25_and_more_pushes.sql,20261020110000_billing_review_fixes.sql'
   ).split(','),
 )
 await seed(db)
@@ -289,6 +289,52 @@ await t('bill reminders are pushed 5 days before, on the due date and the day af
 })
 await t('Accounting is told about every payment sent for checking', async () => {
   ok((await pushes()).some((b) => b.title === 'Payment to check' && b.user_id === ID.acc), 'accountant pushed')
+})
+
+section('4e. Billing fixes (2026-10-20)')
+await t('a customer whose payment is waiting for Accounting is not flagged for disconnection', async () => {
+  // Only the bill below is owed (earlier sections left c3 with other unpaid bills).
+  await db.query(`update public.billing set status = 'Cancelled' where client_id = $1`, [ID.c3])
+  await db.query(`update public.clients set disconnection_flag = false where id = $1`, [ID.c3])
+  await db.query(
+    `insert into public.billing (tenant_id, client_id, bill_id, status, bill_type, bill_date, due_date, grace_until, disconnect_date, terminate_date, amount_due, original_amount, final_amount, billing_period_start, billing_period_end)
+     values ($1, $2, 'SAM-WAIT', 'Unpaid', 'Monthly', current_date - 20, current_date - 5, current_date - 1, current_date, current_date + 30, 750, 750, 750, current_date - 300, current_date - 280)`,
+    [ID.tenant, ID.c3],
+  )
+  const bill = (await one(`select id from public.billing where bill_id = 'SAM-WAIT'`)).id
+  await db.query(
+    `insert into public.payment_submissions (tenant_id, client_id, user_id, billing_id, amount_claimed, payment_method, reference_number, payment_date, proof_path, status)
+     values ($1, $2, $3, $4, 750, 'GCash', 'GC-WAIT-1', current_date - 1, 'x/y.jpg', 'Pending')`,
+    [ID.tenant, ID.c3, ID.u3, bill],
+  )
+  const before = (await pushes()).filter((b) => b.title === 'Your service is due for disconnection' && b.user_id === ID.u3).length
+  await run()
+  eq((await one(`select disconnection_flag f from public.clients where id = $1`, [ID.c3])).f, false, 'not flagged while Accounting checks')
+  eq((await pushes()).filter((b) => b.title === 'Your service is due for disconnection' && b.user_id === ID.u3).length, before, 'no disconnection push')
+  await db.query(`update public.payment_submissions set status = 'Rejected', reject_reason = 'Unreadable' where reference_number = 'GC-WAIT-1'`)
+  await run()
+  eq((await one(`select disconnection_flag f from public.clients where id = $1`, [ID.c3])).f, true, 'flagged once the payment is rejected')
+  await db.query(`update public.billing set status = 'Cancelled' where id = $1`, [bill])
+  await run()
+  eq((await one(`select disconnection_flag f from public.clients where id = $1`, [ID.c3])).f, false, 'lifted when nothing is owed')
+})
+await t('taking a plan off sale does not stop billing the customers already on it', async () => {
+  await db.query(`delete from public.billing where client_id = $1 and bill_id ~ '^SAM-[0-9]+$'`, [ID.c1])
+  await db.query(`update public.clients set billing_day = 1 where id = $1`, [ID.c1])
+  await db.query(`update public.internet_plans set active = false where plan_name = 'G1_P750' and tenant_id = $1`, [ID.tenant])
+  try {
+    await run()
+    eq((await q(`select 1 from public.billing where client_id = $1 and bill_id ~ '^SAM-[0-9]+$'`, [ID.c1])).length, 1, 'still billed')
+  } finally {
+    await db.query(`update public.internet_plans set active = true where plan_name = 'G1_P750' and tenant_id = $1`, [ID.tenant])
+  }
+})
+await t('a bill issued today is not also announced as "due in 5 days" the same morning', async () => {
+  await addBill(db, { client: ID.c1, billId: 'SAM-FRESH', amount: 750, dueOffset: 5, periodStartOffset: -48 })
+  await db.query(`update public.billing set bill_date = current_date where bill_id = 'SAM-FRESH'`)
+  await run()
+  eq((await pushes()).filter((b) => b.title === 'Bill due in 5 days' && /SAM-FRESH/.test(b.body)).length, 0)
+  await db.query(`update public.billing set status = 'Cancelled' where bill_id = 'SAM-FRESH'`)
 })
 
 section('5. Access')

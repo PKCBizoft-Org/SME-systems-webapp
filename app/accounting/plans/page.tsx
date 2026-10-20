@@ -123,7 +123,7 @@ export default function PlansPage() {
     if (!Number.isFinite(amount) || amount <= 0) return setMessage({ kind: "error", text: "Enter a price above zero." });
     if (editing !== "new" && !active && editing.active && editing.customers > 0) {
       const ok = window.confirm(
-        `${editing.customers} customer(s) are on ${editing.plan_name}. Turning it off stops new bills for them until you move them to another plan. Continue?`,
+        `${editing.customers} customer(s) are on ${editing.plan_name}. Turning it off only stops new customers from choosing it; the ${editing.customers} customer(s) on it keep their plan and keep being billed. Continue?`,
       );
       if (!ok) return;
     }
