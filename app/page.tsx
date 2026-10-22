@@ -302,6 +302,9 @@ export default function HomePage() {
   const [selectedNode, setSelectedNode] = useState(NETWORK_POINTS.find((point) => point.id === "philippines") ?? NETWORK_POINTS[0]);
   const [showFeatureDetail, setShowFeatureDetail] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
+  // react-globe.gl takes the globe's material as a prop (its ref has no globeMaterial() method).
+  // three is already in the globe's chunk, so loading it here costs nothing extra.
+  const [globeMaterial, setGlobeMaterial] = useState<MeshPhongMaterial | null>(null);
 
   useEffect(() => {
     const finishIntro = () => {
@@ -359,12 +362,26 @@ export default function HomePage() {
     controls.enablePan = false;
     controls.enableRotate = true;
     globe.pointOfView({ lat: 22, lng: 105, altitude: 1.72 }, 0);
-    const material = (globe as GlobeMethods & { globeMaterial: () => MeshPhongMaterial }).globeMaterial();
-    material.color?.set("#087d9d");
-    material.emissive?.set("#032b3d");
-    material.emissiveIntensity = 1.25;
-    material.shininess = 18;
   }, []);
+
+  useEffect(() => {
+    if (!webglAvailable || globeMaterial) return;
+    let cancelled = false;
+    void import("three").then(({ Color, MeshPhongMaterial }) => {
+      if (cancelled) return;
+      setGlobeMaterial(
+        new MeshPhongMaterial({
+          color: new Color("#087d9d"),
+          emissive: new Color("#032b3d"),
+          emissiveIntensity: 1.25,
+          shininess: 18,
+        }),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [webglAvailable, globeMaterial]);
 
   const htmlElement = useCallback((obj: object) => {
     const d = obj as NetworkPoint;
@@ -691,12 +708,13 @@ export default function HomePage() {
                 <div className="globeFallbackLine lineB" />
                 <div className="globeFallbackLabel">NETWORK CORE <b>WEBGL OFF</b></div>
               </div>
-            ) : webglAvailable === null || introVisible ? (
+            ) : webglAvailable === null || introVisible || !globeMaterial ? (
               <div className="globeLoading" aria-hidden="true"><span /><b>INITIALIZING NETWORK CORE</b></div>
             ) : (
               <Globe
               ref={globeRef}
               onGlobeReady={configureGlobe}
+              globeMaterial={globeMaterial}
               width={680}
               height={680}
               backgroundColor="rgba(0,0,0,0)"
