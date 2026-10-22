@@ -276,6 +276,11 @@ const arcColor = () => ["rgba(86,239,255,.95)", "rgba(86,239,255,.12)"];
 const pathPointLat = (p: number[]) => p[0];
 const pathPointLng = (p: number[]) => p[1];
 const pathColor = () => "#2fe5ff";
+// Hologram look: countries drawn as glowing dots, the Philippines brightest.
+const hexColor = (d: object) =>
+  (d as { properties?: { n?: string } }).properties?.n === "Philippines" ? "#8ff8ff" : "rgba(53,231,255,0.5)";
+const hexAltitude = (d: object) =>
+  (d as { properties?: { n?: string } }).properties?.n === "Philippines" ? 0.018 : 0.006;
 const htmlVisibility = (el: HTMLElement, visible: boolean) => {
   el.style.opacity = visible ? "1" : "0";
 };
@@ -305,6 +310,8 @@ export default function HomePage() {
   // react-globe.gl takes the globe's material as a prop (its ref has no globeMaterial() method).
   // three is already in the globe's chunk, so loading it here costs nothing extra.
   const [globeMaterial, setGlobeMaterial] = useState<MeshPhongMaterial | null>(null);
+  // Country outlines for the dot map: one small file from /public (about 50 KB gzipped) instead of two earth textures.
+  const [countries, setCountries] = useState<object[]>([]);
 
   useEffect(() => {
     const finishIntro = () => {
@@ -361,20 +368,24 @@ export default function HomePage() {
     controls.enableZoom = false;
     controls.enablePan = false;
     controls.enableRotate = true;
-    globe.pointOfView({ lat: 22, lng: 105, altitude: 1.72 }, 0);
+    globe.pointOfView({ lat: 13, lng: 118, altitude: 1.8 }, 0);
   }, []);
 
   useEffect(() => {
     if (!webglAvailable || globeMaterial) return;
     let cancelled = false;
-    void import("three").then(({ Color, MeshPhongMaterial }) => {
+    const geo = fetch("/geo/countries-110m.json")
+      .then((res) => (res.ok ? res.json() : null))
+      .catch(() => null);
+    void Promise.all([import("three"), geo]).then(([{ Color, MeshPhongMaterial }, data]) => {
       if (cancelled) return;
+      setCountries(Array.isArray(data?.features) ? data.features : []);
       setGlobeMaterial(
         new MeshPhongMaterial({
-          color: new Color("#087d9d"),
-          emissive: new Color("#032b3d"),
-          emissiveIntensity: 1.25,
-          shininess: 18,
+          color: new Color("#04202c"),
+          emissive: new Color("#021620"),
+          emissiveIntensity: 0.9,
+          shininess: 8,
         }),
       );
     });
@@ -386,6 +397,8 @@ export default function HomePage() {
   const htmlElement = useCallback((obj: object) => {
     const d = obj as NetworkPoint;
     const element = document.createElement("div");
+    // Only the PH core shows a full card; the other nodes are small labels that open on hover, so the globe stays visible.
+    if (!isCorePoint(d)) element.className = "geoMini";
     element.innerHTML = `<span class="geoAnchor"></span><span class="geoHalo"></span><span class="geoLine"></span><span class="geoArrow"></span><button class="geoCard" type="button" aria-label="Inspect ${d.label}"><div class="geoIcon"><span class="iconMount"></span></div><div class="geoText"><strong>${d.label}</strong><small>${d.sub}</small><div class="geoMeta"><em><i></i>${d.status}</em><b>${d.metric}</b></div><span class="geoAction">INSPECT NODE ↗</span></div></button>`;
     const card = element.querySelector(".geoCard") as HTMLButtonElement | null;
     if (card) card.addEventListener("click", () => setSelectedNode(d));
@@ -718,13 +731,17 @@ export default function HomePage() {
               width={680}
               height={680}
               backgroundColor="rgba(0,0,0,0)"
-              globeImageUrl="//cdn.jsdelivr.net/npm/three-globe/example/img/earth-dark.jpg"
-              bumpImageUrl="//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png"
               showAtmosphere
               atmosphereColor="#16d9ff"
-              atmosphereAltitude={0.17}
-              showGraticules
-                            pointsData={NETWORK_POINTS}
+              atmosphereAltitude={0.22}
+              hexPolygonsData={countries}
+              hexPolygonResolution={3}
+              hexPolygonMargin={0.42}
+              hexPolygonUseDots
+              hexPolygonColor={hexColor}
+              hexPolygonAltitude={hexAltitude}
+              hexPolygonsTransitionDuration={0}
+              pointsData={NETWORK_POINTS}
               pointLat="lat"
               pointLng="lng"
               pointColor={pointColor}
@@ -3743,6 +3760,28 @@ export default function HomePage() {
           box-shadow: 0 18px 44px rgba(0,0,0,.42), 0 0 30px rgba(26,211,255,.13);
         }
         :global(.geoCard:focus-visible) { outline: 1px solid #55eaff; outline-offset: 4px; }
+        :global(.geoMini .geoLine) { top: -20px; height: 20px; }
+        :global(.geoMini .geoArrow) { top: -23px; }
+        :global(.geoMini .geoCard) {
+          bottom: 20px;
+          min-width: 0;
+          padding: 6px 10px;
+          gap: 7px;
+          border-radius: 999px;
+          backdrop-filter: none;
+          background: rgba(3, 16, 22, 0.88);
+        }
+        :global(.geoMini .geoIcon) { width: 18px; height: 18px; flex: 0 0 18px; }
+        :global(.geoMini .geoCard strong) { font-size: 9px; }
+        :global(.geoMini .geoCard small),
+        :global(.geoMini .geoMeta),
+        :global(.geoMini .geoAction) { display: none; }
+        :global(.geoMini .geoCard:hover),
+        :global(.geoMini .geoCard:focus-visible) { border-radius: 8px; padding: 10px 12px; }
+        :global(.geoMini .geoCard:hover small),
+        :global(.geoMini .geoCard:focus-visible small) { display: block; }
+        :global(.geoMini .geoCard:hover .geoMeta),
+        :global(.geoMini .geoCard:focus-visible .geoMeta) { display: flex; }
         :global(.geoAction) {
           display: inline-block;
           margin-top: 6px;
