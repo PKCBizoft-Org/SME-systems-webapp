@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StaffHeader } from "../components/StaffHeader";
 import { StaffMotion } from "../components/StaffMotion";
 import { PkcLoader } from "../components/PkcLoader";
-import { PendingWithdrawalsBadge } from "../components/PendingWithdrawalsBadge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabaseClient";
@@ -232,7 +231,6 @@ export default function AccountingPage() {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [paymentsError, setPaymentsError] = useState<string | null>(null);
 
-  const [moreOpen, setMoreOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
@@ -536,50 +534,16 @@ export default function AccountingPage() {
             <p>Verify payments and follow up on late accounts.</p>
           </div>
           <div className="hero-btns" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-start" }}>
-            <Link href="/accounting/verification" className="refresh" style={{ textDecoration: "none" }}>
-              ✓ Payment verification
-            </Link>
-            <Link href="/accounting/collections" className="refresh" style={{ textDecoration: "none" }}>
-              ▥ Collections
-            </Link>
-            <div className="more-wrap">
-              <button className="refresh" onClick={() => setMoreOpen((open) => !open)} aria-haspopup="menu" aria-expanded={moreOpen}>
-                ⋯ More <PendingWithdrawalsBadge />
-              </button>
-              {moreOpen && (
-                <>
-                  <div className="more-backdrop" onClick={() => setMoreOpen(false)} />
-                  <div className="more-menu" role="menu">
-                    <button
-                      role="menuitem"
-                      onClick={() => {
-                        setMoreOpen(false);
-                        setBulkResult(null);
-                        setBulkOpen(true);
-                      }}
-                    >
-                      🔔 Remind all overdue ({overdueCustomers})
-                    </button>
-                    <a role="menuitem" href="/accounting/referrals">
-                      ★ Referral payouts
-                    </a>
-                    <a role="menuitem" href="/accounting/reports">
-                      ▤ Reports
-                    </a>
-                    {(staffRoles.includes("admin") || staffRoles.includes("accounting")) && (
-                      <a role="menuitem" href="/accounting/plans">
-                        ₱ Plans &amp; prices
-                      </a>
-                    )}
-                    {staffRoles.includes("admin") && (
-                      <a role="menuitem" href="/accounting/audit">
-                        ⌕ Audit log
-                      </a>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            <button
+              className="refresh"
+              onClick={() => {
+                setBulkResult(null);
+                setBulkOpen(true);
+              }}
+              disabled={overdueCustomers === 0}
+            >
+              🔔 Remind overdue ({overdueCustomers})
+            </button>
             <button className="refresh" onClick={() => void loadAccountingData(true)} disabled={refreshing}>
               <span className={refreshing ? "spin" : ""}>↻</span>{refreshing ? "Refreshing…" : "Refresh data"}
             </button>
@@ -803,11 +767,6 @@ const styles = `
 .hero p { margin:0; color:#738998; font-size:13px; }
 .refresh,.primary,.secondary,.row-open,.quick-filters button { border-radius:9px; cursor:pointer; font-weight:900; }
 .refresh { min-height:42px; padding:0 16px; border:1px solid #16486a; background:#092033; color:#6bc0ff; }
-.more-wrap { position:relative; }
-.more-backdrop { position:fixed; inset:0; z-index:40; }
-.more-menu { position:absolute; right:0; top:48px; z-index:41; min-width:230px; padding:6px; display:grid; gap:2px; border:1px solid #16486a; border-radius:10px; background:#071622; box-shadow:0 14px 34px rgba(0,0,0,.5); }
-.more-menu button,.more-menu :global(a) { display:flex; align-items:center; gap:8px; width:100%; padding:11px 12px; border:0; border-radius:7px; background:transparent; color:#cfe6f7; font-size:13px; font-weight:800; text-align:left; text-decoration:none; cursor:pointer; }
-.more-menu button:hover,.more-menu :global(a:hover) { background:#0e2a40; }
 .refresh span { margin-right:8px; font-size:17px; } .spin { display:inline-block;animation:spin .7s linear infinite; }
 .notice { display:flex;gap:12px;padding:13px 15px;margin-bottom:18px;border:1px solid #4a3515;border-radius:10px;background:#171107;color:#c2a15a; }
 .notice>b { width:23px;height:23px;display:grid;place-items:center;border-radius:7px;background:#2b1d08; } .notice div { display:grid;gap:3px; } .notice strong{font-size:13px}.notice span{font-size:13px;color: #957f53}

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "../../../lib/supabaseClient";
 import { StaffHeader } from "../../components/StaffHeader";
 import { PkcLoader } from "../../components/PkcLoader";
-import { InsightsNav } from "../InsightsNav";
 import { useInsightsAccess } from "../useInsightsAccess";
 import styles from "../../accounting/reports/reports.module.css";
 
@@ -67,7 +66,6 @@ export default function ErrorsPage() {
           </button>
         </section>
 
-        <InsightsNav current="errors" permissions={access.permissions} />
 
         <div className={styles.controls}>
           <label className={styles.field}>

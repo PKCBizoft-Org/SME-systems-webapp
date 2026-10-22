@@ -279,3 +279,115 @@
     width: 100%;
   }
 }
+
+/* Second row: the pages of the group you are in. Not sticky and no blur, so it
+   stays cheap on weak phones; it scrolls sideways when it does not fit. */
+.subnav {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px clamp(14px, 3vw, 34px);
+  border-bottom: 1px solid rgba(76, 232, 255, 0.07);
+  background: rgba(3, 10, 15, 0.55);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  animation: subnavIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.subnav::-webkit-scrollbar {
+  display: none;
+}
+
+.subnavTitle {
+  flex: 0 0 auto;
+  margin-right: 10px;
+  padding-right: 14px;
+  border-right: 1px solid rgba(76, 232, 255, 0.14);
+  color: #4ce8ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.subLink {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  color: #8aa3b3;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.subLink:hover {
+  color: #eaf7ff;
+  background: rgba(76, 232, 255, 0.06);
+}
+
+.subLink:focus-visible {
+  outline: 2px solid #4ce8ff;
+  outline-offset: 2px;
+}
+
+/* underline that marks the page you are on */
+.subActive {
+  color: #eaf7ff;
+  background: rgba(76, 232, 255, 0.08);
+}
+
+.subActive::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: #4ce8ff;
+  box-shadow: 0 0 10px rgba(76, 232, 255, 0.6);
+}
+
+.sessionOn {
+  border-color: rgba(54, 224, 161, 0.6);
+  background: rgba(54, 224, 161, 0.14);
+}
+
+@keyframes subnavIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 760px) {
+  .subnav {
+    padding: 6px 12px;
+  }
+
+  .subnavTitle {
+    display: none;
+  }
+
+  .subLink {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subnav {
+    animation: none;
+  }
+
+  .subLink {
+    transition: none;
+  }
+}

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "../../../lib/supabaseClient";
 import { StaffHeader } from "../../components/StaffHeader";
 import { PkcLoader } from "../../components/PkcLoader";
-import { InsightsNav } from "../InsightsNav";
 import { useInsightsAccess } from "../useInsightsAccess";
 import styles from "../../accounting/reports/reports.module.css";
 
@@ -113,7 +112,6 @@ export default function OutagesPage() {
           </div>
         </section>
 
-        <InsightsNav current="outages" permissions={access.permissions} />
 
         {error && (
           <div className={styles.notice} role="alert">
