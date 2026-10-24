@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatPeso } from "@/lib/format";
+import { planLabel } from "@/lib/plans";
 import { StaffHeader } from "../../components/StaffHeader";
 import { PkcLoader } from "../../components/PkcLoader";
 import styles from "../verification/verification.module.css";
@@ -123,13 +124,13 @@ export default function PlansPage() {
     if (!Number.isFinite(amount) || amount <= 0) return setMessage({ kind: "error", text: "Enter a price above zero." });
     if (editing !== "new" && !active && editing.active && editing.customers > 0) {
       const ok = window.confirm(
-        `${editing.customers} customer(s) are on ${editing.plan_name}. Turning it off only stops new customers from choosing it; the ${editing.customers} customer(s) on it keep their plan and keep being billed. Continue?`,
+        `${editing.customers} customer(s) are on ${planLabel(editing.plan_name)}. Turning it off only stops new customers from choosing it; the ${editing.customers} customer(s) on it keep their plan and keep being billed. Continue?`,
       );
       if (!ok) return;
     }
     if (editing !== "new" && amount !== editing.price && editing.customers > 0) {
       const ok = window.confirm(
-        `${editing.plan_name} costs ${formatPeso(editing.price)} today. The new price ${formatPeso(amount)} applies to NEW bills and new applications for its ${editing.customers} customer(s); bills already issued do not change. Continue?`,
+        `${planLabel(editing.plan_name)} costs ${formatPeso(editing.price)} today. The new price ${formatPeso(amount)} applies to NEW bills and new applications for its ${editing.customers} customer(s); bills already issued do not change. Continue?`,
       );
       if (!ok) return;
     }
@@ -215,8 +216,8 @@ export default function PlansPage() {
             <article key={plan.id} className={styles.card}>
               <header>
                 <div>
-                  <strong>{plan.plan_name}</strong>
-                  <small>{plan.speed || "No speed set"}</small>
+                  <strong>{planLabel(plan.plan_name)}</strong>
+                  <small>Code {plan.plan_name}</small>
                 </div>
                 <span className={`${styles.badge} ${plan.active ? styles.verified : styles.rejected}`}>{plan.active ? "On sale" : "Off"}</span>
               </header>
@@ -268,7 +269,7 @@ export default function PlansPage() {
       {editing && (
         <div className={styles.modalBackdrop} role="presentation" onClick={() => !busy && setEditing(null)}>
           <div className={styles.modal} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <h2>{editing === "new" ? "Add a plan" : `Edit ${editing.plan_name}`}</h2>
+            <h2>{editing === "new" ? "Add a plan" : `Edit ${planLabel(editing.plan_name)}`}</h2>
             <input
               className={styles.noteBox}
               placeholder="Plan name, e.g. G1_P1250"

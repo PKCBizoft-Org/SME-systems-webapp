@@ -873,7 +873,7 @@ export default function ClientsPage() {
                       key={plan}
                       value={plan}
                     >
-                      {plan}
+                      {planLabel(plan)}
                     </option>
                   ))}
                 </select>

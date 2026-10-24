@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
+import { planLabel } from "@/lib/plans";
 import { StaffHeader } from "../../components/StaffHeader";
 import { notifyBadgesChanged } from "../../components/LiveBadge";
 import { PkcLoader } from "../../components/PkcLoader";
@@ -353,7 +354,7 @@ export default function PaymentVerificationPage() {
     } else if (expected > 0 && claimed !== expected) {
       setMessage({
         kind: "error",
-        text: `Amount mismatch: the customer entered ${formatPeso(claimed)} but ${request?.requested_plan || "the plan"} costs ${formatPeso(expected)}. Reject it and ask them to pay the exact amount.`,
+        text: `Amount mismatch: the customer entered ${formatPeso(claimed)} but ${planLabel(request?.requested_plan) || "the plan"} costs ${formatPeso(expected)}. Reject it and ask them to pay the exact amount.`,
       });
       return;
     }
@@ -546,7 +547,7 @@ export default function PaymentVerificationPage() {
                     ) : (
                       <div>
                         <dt>Plan</dt>
-                        <dd>{request?.requested_plan || "—"}</dd>
+                        <dd>{planLabel(request?.requested_plan) || "—"}</dd>
                       </div>
                     )}
                     <div>
