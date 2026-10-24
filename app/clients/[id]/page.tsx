@@ -177,6 +177,14 @@ const statusClass = (value?: string | null) => {
   return "warn";
 };
 
+type ClientTab = "details" | "location" | "field" | "materials" | "billing" | "activity";
+
+const SECTION_TAB: Record<string, ClientTab> = {
+  "location-section": "location",
+  "photos-section": "field",
+  "repairs-section": "field",
+};
+
 export default function ClientDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -191,6 +199,7 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [tab, setTab] = useState<ClientTab>("details");
   const [installationSaveStatus, setInstallationSaveStatus] =
     useState<SaveStatus>("idle");
   const [accountSaveStatus, setAccountSaveStatus] =
@@ -1150,7 +1159,12 @@ export default function ClientDetailPage() {
   });
 
   const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const target = SECTION_TAB[id];
+    if (target) setTab(target);
+    // wait one frame so the tab's content is on the page before scrolling to it
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const copyCoordinates = async () => {
@@ -1271,7 +1285,33 @@ export default function ClientDetailPage() {
           </div>
         </section>
 
-        <section className="contentGrid">
+        <nav className="recordTabs" role="tablist" aria-label="Customer record sections">
+          {(
+            [
+              ["details", "Details", 0],
+              ["location", "Location", 0],
+              ["field", "Photos & repairs", sitePhotos.length + repairs.length],
+              ["materials", "Materials", 0],
+              ["billing", "Billing", billing.length + payments.length],
+              ["activity", "Activity", auditLogs.length],
+            ] as [ClientTab, string, number][]
+          ).map(([key, label, count]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              className={`recordTab${tab === key ? " active" : ""}`}
+              onClick={() => setTab(key)}
+            >
+              {label}
+              {count > 0 && <i>{count}</i>}
+            </button>
+          ))}
+        </nav>
+
+        {tab === "details" && (
+        <section className="contentGrid tabPane">
           <article className="panel">
             <PanelHeader
               index="01"
@@ -1357,8 +1397,10 @@ export default function ClientDetailPage() {
             </div>
           </article>
         </section>
+        )}
 
-        <section id="location-section" className="panel locationPanel">
+        {tab === "location" && (
+        <section id="location-section" className="panel locationPanel tabPane">
           <PanelHeader
             index="03"
             title="Service Location"
@@ -1533,7 +1575,10 @@ export default function ClientDetailPage() {
             </form>
           </div>
         </section>
+        )}
 
+        {tab === "field" && (
+        <div className="tabPane">
         <section id="photos-section" className="panel">
           <PanelHeader
             index="04"
@@ -1790,10 +1835,17 @@ export default function ClientDetailPage() {
             ))}
           </div>
         </section>
+        </div>
+        )}
 
-        <ClientMaterials clientId={id} />
+        {tab === "materials" && (
+          <div className="tabPane">
+            <ClientMaterials clientId={id} />
+          </div>
+        )}
 
-        <section className="contentGrid lowerGrid">
+        {tab === "billing" && (
+        <section className="contentGrid lowerGrid tabPane">
           <article className="panel tablePanel">
             <PanelHeader
               index="06"
@@ -1839,8 +1891,10 @@ export default function ClientDetailPage() {
             />
           </article>
         </section>
+        )}
 
-        <section className="panel auditPanel">
+        {tab === "activity" && (
+        <section className="panel auditPanel tabPane">
           <PanelHeader
             index="08"
             title="Activity Log"
@@ -1875,6 +1929,7 @@ export default function ClientDetailPage() {
             </div>
           )}
         </section>
+        )}
         {pendingChange && (
           <div className="confirmOverlay" role="presentation">
             <div
@@ -2541,5 +2596,7 @@ const styles = `
 @media(max-width:650px){.lightbox{padding:10px}.lightboxPanel{width:100%;height:94vh;padding:8px}.lightboxToolbar{align-items:flex-start;flex-direction:column}.lightboxControls{width:100%;justify-content:flex-end}.tableWrap{max-height:300px}}
 
 /* Tablet + phone: fewer columns, more air, readable small text. Must stay last so it beats the 6-column stats rule above. */
+/* ---- record tabs ---- */
+.recordTabs{position:sticky;top:0;z-index:9;display:flex;gap:4px;margin:12px 0;padding:5px;border:1px solid rgba(123,219,233,.11);border-radius:12px;background:rgba(3,12,16,.92);backdrop-filter:blur(12px);overflow-x:auto;scrollbar-width:none}.recordTabs::-webkit-scrollbar{display:none}.recordTab{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:0;border-radius:8px;background:transparent;color:#7fa3aa;font:inherit;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:background .15s ease,color .15s ease}.recordTab:hover{color:#e5fbfd;background:rgba(77,214,233,.05)}.recordTab.active{color:#e9fdff;background:linear-gradient(135deg,#123c46,#0b232a);box-shadow:inset 0 0 0 1px rgba(79,218,237,.28)}.recordTab:focus-visible{outline:2px solid #59dceb;outline-offset:1px}.recordTab i{font-style:normal;min-width:18px;padding:2px 6px;border-radius:999px;background:rgba(77,214,233,.1);color:#70d9e7;font-size:9px;text-align:center}.tabPane{animation:tabIn .22s ease both}@keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){.tabPane{animation:none}.recordTab{transition:none}}
 @media(max-width:1000px){.pageShell{width:min(100% - 32px,1440px)}.statsGrid{grid-template-columns:repeat(3,1fr)}.repairFormGrid{grid-template-columns:1fr 1fr}.detailGrid{gap:0 20px}.heroCard{padding:26px 24px}.panel{padding:20px}.quickAction{padding:10px 12px;font-size:11px}.healthBadge,.healthReason,.locationMetric,.locationPending{font-size:11px}}
 @media(max-width:650px){.statsGrid{grid-template-columns:1fr 1fr}.repairFormGrid{grid-template-columns:1fr}.quickAction{flex:1 1 calc(50% - 7px);justify-content:center}.stat strong{white-space:normal}}`;
