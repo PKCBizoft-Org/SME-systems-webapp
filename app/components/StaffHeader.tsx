@@ -45,6 +45,7 @@ const GROUPS: { key: GroupKey; label: string; roles: string[]; badge?: Item["bad
     label: "Field work",
     roles: ["admin", "accounting", "inventory"],
     items: [
+      { label: "Mission control", href: "/insights/map", permission: "dispatch" },
       { label: "Dispatch", href: "/insights/dispatch", permission: "dispatch" },
       { label: "Tickets", href: "/insights/tickets", permission: "tickets" },
       { label: "Outages", href: "/insights/outages", permission: "dispatch" },
