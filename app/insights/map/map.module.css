@@ -264,6 +264,11 @@
   }
 }
 
+/* OpenStreetMap tiles are light; flip them to a dark blue night map. */
+.mapWrap :global(.leaflet-tile-pane) {
+  filter: invert(1) hue-rotate(185deg) brightness(0.85) contrast(0.9) saturate(0.45);
+}
+
 /* Dark tooltip to match the map. */
 .mapWrap :global(.leaflet-tooltip) {
   background: #0b1728;
