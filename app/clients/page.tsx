@@ -148,8 +148,6 @@ export default function ClientsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [bulkStatus, setBulkStatus] = useState('')
-  const [bulkSaving, setBulkSaving] = useState(false)
   const [bulkMessage, setBulkMessage] = useState('')
 
   const supabase = useMemo(() => createClient(), [])
@@ -543,68 +541,6 @@ export default function ClientsPage() {
     link.click()
     link.remove()
     URL.revokeObjectURL(url)
-  }
-
-  const applyBulkStatus = async () => {
-    if (!bulkStatus || selectedIds.length === 0) return
-
-    setBulkSaving(true)
-    setBulkMessage('')
-
-    const affectedIds = [...selectedIds]
-    const affectedCount = affectedIds.length
-
-    try {
-      const { error: updateError } = await supabase
-        .from('clients')
-        .update({ account_status: bulkStatus })
-        .in('id', affectedIds)
-
-      if (updateError) throw updateError
-
-      // Mirror the audit trail that every other account_status change
-      // already gets from the client detail page — without this, bulk
-      // updates from this list silently bypass the activity log.
-      const { data: userData } = await supabase.auth.getUser()
-      const actorEmail = userData.user?.email || null
-
-      if (actorEmail) {
-        const previousValues = new Map(
-          clients
-            .filter((client) => affectedIds.includes(client.id))
-            .map((client) => [client.id, client.account_status]),
-        )
-
-        await supabase.from('audit_log').insert(
-          affectedIds.map((clientId) => ({
-            client_id: clientId,
-            changed_by_email: actorEmail,
-            field_name: 'account_status',
-            old_value: previousValues.get(clientId) ?? null,
-            new_value: bulkStatus,
-            changed_at: new Date().toISOString(),
-          })),
-        )
-      }
-
-      setClients((current) =>
-        current.map((client) =>
-          affectedIds.includes(client.id)
-            ? { ...client, account_status: bulkStatus }
-            : client,
-        ),
-      )
-      setSelectedIds([])
-      setBulkStatus('')
-      setBulkMessage(`${affectedCount} client${affectedCount === 1 ? '' : 's'} updated.`)
-    } catch (err) {
-      console.error('Bulk client update error:', err)
-      setBulkMessage(
-        err instanceof Error ? err.message : 'Unable to update selected clients.',
-      )
-    } finally {
-      setBulkSaving(false)
-    }
   }
 
   useEffect(() => {
@@ -1015,26 +951,9 @@ export default function ClientsPage() {
           <section className="bulkPanel">
             <div>
               <strong>{selectedIds.length} selected</strong>
-              <span>Select clients from the table to apply a bulk action.</span>
+              <span>Select clients from the table to export them. Account status updates automatically from installation and billing.</span>
             </div>
             <div className="bulkActions">
-              <select
-                value={bulkStatus}
-                onChange={(event) => setBulkStatus(event.target.value)}
-              >
-                <option value="">Set account status...</option>
-                {accountStatuses.map((status) => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="bulkApplyButton"
-                onClick={applyBulkStatus}
-                disabled={!bulkStatus || bulkSaving}
-              >
-                {bulkSaving ? 'Updating...' : 'Apply'}
-              </button>
               <button
                 type="button"
                 className="bulkExportButton"

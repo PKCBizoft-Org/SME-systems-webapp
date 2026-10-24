@@ -30,6 +30,7 @@ type Client = {
   area: string;
   installation_status: string;
   account_status: string;
+  disconnection_flag?: boolean | null;
   account_id: string;
   mobile_number: string;
   pppoe_name: string;
@@ -143,13 +144,31 @@ type PendingChange = {
 };
 
 const BUCKET = "client-media";
-const INSTALLATION_STATUS_OPTIONS = [
-  "Scheduled",
-  "Completed",
-  "Cancelled",
-  "Terminated",
-];
-const ACCOUNT_STATUS_OPTIONS = ["Paid", "Due", "Overdue"];
+// Service status is never edited by hand. Installation moves on its own:
+// Pending (signed up) -> For installation (fee verified) -> Installed
+// (technician finished) -> Terminated (unpaid 30 days after disconnection).
+// Billing standing is read from the bills.
+type Readout = { value: string; tone: "good" | "warn" | "bad"; note: string };
+
+function installationReadout(status: string | null | undefined): Readout {
+  const s = (status || "").toLowerCase();
+  if (["installed", "completed", "done"].includes(s)) return { value: "Installed", tone: "good", note: "Set when the technician finished the installation job" };
+  if (s === "for installation") return { value: "For installation", tone: "warn", note: "Set when Accounting verified the installation fee" };
+  if (s === "terminated") return { value: "Terminated", tone: "bad", note: "Set by billing: still unpaid 30 days after disconnection" };
+  return { value: status || "Pending", tone: "warn", note: "Waiting for the customer's plan application and installation fee" };
+}
+
+function standingReadout(client: { installation_status: string; disconnection_flag?: boolean | null }, bills: Billing[]): Readout {
+  const install = (client.installation_status || "").toLowerCase();
+  if (install === "terminated") return { value: "Terminated", tone: "bad", note: "Service ended for non-payment" };
+  if (!["installed", "completed", "done"].includes(install)) return { value: "Not billed yet", tone: "warn", note: "Monthly billing starts after installation" };
+  if (client.disconnection_flag) return { value: "For disconnection", tone: "bad", note: "A bill is still unpaid after the grace period" };
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
+  const open = bills.filter((b) => !/^(paid|cancelled|void|waived)/i.test(b.status || ""));
+  if (open.some((b) => /overdue/i.test(b.status) || (b.due_date && b.due_date < today))) return { value: "Overdue", tone: "bad", note: "A bill is past its due date" };
+  if (open.length > 0) return { value: "Bill due", tone: "warn", note: `${open.length} unpaid bill${open.length === 1 ? "" : "s"}, not yet past due` };
+  return { value: "Paid up", tone: "good", note: "No unpaid bills" };
+}
 const PHOTO_TYPES = [
   {
     key: "house" as const,
@@ -1377,23 +1396,11 @@ export default function ClientDetailPage() {
             <PanelHeader
               index="02"
               title="Service Status"
-              subtitle="Operational account controls"
+              subtitle="Updated automatically from jobs, payments and bills"
             />
             <div className="controlStack">
-              <StatusControl
-                label="Installation"
-                value={client.installation_status}
-                options={INSTALLATION_STATUS_OPTIONS}
-                onChange={(v) => saveClientField("installation_status", v, "Installation Status")}
-                saveStatus={installationSaveStatus}
-              />
-              <StatusControl
-                label="Account Standing"
-                value={client.account_status}
-                options={ACCOUNT_STATUS_OPTIONS}
-                onChange={(v) => saveClientField("account_status", v, "Account Standing")}
-                saveStatus={accountSaveStatus}
-              />
+              <StatusReadout label="Installation" readout={installationReadout(client.installation_status)} />
+              <StatusReadout label="Billing standing" readout={standingReadout(client, billing)} />
             </div>
           </article>
         </section>
@@ -2371,40 +2378,15 @@ function EditableSelect({
   );
 }
 
-function StatusControl({
-  label,
-  value,
-  options,
-  onChange,
-  saveStatus,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-  saveStatus: SaveStatus;
-}) {
+function StatusReadout({ label, readout }: { label: string; readout: Readout }) {
   return (
     <div className="statusControl">
       <div>
         <span>{label}</span>
-        <small>Changes save automatically</small>
+        <small>{readout.note}</small>
       </div>
       <div className="statusRight">
-        <select value={value || ""} onChange={(e) => onChange(e.target.value)}>
-          {options.map((o) => (
-            <option key={o}>{o}</option>
-          ))}
-        </select>
-        {saveStatus !== "idle" && (
-          <em className={saveStatus}>
-            {saveStatus === "saving"
-              ? "Saving…"
-              : saveStatus === "saved"
-                ? "Saved"
-                : "Failed"}
-          </em>
-        )}
+        <strong className={readout.tone}>{readout.value}</strong>
       </div>
     </div>
   );
