@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 // The logged-in area is data-heavy, so it only gets the progress bar.
 // No cursor glow, no particles, no reveal animations.
-const CALM_ROUTES = ["/clients", "/accounting", "/users", "/set-password"];
+const CALM_ROUTES = ["/clients", "/accounting", "/users", "/set-password", "/insights", "/inventory", "/ratings"];
 
 // Pages that get scroll-reveal. The home and who-we-are pages already have
 // their own reveal logic, so they are deliberately not listed.

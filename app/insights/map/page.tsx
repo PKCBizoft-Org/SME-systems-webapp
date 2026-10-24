@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { CircleMarker, LayerGroup, Map as LeafletMap, Marker } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { createClient } from "../../../lib/supabaseClient";
@@ -18,6 +19,7 @@ type Customer = {
   area: string | null;
   installation: string | null;
   account: string | null;
+  applied: boolean;
   in_outage: boolean;
 };
 type Outage = { id: string; title: string; areas: string[]; created_at: string };
@@ -30,13 +32,13 @@ const supabase = createClient();
 const REFRESH_MS = 15000;
 const PH_CENTER: [number, number] = [12.8, 121.8];
 
-type Status = "outage" | "online" | "pending" | "offline";
+type Status = "outage" | "online" | "pending" | "noplan" | "offline";
 
 function statusOf(c: Customer): Status {
   if (c.in_outage) return "outage";
   const install = (c.installation || "").toLowerCase();
   const account = (c.account || "").toLowerCase();
-  if (!["installed", "completed", "done"].includes(install)) return "pending";
+  if (!["installed", "completed", "done"].includes(install)) return c.applied ? "pending" : "noplan";
   if (account && account !== "active") return "offline";
   return "online";
 }
@@ -44,6 +46,7 @@ function statusOf(c: Customer): Status {
 const COLORS: Record<Status, string> = {
   online: "#00e5ff",
   pending: "#ffc857",
+  noplan: "#b48cff",
   offline: "#5b6b7c",
   outage: "#ff4d6d",
 };
@@ -72,6 +75,7 @@ function playAlarm(ctx: AudioContext) {
 
 export default function MissionControlPage() {
   const access = useInsightsAccess("dispatch");
+  const router = useRouter();
   const mapEl = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layerRef = useRef<LayerGroup | null>(null);
@@ -208,7 +212,7 @@ export default function MissionControlPage() {
           if (el) el.classList.toggle(styles.dotOutage, status === "outage");
         } else {
           const marker = L.circleMarker([c.lat, c.lng], options).bindTooltip(label, { direction: "top" }).addTo(layer);
-          marker.on("click", () => window.open(`/clients/${c.id}`, "_blank"));
+          marker.on("click", () => router.push(`/clients/${c.id}`));
           markersRef.current.set(c.id, marker);
         }
       }
@@ -227,7 +231,7 @@ export default function MissionControlPage() {
     return () => {
       cancelled = true;
     };
-  }, [data, mapReady]);
+  }, [data, mapReady, router]);
 
   // Technicians on the way: a moving van icon per started job.
   useEffect(() => {
@@ -250,7 +254,7 @@ export default function MissionControlPage() {
         } else {
           const icon = L.divIcon({ className: styles.techIcon, html: "🚐", iconSize: [30, 30], iconAnchor: [15, 15] });
           const marker = L.marker([t.lat, t.lng], { icon, zIndexOffset: 1000 }).bindTooltip(label, { direction: "top" }).addTo(layer);
-          marker.on("click", () => window.open(`/clients/${t.customer_id}`, "_blank"));
+          marker.on("click", () => router.push(`/clients/${t.customer_id}`));
           techMarkersRef.current.set(t.repair_id, marker);
         }
       }
@@ -264,7 +268,7 @@ export default function MissionControlPage() {
     return () => {
       cancelled = true;
     };
-  }, [techs, mapReady]);
+  }, [techs, mapReady, router]);
 
   // Live refresh.
   useEffect(() => {
@@ -291,7 +295,7 @@ export default function MissionControlPage() {
   if (access.checking) return <PkcLoader label="Opening mission control" steps={["Verifying your role", "Loading the map"]} />;
   if (!access.authorized) return null;
 
-  const counts = { online: 0, pending: 0, offline: 0, outage: 0 };
+  const counts = { online: 0, pending: 0, noplan: 0, offline: 0, outage: 0 };
   for (const c of data?.customers || []) counts[statusOf(c)]++;
   const outages = data?.outages || [];
 
@@ -311,6 +315,7 @@ export default function MissionControlPage() {
           <div className={styles.stats}>
             <Stat label="Online" value={counts.online} color={COLORS.online} />
             <Stat label="Pending install" value={counts.pending} color={COLORS.pending} />
+            <Stat label="No plan yet" value={counts.noplan} color={COLORS.noplan} />
             <Stat label="Inactive" value={counts.offline} color={COLORS.offline} />
             <Stat label="In outage" value={counts.outage} color={COLORS.outage} />
             <Stat label="Techs on the way" value={techs.length} color="#36e0a1" />
@@ -378,7 +383,13 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
 }
 
 function statusText(status: Status) {
-  return { online: "Online", pending: "Waiting for installation", offline: "Inactive account", outage: "Affected by outage" }[status];
+  return {
+    online: "Online",
+    pending: "Applied, waiting for installation",
+    noplan: "Signed up, no plan application yet",
+    offline: "Inactive account",
+    outage: "Affected by outage",
+  }[status];
 }
 
 function escapeHtml(text: string) {
