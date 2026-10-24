@@ -79,6 +79,7 @@ const GROUPS: { key: GroupKey; label: string; roles: string[]; badge?: Item["bad
     roles: ["admin", "accounting"],
     items: [
       { label: "Revenue analytics", href: "/insights/analytics", permission: "analytics" },
+      { label: "Expansion planner", href: "/insights/expansion", adminOnly: true },
       { label: "App errors", href: "/insights/errors", permission: "audit" },
       { label: "Audit log", href: "/insights/audit", permission: "audit" },
     ],

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CircleMarker, LayerGroup, Map as LeafletMap } from "leaflet";
+import type { CircleMarker, LayerGroup, Map as LeafletMap, Marker } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatPeso } from "@/lib/format";
@@ -23,6 +23,7 @@ type Customer = {
 type Outage = { id: string; title: string; areas: string[]; created_at: string };
 type Payment = { id: string; client_id: string | null; amount: number };
 type MapData = { customers: Customer[]; unpinned: number; outages: Outage[]; payments: Payment[] };
+type Tech = { repair_id: string; technician: string; customer: string | null; customer_id: string; job_type: string | null; lat: number; lng: number; updated_at: string };
 type Toast = { id: string; text: string; kind: "paid" | "outage" };
 
 const supabase = createClient();
@@ -75,6 +76,8 @@ export default function MissionControlPage() {
   const mapRef = useRef<LeafletMap | null>(null);
   const layerRef = useRef<LayerGroup | null>(null);
   const markersRef = useRef<Map<string, CircleMarker>>(new Map());
+  const techLayerRef = useRef<LayerGroup | null>(null);
+  const techMarkersRef = useRef<Map<string, Marker>>(new Map());
   const seenPayments = useRef<Set<string> | null>(null);
   const seenOutages = useRef<Set<string> | null>(null);
   const fitted = useRef(false);
@@ -82,6 +85,7 @@ export default function MissionControlPage() {
   const soundOnRef = useRef(false);
 
   const [data, setData] = useState<MapData | null>(null);
+  const [techs, setTechs] = useState<Tech[]>([]);
   const [error, setError] = useState("");
   const [soundOn, setSoundOn] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -105,6 +109,7 @@ export default function MissionControlPage() {
     if (!access.authorized || !mapEl.current || mapRef.current) return;
     let cancelled = false;
     const markers = markersRef.current;
+    const techMarkers = techMarkersRef.current;
     void import("leaflet").then((L) => {
       if (cancelled || !mapEl.current) return;
       const map = L.map(mapEl.current, { zoomControl: true, attributionControl: true }).setView(PH_CENTER, 6);
@@ -114,6 +119,7 @@ export default function MissionControlPage() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
       }).addTo(map);
       layerRef.current = L.layerGroup().addTo(map);
+      techLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       setMapReady(true);
     });
@@ -122,13 +128,19 @@ export default function MissionControlPage() {
       mapRef.current?.remove();
       mapRef.current = null;
       layerRef.current = null;
+      techLayerRef.current = null;
+      techMarkers.clear();
       markers.clear();
       fitted.current = false;
     };
   }, [access.authorized]);
 
   const load = useCallback(async () => {
-    const { data: result, error: rpcError } = await supabase.rpc("mission_control_map");
+    const [{ data: result, error: rpcError }, techResult] = await Promise.all([
+      supabase.rpc("mission_control_map"),
+      supabase.rpc("mission_control_technicians"),
+    ]);
+    if (!techResult.error) setTechs((techResult.data || []) as Tech[]);
     if (rpcError) {
       setError(rpcError.message);
       return;
@@ -218,6 +230,43 @@ export default function MissionControlPage() {
     };
   }, [data, mapReady]);
 
+  // Technicians on the way: a moving van icon per started job.
+  useEffect(() => {
+    if (!mapRef.current || !techLayerRef.current) return;
+    let cancelled = false;
+    void import("leaflet").then((L) => {
+      const layer = techLayerRef.current;
+      if (cancelled || !layer) return;
+      const keep = new Set<string>();
+      for (const t of techs) {
+        keep.add(t.repair_id);
+        const mins = Math.max(0, Math.round((Date.now() - new Date(t.updated_at).getTime()) / 60000));
+        const label = `<strong>${escapeHtml(t.technician)}</strong> on the way<br/>to ${escapeHtml(t.customer || "a customer")}${
+          t.job_type ? ` (${escapeHtml(t.job_type)})` : ""
+        }<br/>updated ${mins === 0 ? "just now" : `${mins} min ago`}`;
+        const existing = techMarkersRef.current.get(t.repair_id);
+        if (existing) {
+          existing.setLatLng([t.lat, t.lng]);
+          existing.setTooltipContent(label);
+        } else {
+          const icon = L.divIcon({ className: styles.techIcon, html: "🚐", iconSize: [30, 30], iconAnchor: [15, 15] });
+          const marker = L.marker([t.lat, t.lng], { icon, zIndexOffset: 1000 }).bindTooltip(label, { direction: "top" }).addTo(layer);
+          marker.on("click", () => window.open(`/clients/${t.customer_id}`, "_blank"));
+          techMarkersRef.current.set(t.repair_id, marker);
+        }
+      }
+      for (const [id, marker] of techMarkersRef.current) {
+        if (!keep.has(id)) {
+          layer.removeLayer(marker);
+          techMarkersRef.current.delete(id);
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [techs, mapReady]);
+
   // Live refresh.
   useEffect(() => {
     if (!access.authorized) return;
@@ -265,6 +314,7 @@ export default function MissionControlPage() {
             <Stat label="Pending install" value={counts.pending} color={COLORS.pending} />
             <Stat label="Inactive" value={counts.offline} color={COLORS.offline} />
             <Stat label="In outage" value={counts.outage} color={COLORS.outage} />
+            <Stat label="Techs on the way" value={techs.length} color="#36e0a1" />
           </div>
 
           <button className={`${styles.soundBtn} ${soundOn ? styles.soundOn : ""}`} onClick={toggleSound}>

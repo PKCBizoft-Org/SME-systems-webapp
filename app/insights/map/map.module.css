@@ -214,6 +214,18 @@
   transform-origin: center;
 }
 
+.techIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(54, 224, 161, 0.18);
+  border: 2px solid #36e0a1;
+  box-shadow: 0 0 14px rgba(54, 224, 161, 0.7);
+  font-size: 16px;
+  transition: transform 0.3s;
+}
+
 @keyframes blink {
   50% {
     opacity: 0.25;
