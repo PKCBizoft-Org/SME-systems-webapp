@@ -3,7 +3,7 @@ import { applyMigrations } from './migrate.mjs'
 import { ID, seed, addBill } from './seed.mjs'
 import { t, rejects, eq, ok, section, summary } from './kit.mjs'
 
-const MIGRATIONS = (process.env.MIGRATIONS || '20261009220000_bill_payments.sql,20261010110000_cancel_bill_payment.sql,20261025090000_pay_all_bills_one_receipt.sql').split(',')
+const MIGRATIONS = (process.env.MIGRATIONS || '20261009220000_bill_payments.sql,20261010110000_cancel_bill_payment.sql,20261025090000_pay_all_bills_one_receipt.sql,20261025140000_payment_group_server_only.sql').split(',')
 
 const { db, failures } = await createDb()
 if (failures.length > 1) console.log('replica load warnings:', failures.length)
@@ -99,7 +99,26 @@ await t('rejecting one part rejects all', async () => {
   await db.query(`delete from public.payment_submissions where billing_id in ($1, $2)`, [B5, B6])
 })
 
-section('4. Single bill payments still work')
+section('4. Only the server can group payments')
+await t('a direct insert with a made-up group_id is refused', async () => {
+  const B8 = await addBill(db, { billId: 'SAM-00008', amount: 90, dueOffset: 11, periodStartOffset: -21 })
+  await rejects(
+    () =>
+      as(
+        ID.u1,
+        `insert into public.payment_submissions (group_id, client_id, user_id, billing_id, amount_claimed, payment_method, reference_number, status)
+         values (gen_random_uuid(), $1, $2, $3, 90, 'GCash', 'GC-FORGED', 'Pending')`,
+        [ID.c1, ID.u1, B8],
+      ),
+    /only be grouped|row-level security|permission denied/,
+  )
+  await rejects(
+    () => db.query(`update public.payment_submissions set group_id = gen_random_uuid() where id = (select id from public.payment_submissions limit 1)`),
+    /only be grouped|cannot be taken out/,
+  )
+})
+
+section('5. Single bill payments still work')
 await t('submit_bill_payment + verify are unchanged for one bill', async () => {
   const B7 = await addBill(db, { billId: 'SAM-00007', amount: 120, dueOffset: 10, periodStartOffset: -22 })
   const id = (await as(ID.u1, `select public.submit_bill_payment($1, 120, 'GCash', 'GC-ONE', null, '09170000001', null, $2) id`, [
