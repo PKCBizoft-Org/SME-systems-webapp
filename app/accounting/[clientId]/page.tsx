@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
-import { INSTALL_FEE, planLabel } from "@/lib/plans";
+import { INSTALL_FEE, planLabel, usePlanCatalog } from "@/lib/plans";
 import { BILL_TYPES_BY_HAND, billingDayFor, billingDayText, nextBillDate, SCHEDULE_TEXT } from "@/lib/billingSchedule";
 import { StaffHeader } from "../../components/StaffHeader";
 import { StaffMotion } from "../../components/StaffMotion";
@@ -204,6 +204,7 @@ function Detail({
 }
 
 export default function AccountingCustomerPage() {
+  usePlanCatalog();
   const params = useParams();
   const router = useRouter();
   const clientId = Array.isArray(params.clientId)

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatPeso } from "@/lib/format";
-import { planLabel } from "@/lib/plans";
+import { planLabel, usePlanCatalog } from "@/lib/plans";
 import { StaffHeader } from "../../components/StaffHeader";
 import { PkcLoader } from "../../components/PkcLoader";
 import styles from "../verification/verification.module.css";
@@ -15,6 +15,7 @@ type Plan = { id: string; plan_name: string; price: number; speed: string | null
 const supabase = createClient();
 
 export default function PlansPage() {
+  usePlanCatalog();
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);

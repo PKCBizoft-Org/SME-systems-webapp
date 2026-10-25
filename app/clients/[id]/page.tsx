@@ -15,7 +15,7 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { ClientMaterials } from "../../components/ClientMaterials";
 import { formatDate, formatPeso } from "@/lib/format";
-import { planLabel } from "@/lib/plans";
+import { planLabel, usePlanCatalog } from "@/lib/plans";
 import { openJobReport, type ReportCostLine } from "@/lib/jobReport";
 
 // Leaflet is loaded from a CDN at runtime and ships no bundled types.
@@ -205,6 +205,7 @@ const SECTION_TAB: Record<string, ClientTab> = {
 };
 
 export default function ClientDetailPage() {
+  usePlanCatalog();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;

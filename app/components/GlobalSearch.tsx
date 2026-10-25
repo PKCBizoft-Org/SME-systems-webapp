@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { formatPeso } from "@/lib/format";
-import { planLabel } from "@/lib/plans";
+import { planLabel, usePlanCatalog } from "@/lib/plans";
 import styles from "./global-search.module.css";
 
 type Hit = { key: string; group: string; title: string; detail: string; href: string };
@@ -14,6 +14,7 @@ const clean = (text: string) => text.replace(/[,()%*\\"']/g, " ").trim();
 
 // One search box for every staff page: customers, payments and jobs.
 export function GlobalSearch({ roles }: { roles: string[] }) {
+  usePlanCatalog();
   const supabase = useMemo(() => createClient(), []);
   const [text, setText] = useState("");
   const [hits, setHits] = useState<Hit[]>([]);

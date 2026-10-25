@@ -27,6 +27,9 @@ type Message = {
   sender_role: "customer" | "technician" | "staff";
   sender_name: string | null;
   body: string;
+  photo_path?: string | null;
+  /** Signed link to view the photo, when the message has one. */
+  photo_url?: string;
   created_at: string;
 };
 
@@ -68,14 +71,24 @@ export default function TicketsPage() {
   const loadThread = useCallback(async (id: string) => {
     const { data, error: loadError } = await supabase
       .from("ticket_messages")
-      .select("id, sender_role, sender_name, body, created_at")
+      .select("id, sender_role, sender_name, body, photo_path, created_at")
       .eq("request_id", id)
       .order("created_at", { ascending: true })
       .limit(300);
     if (loadError) setThreadError(loadError.message);
     else {
       setThreadError("");
-      setThread((data || []) as Message[]);
+      const rows = (data || []) as Message[];
+      // Photos sent from the app live in the private chat-photos bucket.
+      const paths = rows.map((m) => m.photo_path).filter((p): p is string => !!p);
+      if (paths.length > 0) {
+        const { data: links } = await supabase.storage.from("chat-photos").createSignedUrls(paths, 3600);
+        const byPath = new Map((links || []).map((l) => [l.path, l.signedUrl]));
+        rows.forEach((m) => {
+          if (m.photo_path) m.photo_url = byPath.get(m.photo_path) || undefined;
+        });
+      }
+      setThread(rows);
     }
   }, []);
 
@@ -242,7 +255,19 @@ export default function TicketsPage() {
                           {m.sender_name || ROLE[m.sender_role]} · {ROLE[m.sender_role]} ·{" "}
                           {new Date(m.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}
                         </div>
-                        <div style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{m.body}</div>
+                        {m.photo_url ? (
+                          <a href={m.photo_url} target="_blank" rel="noreferrer" title="Open the photo">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={m.photo_url}
+                              alt="Photo sent in the chat"
+                              style={{ display: "block", maxWidth: 260, maxHeight: 260, borderRadius: 10, marginTop: 6 }}
+                            />
+                          </a>
+                        ) : m.photo_path ? (
+                          <div className={styles.muted}>📷 Photo</div>
+                        ) : null}
+                        {m.body ? <div style={{ fontSize: 14, whiteSpace: "pre-wrap" }}>{m.body}</div> : null}
                       </div>
                     ))
                   )}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
-import { planLabel } from "@/lib/plans";
+import { planLabel, usePlanCatalog } from "@/lib/plans";
 import { StaffHeader } from "../../components/StaffHeader";
 import { notifyBadgesChanged } from "../../components/LiveBadge";
 import { PkcLoader } from "../../components/PkcLoader";
@@ -81,6 +81,7 @@ function bucketOf(status: string | null): Exclude<Filter, "all"> {
 const REJECT_REASONS = ["Wrong amount", "Reference not found", "Blurry receipt", "Reference already used", "Other"];
 
 export default function PaymentVerificationPage() {
+  usePlanCatalog();
   const router = useRouter();
 
   const [checkingAccess, setCheckingAccess] = useState(true);
