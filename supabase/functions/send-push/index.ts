@@ -1,6 +1,12 @@
 // Sends a push notification to every phone registered for a user, through
-// Firebase Cloud Messaging (HTTP v1). Called by the database trigger
-// notify_payment_result with a shared secret.
+// Firebase Cloud Messaging (HTTP v1). Called by the database (team_push,
+// chat_push, payment triggers) with a shared secret.
+//
+// Chat messages (kind "chat") go out as data-only messages so the app's
+// notification library draws them itself, with a "Reply" button that has a
+// text box (the "chat-message" category the app registers). Only phones that
+// registered with an app version (new enough to have that category) get this
+// style; older apps get a plain notification as before.
 //
 // Secret needed (Supabase dashboard > Edge Functions > Secrets):
 //   FCM_SERVICE_ACCOUNT = the full contents of the Firebase service-account JSON
@@ -44,6 +50,22 @@ async function accessToken(account: { client_email: string; private_key: string 
   return json.access_token as string;
 }
 
+function chatMessage(token: string, title: string, body: string, requestId: string) {
+  return {
+    token,
+    data: {
+      title,
+      message: body,
+      channelId: "pkc-alerts",
+      categoryId: "chat-message",
+      // One notification per conversation: a newer message replaces the older one.
+      tag: `chat-${requestId}`,
+      body: JSON.stringify({ kind: "chat", request_id: requestId, route: `/chat?request=${requestId}` }),
+    },
+    android: { priority: "HIGH", ttl: "86400s" },
+  };
+}
+
 Deno.serve(async (req) => {
   const { data: cfg } = await admin.from("push_config").select("secret").limit(1).maybeSingle();
   if (!cfg?.secret || req.headers.get("x-push-secret") !== cfg.secret) {
@@ -54,21 +76,21 @@ Deno.serve(async (req) => {
   if (!raw) return new Response("FCM_SERVICE_ACCOUNT is not set", { status: 500 });
   const account = JSON.parse(raw);
 
-  const { user_id, title, body } = await req.json();
+  const { user_id, title, body, kind, request_id } = await req.json();
   if (!user_id || !title) return new Response("Bad request", { status: 400 });
 
-  const { data: tokens } = await admin.from("push_tokens").select("token").eq("user_id", user_id);
+  const { data: tokens } = await admin.from("push_tokens").select("token, app_version").eq("user_id", user_id);
   if (!tokens?.length) return Response.json({ sent: 0 });
 
   const bearer = await accessToken(account);
   let sent = 0;
 
-  for (const { token } of tokens) {
+  for (const { token, app_version } of tokens) {
     const res = await fetch(`https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`, {
       method: "POST",
       headers: { Authorization: `Bearer ${bearer}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: {
+        message: kind === "chat" && request_id && app_version ? chatMessage(token, title, body ?? "", request_id) : {
           token,
           notification: { title, body: body ?? "" },
           // High priority wakes the phone from Doze; the "pkc-alerts" channel (made by the app) pops up with

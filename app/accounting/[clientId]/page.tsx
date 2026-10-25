@@ -922,8 +922,8 @@ export default function AccountingCustomerPage() {
                     <p>Invoices that still have a remaining balance.</p>
                   </div>
                   <span className="count">{openBills.length}</span>
-                  <button className="row-action" onClick={openAddBill}>
-                    Add bill
+                  <button className="row-action add-bill-btn" onClick={openAddBill}>
+                    + Add bill
                   </button>
                 </header>
                 <div className="table-wrap">
@@ -1373,7 +1373,7 @@ export default function AccountingCustomerPage() {
 
       {addOpen && (
         <div className="modal-backdrop" onMouseDown={() => !addBusy && setAddOpen(false)}>
-          <section className="modal" onMouseDown={(e) => e.stopPropagation()}>
+          <section className="modal add-bill" onMouseDown={(e) => e.stopPropagation()}>
             <header>
               <div>
                 <small>BILLING</small>
@@ -1410,7 +1410,7 @@ export default function AccountingCustomerPage() {
                 <input type="date" value={addDue} min={phToday()} onChange={(e) => setAddDue(e.target.value)} disabled={addBusy} />
               </label>
             </div>
-            <p style={{ margin: "4px 0 0", opacity: 0.7, fontSize: 13 }}>
+            <p style={{ margin: "-4px 20px 16px", opacity: 0.7, fontSize: 14 }}>
               Left blank, it is due at the end of the month, and never less than 7 days from today. Grace period,
               disconnection and termination follow the same days as a monthly bill.
             </p>
@@ -1571,6 +1571,16 @@ const styles = `
 .field input:focus,.field select:focus{border-color:#197cb6;box-shadow:0 0 0 2px rgba(25,124,182,.12)}
 .field{margin-bottom:12px}
 @media(max-width:560px){.form-grid{grid-template-columns:1fr}}
+
+/* ---- add bill: a little bigger than the other dialogs ---- */
+.add-bill-btn{padding:9px 16px;font-size:15px!important}
+.modal.add-bill{width:min(640px,100%)}
+.add-bill header{padding:22px 22px 20px}.add-bill h2{font-size:22px}
+.add-bill .recipient{margin:18px 20px;padding:14px}.add-bill .recipient strong{font-size:15px}.add-bill .recipient small{font-size:13px}
+.add-bill .field{margin:0 20px 16px}.add-bill .field>span{font-size:13px}
+.add-bill .field input,.add-bill .field select{height:48px;font-size:15px}
+.add-bill .field textarea{font-size:14px;min-height:80px!important}
+.add-bill footer{padding:16px 20px}.add-bill footer button{min-height:46px;padding:0 20px;font-size:14px}
 
 /* ---- readability + small screens ---- */
 td{font-size:16px}th{font-size:14px}td strong{font-size:17px}td small{font-size:14px}.badge{font-size:13px}.detail span{font-size:13px}.detail strong{font-size:15px}.row-action{font-size:14px}.identity p{font-size:15px}.panel-head p{font-size:14px}.financials span{font-size:14px}

@@ -20,16 +20,27 @@ export async function POST(request: NextRequest) {
 
   const { data: sub } = await caller.admin
     .from('payment_submissions')
-    .select('id, tenant_id, amount_claimed, status')
+    .select('id, tenant_id, amount_claimed, status, group_id')
     .eq('id', submissionId)
     .maybeSingle()
   if (!sub) return NextResponse.json({ error: 'Payment submission not found.' }, { status: 404 })
+
+  // One receipt split over several bills is approved as a whole, so the threshold uses its total.
+  let amount = Number(sub.amount_claimed)
+  if (sub.group_id) {
+    const { data: parts } = await caller.admin
+      .from('payment_submissions')
+      .select('amount_claimed')
+      .eq('group_id', sub.group_id)
+      .eq('status', 'Pending')
+    amount = (parts || []).reduce((sum, part) => sum + Number(part.amount_claimed || 0), 0)
+  }
 
   if (!(await hasTenantRole(caller, sub.tenant_id, ['admin', 'accounting']))) {
     return NextResponse.json({ error: 'Only accounting or admin staff can verify payments.' }, { status: 403 })
   }
 
-  if (Number(sub.amount_claimed) >= SECONDARY_THRESHOLD) {
+  if (amount >= SECONDARY_THRESHOLD) {
     if (!secondary) {
       return NextResponse.json(
         { error: 'Enter your secondary password to approve this amount.', code: 'secondary_required', threshold: SECONDARY_THRESHOLD },

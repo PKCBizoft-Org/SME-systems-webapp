@@ -19,6 +19,8 @@ type Submission = {
   service_request_id: string | null;
   /** Set when the customer is paying a monthly bill instead of applying for a plan. */
   billing_id?: string | null;
+  /** Parts of one receipt split over several bills share this; they are approved or rejected together. */
+  group_id?: string | null;
   gcash_mobile?: string | null;
   bank_account_name?: string | null;
   bank_account_number?: string | null;
@@ -257,6 +259,12 @@ export default function PaymentVerificationPage() {
     setProofUrl(data.signedUrl);
   }
 
+  // Every part of the same receipt (just the submission itself when it is not split).
+  function groupOf(submission: Submission) {
+    if (!submission.group_id) return [submission];
+    return submissions.filter((s) => s.group_id === submission.group_id);
+  }
+
   async function authHeader() {
     const { data } = await supabase.auth.getSession();
     return data.session ? { Authorization: `Bearer ${data.session.access_token}` } : null;
@@ -303,7 +311,7 @@ export default function PaymentVerificationPage() {
       setMessage({
         kind: "ok",
         text:
-          `Verified ${formatPeso(claimed)} for ${client?.customer_name || "the customer"}${receipt ? ` (${receipt})` : ""}. ` +
+          `Verified ${formatPeso(Number(result?.result?.amount ?? claimed))} for ${client?.customer_name || "the customer"}${receipt ? ` (${receipt})` : ""}. ` +
           (isBill
             ? left > 0
               ? `Bill ${billRef} is partly paid — ${formatPeso(left)} is still due.`
@@ -364,6 +372,7 @@ export default function PaymentVerificationPage() {
       const dup = submissions.find(
         (s) =>
           s.id !== submission.id &&
+          !(submission.group_id && s.group_id === submission.group_id) &&
           bucketOf(s.status) === "verified" &&
           (s.reference_number || "").trim().toLowerCase() === reference.toLowerCase(),
       );
@@ -374,6 +383,23 @@ export default function PaymentVerificationPage() {
         });
         return;
       }
+    }
+
+    const group = groupOf(submission);
+    if (group.length > 1) {
+      const total = group.reduce((sum, part) => sum + Number(part.amount_claimed || 0), 0);
+      const billRefs = group.map((part) => (part.billing_id && bills.get(part.billing_id)?.bill_id) || "a bill").join(", ");
+      setConfirming({
+        submission,
+        headline: `Did ${formatPeso(total)} really arrive?`,
+        facts: [
+          ["From", client?.customer_name || "this customer"],
+          ["Method", submission.payment_method || "Payment"],
+          ["Reference", reference || "—"],
+        ],
+        detail: `One receipt for ${group.length} bills (${billRefs}). This records all of them and emails the customer once.`,
+      });
+      return;
     }
 
     setConfirming({
@@ -533,6 +559,16 @@ export default function PaymentVerificationPage() {
                             <dt>Billing period</dt>
                             <dd>
                               {formatDate(bill.billing_period_start)} – {formatDate(bill.billing_period_end)}
+                            </dd>
+                          </div>
+                        )}
+                        {s.group_id && groupOf(s).length > 1 && (
+                          <div>
+                            <dt>One receipt</dt>
+                            <dd>
+                              {formatPeso(groupOf(s).reduce((sum, part) => sum + Number(part.amount_claimed || 0), 0))} for{" "}
+                              {groupOf(s).length} bills
+                              <em> (approving or rejecting this does all of them)</em>
                             </dd>
                           </div>
                         )}
@@ -734,7 +770,7 @@ export default function PaymentVerificationPage() {
           <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Secondary password">
             <h2>Confirm with your secondary password</h2>
             <p className={styles.modalLead}>
-              This payment is {formatPeso(needsSecondary.amount_claimed)}. Large amounts need your secondary password before they are approved.
+              This payment is {formatPeso(groupOf(needsSecondary).reduce((sum, part) => sum + Number(part.amount_claimed || 0), 0))}. Large amounts need your secondary password before they are approved.
             </p>
 
             <input
