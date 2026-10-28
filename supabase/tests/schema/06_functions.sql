@@ -1518,7 +1518,7 @@ begin
     select secret into v_secret from public.push_config limit 1;
 
     perform net.http_post(
-      url := 'https://sme-systems-webapp.vercel.app/api/sms/job-accepted',
+      url := 'https://bizoftph.com/api/sms/job-accepted',
       headers := jsonb_build_object('Content-Type', 'application/json', 'x-push-secret', v_secret),
       body := jsonb_build_object('repair_id', NEW.id)
     );

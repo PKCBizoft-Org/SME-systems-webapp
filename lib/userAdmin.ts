@@ -11,7 +11,7 @@ export const TEMP_PASSWORD_HOURS = 24
 // public website address, never the address the admin happened to be on
 // (that would be localhost while testing). Override with PUBLIC_SITE_URL.
 export function siteUrl() {
-  return (process.env.PUBLIC_SITE_URL || 'https://sme-systems-webapp.vercel.app').replace(/\/+$/, '')
+  return (process.env.PUBLIC_SITE_URL || 'https://bizoftph.com').replace(/\/+$/, '')
 }
 
 const ROLE_LABEL: Record<string, string> = {
