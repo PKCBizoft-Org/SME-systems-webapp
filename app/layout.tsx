@@ -28,11 +28,32 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://bizoftph.com"),
   title: {
-    default: "PKC BIZOFT",
+    default: "PKC BIZOFT | WiFi Installation & Internet Service",
     template: "%s | PKC BIZOFT",
   },
-  description: "PKC BIZOFT Client and Billing Management System",
+  description:
+    "PKC BIZOFT (bizoftph) installs home WiFi and internet. Request an installation, pay your bills, track your technician and get help, all in one app.",
+  keywords: ["PKC BIZOFT", "PKC Bizoft", "bizoft", "bizoftph", "WiFi installation", "internet service", "Philippines"],
+  openGraph: {
+    type: "website",
+    siteName: "PKC BIZOFT",
+    title: "PKC BIZOFT | WiFi Installation & Internet Service",
+    description: "Home WiFi installation, bills, repairs and technician tracking in one app.",
+    images: ["/pkc-logo.webp"],
+  },
+};
+
+// Tells Google and Bing who we are, so searches for our name show our site and logo.
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "PKC BIZOFT",
+  alternateName: ["PKC Bizoft", "Bizoft", "bizoftph", "bizoftph.com"],
+  url: "https://bizoftph.com",
+  logo: "https://bizoftph.com/pkc-logo.webp",
+  description: "Home WiFi installation and internet service in the Philippines.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -49,6 +70,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             __html:
               "(function(){try{var n=navigator,c=n.connection||{};if(localStorage.getItem('pkc_lite_v1')||(n.deviceMemory&&n.deviceMemory<=6)||(n.hardwareConcurrency&&n.hardwareConcurrency<=6)||c.saveData||(matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:900px)').matches)){document.documentElement.classList.add('lite')}}catch(e){}})();",
           }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
         />
       </head>
       <body className="min-h-full flex flex-col">
