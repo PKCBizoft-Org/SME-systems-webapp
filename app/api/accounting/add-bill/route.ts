@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCaller, hasTenantRole, isSessionVerified } from '@/lib/serverSecurity'
 
-const TYPES = ['Installation Fee', 'Adjustment']
+const TYPES = ['Monthly', 'Installation Fee', 'Adjustment']
 
-// Accounting adds a bill the nightly job does not create: the one-time installation fee, or an
-// adjustment (extra materials, a visit fee). Monthly bills stay automatic. The database checks the
-// rules again, this only turns the form into a call.
+// Accounting adds a bill by hand: a Monthly bill (a missed month, or billing early; the nightly job
+// then skips that month), the one-time installation fee, or an adjustment (extra materials, a visit
+// fee). The database checks the rules again, this only turns the form into a call.
 export async function POST(request: NextRequest) {
   const caller = await getCaller(request)
   if (!caller) return NextResponse.json({ error: 'Your session is invalid or expired.' }, { status: 401 })
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   if (!clientId) return NextResponse.json({ error: 'Choose the customer.' }, { status: 400 })
   if (!TYPES.includes(billType)) {
-    return NextResponse.json({ error: 'Choose Installation Fee or Adjustment.' }, { status: 400 })
+    return NextResponse.json({ error: 'Choose Monthly, Installation Fee or Adjustment.' }, { status: 400 })
   }
   if (!Number.isFinite(amount) || amount <= 0) return NextResponse.json({ error: 'Enter the amount.' }, { status: 400 })
 

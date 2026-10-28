@@ -1,6 +1,6 @@
 // The bill schedule, as the Accounting screens describe it. The dates themselves are set by the
 // database (run_billing_automation); keep this wording in step with it.
-export const BILL_TYPES_BY_HAND = ["Installation Fee", "Adjustment"] as const;
+export const BILL_TYPES_BY_HAND = ["Monthly", "Installation Fee", "Adjustment"] as const;
 
 export const SCHEDULE_TEXT = {
   due: "Last day of the month",

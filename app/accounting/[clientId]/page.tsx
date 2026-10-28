@@ -255,7 +255,7 @@ export default function AccountingCustomerPage() {
   const [recWaiting, setRecWaiting] = useState(0);
   const [flash, setFlash] = useState<string | null>(null);
 
-  // Adding an Installation Fee or Adjustment bill by hand (monthly bills are automatic).
+  // Adding a bill by hand: Monthly (a missed month, or early), Installation Fee or Adjustment.
   const [addOpen, setAddOpen] = useState(false);
   const [installFee, setInstallFee] = useState(INSTALL_FEE);
   const [addType, setAddType] = useState<string>(BILL_TYPES_BY_HAND[0]);
@@ -572,8 +572,7 @@ export default function AccountingCustomerPage() {
   }
 
   function openAddBill() {
-    setAddType(BILL_TYPES_BY_HAND[0]);
-    setAddAmount(installFee.toFixed(2));
+    chooseAddType(BILL_TYPES_BY_HAND[0]);
     setAddDue("");
     setAddNote("");
     setAddError("");
@@ -584,6 +583,20 @@ export default function AccountingCustomerPage() {
   function chooseAddType(type: string) {
     setAddType(type);
     setAddAmount(type === "Installation Fee" ? installFee.toFixed(2) : "");
+    // A monthly bill starts at the customer's plan price.
+    if (type === "Monthly" && client?.plan_name?.trim()) {
+      void supabase
+        .from("internet_plans")
+        .select("price")
+        .eq("tenant_id", client.tenant_id)
+        .eq("plan_name", client.plan_name)
+        .order("active", { ascending: false })
+        .limit(1)
+        .then(({ data }) => {
+          const price = Number(data?.[0]?.price);
+          if (Number.isFinite(price) && price > 0) setAddAmount((now) => now || price.toFixed(2));
+        });
+    }
   }
 
   async function submitAddBill() {
@@ -1389,7 +1402,7 @@ export default function AccountingCustomerPage() {
               <span className="avatar">{getInitials(client.customer_name)}</span>
               <div>
                 <strong>{client.customer_name || "Customer"}</strong>
-                <small>Monthly bills are created automatically. The bill number is assigned for you.</small>
+                <small>Monthly bills are also created automatically. The bill number is assigned for you.</small>
               </div>
             </div>
 
@@ -1412,8 +1425,10 @@ export default function AccountingCustomerPage() {
               </label>
             </div>
             <p style={{ margin: "-4px 20px 16px", opacity: 0.7, fontSize: 14 }}>
-              Left blank, it is due at the end of the month, and never less than 7 days from today. Grace period,
-              disconnection and termination follow the same days as a monthly bill.
+              {addType === "Monthly"
+                ? "The bill covers the month of its due date (left blank: this month, due at the end of it). The nightly job will not bill that month again."
+                : "Left blank, it is due at the end of the month, and never less than 7 days from today."}{" "}
+              Grace period, disconnection and termination follow the same days as a monthly bill.
             </p>
 
             <label className="field">

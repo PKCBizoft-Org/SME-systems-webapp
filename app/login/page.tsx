@@ -678,7 +678,17 @@ export default function LoginPage() {
       </div>
 
       <header className="header">
-        <a className="brand" href="/" aria-label="PKC BIZOFT home">
+        <a
+          className="brand"
+          href="/"
+          aria-label="PKC BIZOFT home"
+          onClick={(event) => {
+            // Easy to hit by accident; leaving here throws away a half-finished sign-in.
+            if ((verifying || email || password) && !window.confirm("Stop signing in and go to the home page?")) {
+              event.preventDefault();
+            }
+          }}
+        >
           <img src={PKC_LOGO} alt="" />
           <span className="brandText">
             PKC <strong>BIZOFT</strong>

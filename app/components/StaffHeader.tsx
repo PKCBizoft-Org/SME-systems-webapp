@@ -196,7 +196,15 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
       {/* soft ambient light behind every staff page */}
       <div className={styles.aurora} aria-hidden="true" />
       <header className={styles.bar}>
-      <Link href="/" className={styles.brand} aria-label="PKC BIZOFT home">
+      {/* Easy to hit by accident, so ask before leaving the staff pages. */}
+      <Link
+        href="/"
+        className={styles.brand}
+        aria-label="PKC BIZOFT home"
+        onClick={(event) => {
+          if (!window.confirm("Leave the staff pages and go to the PKC BIZOFT home page?")) event.preventDefault();
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/pkc-logo.webp" alt="" width={34} height={34} />
         <span>
