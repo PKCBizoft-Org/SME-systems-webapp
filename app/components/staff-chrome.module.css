@@ -56,6 +56,22 @@
   color: #4ce8ff;
 }
 
+/* Tells staff the logo leaves for the home page. */
+.homeTag {
+  padding: 3px 8px;
+  border: 1px solid rgba(76, 232, 255, 0.3);
+  border-radius: 999px;
+  color: rgba(234, 247, 255, 0.75);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.brand:hover .homeTag {
+  border-color: rgba(76, 232, 255, 0.6);
+  color: #4ce8ff;
+}
+
 .nav {
   display: flex;
   justify-content: flex-start;
@@ -204,6 +220,10 @@
   .brand {
     grid-area: brand;
     min-width: 0;
+  }
+
+  .homeTag {
+    display: none;
   }
 
   .session {

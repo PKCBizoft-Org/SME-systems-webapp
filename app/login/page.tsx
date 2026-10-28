@@ -5,11 +5,13 @@
    scope class, so none of the .brand / .headerNavLink styles would apply. */
 /* eslint-disable @next/next/no-html-link-for-pages */
 
-import { type CSSProperties, FormEvent, useEffect, useState } from "react";
+import { type CSSProperties, FormEvent, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { homeForUser } from "@/lib/homeForRole";
 import { attemptsMessage, checkLock, lockMessage, recordAttempt } from "@/lib/loginLockout";
 import { StaffVerification } from "../components/StaffVerification";
+import { YesNoDialog } from "../components/YesNoDialog";
 
 type RobotExpression =
   | "idle"
@@ -474,6 +476,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const router = useRouter();
+  const [askHome, setAskHome] = useState(false);
+  const closeAskHome = useCallback(() => setAskHome(false), []);
   const [pendingDestination, setPendingDestination] = useState("/clients");
   const [booting, setBooting] = useState(true);
   const [emailTouched, setEmailTouched] = useState(false);
@@ -677,6 +682,14 @@ export default function LoginPage() {
         <div className="bootStatus"><span /> AUTHENTICATION SYSTEM ONLINE</div>
       </div>
 
+      <YesNoDialog
+        open={askHome}
+        title="Stop signing in?"
+        message="You will go to the home page and lose what you typed here."
+        onYes={() => router.push("/")}
+        onNo={closeAskHome}
+      />
+
       <header className="header">
         <a
           className="brand"
@@ -684,8 +697,9 @@ export default function LoginPage() {
           aria-label="PKC BIZOFT home"
           onClick={(event) => {
             // Easy to hit by accident; leaving here throws away a half-finished sign-in.
-            if ((verifying || email || password) && !window.confirm("Stop signing in and go to the home page?")) {
+            if (verifying || email || password) {
               event.preventDefault();
+              setAskHome(true);
             }
           }}
         >

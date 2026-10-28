@@ -1,8 +1,8 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "./staff-chrome.module.css";
 import { createClient } from "../../lib/supabaseClient";
 import { LowRatingsBadge } from "./LowRatingsBadge";
@@ -10,6 +10,7 @@ import { PendingPaymentsBadge } from "./PendingPaymentsBadge";
 import { PendingWithdrawalsBadge } from "./PendingWithdrawalsBadge";
 import { StaffGuard } from "./StaffGuard";
 import { GlobalSearch } from "./GlobalSearch";
+import { YesNoDialog } from "./YesNoDialog";
 
 const supabase = createClient();
 
@@ -158,6 +159,9 @@ function matches(pathname: string, href: string) {
 export function StaffHeader({ current, roles }: { current: StaffSection; roles: string[] }) {
   const pathname = usePathname() || "";
   const perms = useSyncExternalStore(subscribePerms, getPerms, () => null);
+  const router = useRouter();
+  const [askHome, setAskHome] = useState(false);
+  const closeAskHome = useCallback(() => setAskHome(false), []);
 
   const isAdmin = roles.includes("admin");
   // Accounting only handles money, so Billing is the only group they get.
@@ -200,15 +204,20 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
       <Link
         href="/"
         className={styles.brand}
-        aria-label="PKC BIZOFT home"
+        aria-label="PKC BIZOFT home page"
+        title="Go to the home page"
         onClick={(event) => {
-          if (!window.confirm("Leave the staff pages and go to the PKC BIZOFT home page?")) event.preventDefault();
+          event.preventDefault();
+          setAskHome(true);
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/pkc-logo.webp" alt="" width={34} height={34} />
         <span>
           PKC <strong>BIZOFT</strong>
+        </span>
+        <span className={styles.homeTag} aria-hidden="true">
+          ⌂ Home
         </span>
       </Link>
 
@@ -256,6 +265,14 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
           ))}
         </nav>
       ) : null}
+
+      <YesNoDialog
+        open={askHome}
+        title="Go to the home page?"
+        message="You will leave the staff pages. You stay signed in."
+        onYes={() => router.push("/")}
+        onNo={closeAskHome}
+      />
     </>
   );
 }
