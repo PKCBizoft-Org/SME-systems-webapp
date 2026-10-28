@@ -200,12 +200,12 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
       {/* soft ambient light behind every staff page */}
       <div className={styles.aurora} aria-hidden="true" />
       <header className={styles.bar}>
-      {/* Easy to hit by accident, so ask before leaving the staff pages. */}
+      {/* Leaving the staff pages means signing in again, so the logo logs out, after asking. */}
       <Link
         href="/"
         className={styles.brand}
-        aria-label="PKC BIZOFT home page"
-        title="Go to the home page"
+        aria-label="Log out and go to the PKC BIZOFT home page"
+        title="Log out and go to the home page"
         onClick={(event) => {
           event.preventDefault();
           setAskHome(true);
@@ -217,7 +217,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
           PKC <strong>BIZOFT</strong>
         </span>
         <span className={styles.homeTag} aria-hidden="true">
-          ⌂ Home
+          ⏻ Log out
         </span>
       </Link>
 
@@ -268,9 +268,12 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
 
       <YesNoDialog
         open={askHome}
-        title="Go to the home page?"
-        message="You will leave the staff pages. You stay signed in."
-        onYes={() => router.push("/")}
+        title="Log out?"
+        message="You will be signed out and taken to the home page. You will need to sign in again to come back."
+        onYes={async () => {
+          await supabase.auth.signOut();
+          router.push("/");
+        }}
         onNo={closeAskHome}
       />
     </>
