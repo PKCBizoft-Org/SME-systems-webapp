@@ -43,6 +43,10 @@ type Movement = {
   created_by_name: string | null
   job_type: JobType | null
   install_location: string | null
+  receiver_photo_path: string | null
+  receipt_photo_path: string | null
+  stock_photo_path: string | null
+  expected_quantity: number | null
   created_at: string
 }
 
@@ -77,6 +81,7 @@ type Modal =
   | { kind: 'move'; item: Item | null; type: MovementType }
   | { kind: 'kits' }
   | { kind: 'bulk' }
+  | { kind: 'photos'; move: Movement }
   | null
 
 const CATEGORIES: { value: Category; label: string; icon: string }[] = [
@@ -670,6 +675,9 @@ export default function InventoryPage() {
                               {move.job_type ? ` · ${jobLabel(move.job_type)}` : ''}
                               {move.install_location ? ` · at ${move.install_location}` : ''}
                               {move.reference ? ` · ${move.reference}` : ''}
+                              {move.expected_quantity != null && num(move.expected_quantity) !== change
+                                ? ` · ⚠ receipt said ${fmtQty(num(move.expected_quantity))}`
+                                : ''}
                               {move.created_by_name || move.created_by_email
                                 ? ` · by ${move.created_by_name || move.created_by_email}`
                                 : ''}
@@ -685,6 +693,16 @@ export default function InventoryPage() {
                               {fmtQty(change)}
                             </div>
                             <div className={styles.feedTime}>{timeAgo(move.created_at)}</div>
+                            {move.receipt_photo_path && (
+                              <button
+                                type="button"
+                                className={styles.btn}
+                                style={{ marginTop: 6, padding: '4px 8px', fontSize: 11 }}
+                                onClick={() => setModal({ kind: 'photos', move })}
+                              >
+                                📷 Proof
+                              </button>
+                            )}
                           </div>
                         </div>
                       )
@@ -735,6 +753,14 @@ export default function InventoryPage() {
             setNotice(message)
             load(true)
           }}
+        />
+      )}
+
+      {modal?.kind === 'photos' && (
+        <PhotosModal
+          move={modal.move}
+          itemName={itemById.get(modal.move.item_id)?.name || 'Stock received'}
+          onClose={() => setModal(null)}
         />
       )}
 
@@ -821,6 +847,206 @@ function ModalShell({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Receiving stock: arrived -> received (counted) -> compared with the receipt
+// -> proof photos of the receiver, the receipt and the stock that came.
+// The database refuses a "Stock received" movement without all three photos.
+// ---------------------------------------------------------------------------
+
+type PhotoKind = 'receiver' | 'receipt' | 'stock'
+type ReceivingFiles = Record<PhotoKind, File | null>
+type PhotoColumn = 'receiver_photo_path' | 'receipt_photo_path' | 'stock_photo_path'
+
+const RECEIPTS_BUCKET = 'stock-receipts'
+
+const PHOTO_KINDS: { kind: PhotoKind; label: string; capture: 'user' | 'environment'; column: PhotoColumn }[] = [
+  { kind: 'stock', label: 'The stock that came', capture: 'environment', column: 'stock_photo_path' },
+  { kind: 'receiver', label: 'You (the receiver)', capture: 'user', column: 'receiver_photo_path' },
+  { kind: 'receipt', label: 'The receipt', capture: 'environment', column: 'receipt_photo_path' },
+]
+
+const RECEIVING_STEPS = ['Arrived', 'Received', 'Compared', 'Proof']
+
+const noPhotos = (): ReceivingFiles => ({ receiver: null, receipt: null, stock: null })
+
+// An error message when a photo is missing, or '' when all three are there.
+function missingPhotos(files: ReceivingFiles) {
+  const missing = PHOTO_KINDS.filter((p) => !files[p.kind]).map((p) => p.label.toLowerCase())
+  return missing.length ? `Proof needed — add a photo of: ${missing.join(', ')}.` : ''
+}
+
+// Phone photos are large; shrink to 1600px JPEG so uploads are quick on mobile data.
+async function shrinkPhoto(file: File): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+    canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close()
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82))
+    if (blob) return blob
+  } catch {
+    // Fall back to the original file.
+  }
+  return file
+}
+
+async function uploadReceivingPhotos(supabase: ReturnType<typeof createClient>, tenantId: string, files: ReceivingFiles) {
+  const batch = crypto.randomUUID()
+  const paths = {} as Record<PhotoColumn, string>
+  for (const { kind, column } of PHOTO_KINDS) {
+    const file = files[kind]
+    if (!file) throw new Error(missingPhotos(files))
+    const blob = await shrinkPhoto(file)
+    const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg'
+    const path = `${tenantId}/${batch}/${kind}.${ext}`
+    const { error } = await supabase.storage
+      .from(RECEIPTS_BUCKET)
+      .upload(path, blob, { upsert: false, contentType: blob.type || 'image/jpeg' })
+    if (error) throw new Error(`Could not upload the ${kind} photo: ${error.message}`)
+    paths[column] = path
+  }
+  return paths
+}
+
+function ReceivingSteps({ done }: { done: boolean[] }) {
+  return (
+    <ol style={{ display: 'flex', flexWrap: 'wrap', gap: 6, listStyle: 'none', margin: 0, padding: 0, fontSize: 12 }}>
+      {RECEIVING_STEPS.map((step, index) => (
+        <li
+          key={step}
+          style={{
+            padding: '4px 10px',
+            borderRadius: 999,
+            fontWeight: 700,
+            border: `1px solid ${done[index] ? 'var(--good)' : 'rgba(127,127,127,.4)'}`,
+            color: done[index] ? 'var(--good)' : 'inherit',
+            opacity: done[index] ? 1 : 0.75,
+          }}
+        >
+          {done[index] ? '✓' : index + 1}. {step}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function ReceivingPhotoPicker({ files, onChange }: { files: ReceivingFiles; onChange: (files: ReceivingFiles) => void }) {
+  const previews = useMemo(() => {
+    const urls: Partial<Record<PhotoKind, string>> = {}
+    for (const { kind } of PHOTO_KINDS) {
+      const file = files[kind]
+      if (file) urls[kind] = URL.createObjectURL(file)
+    }
+    return urls
+  }, [files])
+
+  useEffect(() => () => Object.values(previews).forEach((url) => url && URL.revokeObjectURL(url)), [previews])
+
+  return (
+    <div className={styles.field}>
+      <span className={styles.label}>Proof photos (required)</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8 }}>
+        {PHOTO_KINDS.map(({ kind, label, capture }) => (
+          <label
+            key={kind}
+            style={{
+              display: 'grid',
+              gap: 6,
+              padding: 8,
+              borderRadius: 10,
+              border: `1px dashed ${files[kind] ? 'var(--good)' : 'rgba(127,127,127,.45)'}`,
+              cursor: 'pointer',
+              textAlign: 'center',
+              fontSize: 12,
+            }}
+          >
+            {previews[kind] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previews[kind]} alt={label} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 6 }} />
+            ) : (
+              <span style={{ height: 90, display: 'grid', placeItems: 'center', fontSize: 28 }} aria-hidden="true">
+                📷
+              </span>
+            )}
+            <span>{files[kind] ? `✓ ${label}` : label}</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture={capture}
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null
+                if (file && !file.type.startsWith('image/')) return
+                onChange({ ...files, [kind]: file })
+              }}
+            />
+          </label>
+        ))}
+      </div>
+      <span className={styles.hint}>Take a photo of the stock that came, yourself, and the receipt.</span>
+    </div>
+  )
+}
+
+function PhotosModal({ move, itemName, onClose }: { move: Movement; itemName: string; onClose: () => void }) {
+  const supabase = useMemo(() => createClient(), [])
+  const [urls, setUrls] = useState<Partial<Record<PhotoKind, string>>>({})
+  const [error, setError] = useState('')
+  const counted = num(move.quantity_change)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const next: Partial<Record<PhotoKind, string>> = {}
+      for (const { kind, column } of PHOTO_KINDS) {
+        const path = move[column]
+        if (!path) continue
+        const { data, error: signError } = await supabase.storage.from(RECEIPTS_BUCKET).createSignedUrl(path, 600)
+        if (signError && !cancelled) setError(signError.message)
+        if (data?.signedUrl) next[kind] = data.signedUrl
+      }
+      if (!cancelled) setUrls(next)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [move, supabase])
+
+  return (
+    <ModalShell
+      title={`Receiving proof — ${itemName}`}
+      subtitle={`${move.created_by_name || move.created_by_email || 'Unknown'} · ${new Date(move.created_at).toLocaleString()}`}
+      onClose={onClose}
+    >
+      {move.expected_quantity != null && (
+        <p style={{ margin: '0 0 12px', fontWeight: 700, color: num(move.expected_quantity) === counted ? 'var(--good)' : 'var(--warn)' }}>
+          Receipt: {fmtQty(num(move.expected_quantity))} · Counted: {fmtQty(counted)}
+          {num(move.expected_quantity) === counted ? ' ✓' : ' ⚠'}
+        </p>
+      )}
+      {error && <div className={styles.formError} role="alert">{error}</div>}
+      <div style={{ display: 'grid', gap: 12 }}>
+        {PHOTO_KINDS.map(({ kind, label }) => (
+          <figure key={kind} style={{ margin: 0 }}>
+            <figcaption className={styles.label} style={{ marginBottom: 6 }}>{label}</figcaption>
+            {urls[kind] ? (
+              <a href={urls[kind]} target="_blank" rel="noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={urls[kind]} alt={label} style={{ width: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 8 }} />
+              </a>
+            ) : (
+              <div className={`${styles.skeleton} skeleton`} />
+            )}
+          </figure>
+        ))}
+      </div>
+    </ModalShell>
+  )
+}
+
 function ItemModal({
   item,
   tenantId,
@@ -844,6 +1070,7 @@ function ItemModal({
   const [location, setLocation] = useState(item?.location || '')
   const [notes, setNotes] = useState(item?.notes || '')
   const [initial, setInitial] = useState('')
+  const [photos, setPhotos] = useState<ReceivingFiles>(noPhotos)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -858,6 +1085,7 @@ function ItemModal({
     if (costNum !== null && (!Number.isFinite(costNum) || costNum < 0)) return setFormError('Unit cost must be 0 or more.')
     const initialNum = initial.trim() === '' ? 0 : Number(initial)
     if (!Number.isFinite(initialNum) || initialNum < 0) return setFormError('Opening stock must be 0 or more.')
+    if (!item && initialNum > 0 && missingPhotos(photos)) return setFormError(missingPhotos(photos))
 
     const fields = {
       name: name.trim(),
@@ -891,12 +1119,14 @@ function ItemModal({
         const {
           data: { session },
         } = await supabase.auth.getSession()
+        const paths = await uploadReceivingPhotos(supabase, tenantId, photos)
         const { error: moveError } = await supabase.from('inventory_movements').insert({
           item_id: data.id,
           movement_type: 'stock_in',
           quantity_change: initialNum,
           reference: 'Opening stock',
           created_by_email: session?.user.email || null,
+          ...paths,
         })
         if (moveError) throw moveError
       }
@@ -968,6 +1198,8 @@ function ItemModal({
             <span className={styles.hint}>Recorded as a “Stock received” movement.</span>
           </div>
         )}
+
+        {!item && Number(initial) > 0 && <ReceivingPhotoPicker files={photos} onChange={setPhotos} />}
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="inv-notes">Notes</label>
@@ -1183,10 +1415,17 @@ function MoveModal({
   const [clientId, setClientId] = useState('')
   const [reference, setReference] = useState('')
   const [notes, setNotes] = useState('')
+  const [expected, setExpected] = useState('')
+  const [photos, setPhotos] = useState<ReceivingFiles>(noPhotos)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
 
   const selected = items.find((i) => i.id === itemId) || null
+  const receiving = type === 'stock_in'
+  const counted = Number(quantity)
+  const onReceipt = Number(expected)
+  const compared = quantity.trim() !== '' && expected.trim() !== '' && Number.isFinite(counted) && Number.isFinite(onReceipt)
+  const gap = compared ? counted - onReceipt : 0
   const needsClient = type === 'installation_use'
   const optionalClient = type === 'return'
 
@@ -1198,6 +1437,13 @@ function MoveModal({
     const qty = Number(quantity)
     if (!Number.isFinite(qty) || qty <= 0) return setFormError('Enter a quantity greater than zero.')
     if (needsClient && !clientId) return setFormError('Select the client installation these materials were used on.')
+    if (receiving) {
+      if (expected.trim() === '' || !Number.isFinite(onReceipt) || onReceipt < 0) {
+        return setFormError('Type the quantity written on the receipt.')
+      }
+      if (gap !== 0 && !notes.trim()) return setFormError('The count does not match the receipt. Explain what happened in Notes.')
+      if (missingPhotos(photos)) return setFormError(missingPhotos(photos))
+    }
 
     const removes = type === 'installation_use' || type === 'stock_out' || (type === 'adjustment' && direction === 'remove')
     const change = removes ? -qty : qty
@@ -1207,15 +1453,24 @@ function MoveModal({
     }
 
     setBusy(true)
-    const { error } = await supabase.from('inventory_movements').insert({
-      item_id: selected.id,
-      movement_type: type,
-      quantity_change: change,
-      client_id: clientId || null,
-      reference: reference.trim() || null,
-      notes: notes.trim() || null,
-      created_by_email: email || null,
-    })
+    let error: { message: string } | null = null
+    try {
+      const proof = receiving
+        ? { ...(await uploadReceivingPhotos(supabase, selected.tenant_id, photos)), expected_quantity: onReceipt }
+        : {}
+      ;({ error } = await supabase.from('inventory_movements').insert({
+        item_id: selected.id,
+        movement_type: type,
+        quantity_change: change,
+        client_id: clientId || null,
+        reference: reference.trim() || null,
+        notes: notes.trim() || null,
+        created_by_email: email || null,
+        ...proof,
+      }))
+    } catch (err) {
+      error = { message: err instanceof Error ? err.message : 'Could not upload the photos.' }
+    }
     setBusy(false)
 
     if (error) {
@@ -1238,6 +1493,17 @@ function MoveModal({
       onClose={onClose}
     >
       <form className={styles.form} onSubmit={save}>
+        {receiving && (
+          <ReceivingSteps
+            done={[
+              Boolean(selected),
+              quantity.trim() !== '' && counted > 0,
+              compared,
+              !missingPhotos(photos),
+            ]}
+          />
+        )}
+
         <div className={styles.field}>
           <label className={styles.label} htmlFor="mv-type">What happened</label>
           <select id="mv-type" className={`${styles.select} ${styles.input}`} value={type} onChange={(e) => setType(e.target.value as MovementType)}>
@@ -1260,7 +1526,10 @@ function MoveModal({
 
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="mv-qty">Quantity{selected ? ` (${unitLabel(selected.unit)})` : ''}</label>
+            <label className={styles.label} htmlFor="mv-qty">
+              {receiving ? 'Actually received (count it)' : 'Quantity'}
+              {selected ? ` (${unitLabel(selected.unit)})` : ''}
+            </label>
             <input id="mv-qty" className={styles.input} type="number" min="0" step="any" inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="0" autoFocus />
           </div>
           {type === 'adjustment' ? (
@@ -1279,6 +1548,20 @@ function MoveModal({
           )}
         </div>
 
+        {receiving && (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="mv-expected">Quantity on the receipt</label>
+            <input id="mv-expected" className={styles.input} type="number" min="0" step="any" inputMode="decimal" value={expected} onChange={(e) => setExpected(e.target.value)} placeholder="What the receipt says" />
+            {compared && (
+              <span className={styles.hint} style={{ color: gap === 0 ? 'var(--good)' : 'var(--warn)', fontWeight: 700 }}>
+                {gap === 0
+                  ? '✓ Count matches the receipt.'
+                  : `⚠ ${gap < 0 ? 'Short' : 'Over'} by ${fmtQty(Math.abs(gap))} — explain in Notes.`}
+              </span>
+            )}
+          </div>
+        )}
+
         {(needsClient || optionalClient) && (
           <div className={styles.field}>
             <label className={styles.label} htmlFor="mv-client">
@@ -1295,8 +1578,10 @@ function MoveModal({
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="mv-notes">Notes</label>
-          <textarea id="mv-notes" className={styles.textarea} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={type === 'adjustment' ? 'Why is the count being corrected?' : ''} />
+          <textarea id="mv-notes" className={styles.textarea} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={type === 'adjustment' ? 'Why is the count being corrected?' : receiving ? 'Damaged, missing or extra items?' : ''} />
         </div>
+
+        {receiving && <ReceivingPhotoPicker files={photos} onChange={setPhotos} />}
 
         {formError && <div className={styles.formError} role="alert">{formError}</div>}
 
@@ -1335,6 +1620,8 @@ function BulkModal({
   const [quantities, setQuantities] = useState<Record<string, string>>({})
   const [reference, setReference] = useState('')
   const [rows, setRows] = useState<NewRow[]>([blankRow(), blankRow(), blankRow()])
+  const [expected, setExpected] = useState<Record<string, string>>({})
+  const [photos, setPhotos] = useState<ReceivingFiles>(noPhotos)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -1350,19 +1637,41 @@ function BulkModal({
     }
     const received = entries.filter((entry) => entry.qty > 0)
     if (received.length === 0) return setFormError('Type a quantity next to at least one item.')
+    const noReceipt = received.find((entry) => {
+      const value = Number(expected[entry.item.id])
+      return (expected[entry.item.id] ?? '').trim() === '' || !Number.isFinite(value) || value < 0
+    })
+    if (noReceipt) return setFormError(`Type the receipt quantity for ${noReceipt.item.name}.`)
+    if (missingPhotos(photos)) return setFormError(missingPhotos(photos))
+    if (new Set(received.map((entry) => entry.item.tenant_id)).size > 1) {
+      return setFormError('Receive items from one company at a time.')
+    }
 
     setBusy(true)
-    const { error } = await supabase.from('inventory_movements').insert(
-      received.map((entry) => ({
-        item_id: entry.item.id,
-        movement_type: 'stock_in',
-        quantity_change: entry.qty,
-        reference: reference.trim() || 'Bulk restock',
-        created_by_email: email || null,
-      })),
-    )
-    setBusy(false)
-    if (error) return setFormError(error.message)
+    try {
+      // One delivery, one set of proof photos, shared by every line.
+      const paths = await uploadReceivingPhotos(supabase, received[0].item.tenant_id, photos)
+      const { error } = await supabase.from('inventory_movements').insert(
+        received.map((entry) => {
+          const onReceipt = Number(expected[entry.item.id])
+          return {
+            item_id: entry.item.id,
+            movement_type: 'stock_in',
+            quantity_change: entry.qty,
+            expected_quantity: onReceipt,
+            notes: onReceipt === entry.qty ? null : `Receipt said ${fmtQty(onReceipt)}, counted ${fmtQty(entry.qty)}.`,
+            reference: reference.trim() || 'Bulk restock',
+            created_by_email: email || null,
+            ...paths,
+          }
+        }),
+      )
+      if (error) throw error
+    } catch (err) {
+      return setFormError(err instanceof Error ? err.message : (err as { message?: string })?.message || 'Could not save.')
+    } finally {
+      setBusy(false)
+    }
     onSaved(`Stock received for ${received.length} item${received.length === 1 ? '' : 's'}.`)
   }
 
@@ -1377,6 +1686,7 @@ function BulkModal({
       }
     }
     if (!tenantId) return setFormError('Your account is not linked to a company yet.')
+    if (filled.some((row) => Number(row.qty || 0) > 0) && missingPhotos(photos)) return setFormError(missingPhotos(photos))
 
     setBusy(true)
     try {
@@ -1399,6 +1709,7 @@ function BulkModal({
         .map((created, index) => ({ id: created.id as string, qty: filled[index].qty.trim() === '' ? 0 : Number(filled[index].qty) }))
         .filter((entry) => entry.qty > 0)
       if (opening.length > 0) {
+        const paths = await uploadReceivingPhotos(supabase, tenantId, photos)
         const { error: moveError } = await supabase.from('inventory_movements').insert(
           opening.map((entry) => ({
             item_id: entry.id,
@@ -1406,6 +1717,7 @@ function BulkModal({
             quantity_change: entry.qty,
             reference: 'Opening stock',
             created_by_email: email || null,
+            ...paths,
           })),
         )
         if (moveError) throw moveError
@@ -1461,17 +1773,43 @@ function BulkModal({
               />
             </div>
             <div style={{ maxHeight: '45vh', overflow: 'auto', display: 'grid', gap: 6 }}>
-              {items.map((item) => (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 8, fontSize: 11, opacity: 0.7 }}>
+                <span>Item</span>
+                <span>On receipt</span>
+                <span>Counted</span>
+              </div>
+              {items.map((item) => {
+                const rawCount = quantities[item.id] ?? ''
+                const rawReceipt = expected[item.id] ?? ''
+                const mismatch = rawCount !== '' && rawReceipt !== '' && Number(rawCount) !== Number(rawReceipt)
+                return (
                 <div
                   key={item.id}
-                  style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: 10, alignItems: 'center' }}
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 8, alignItems: 'center' }}
                 >
                   <div>
                     <strong>{item.name}</strong>
                     <div style={{ opacity: 0.6, fontSize: 12 }}>
                       {fmtQty(num(item.quantity_on_hand))} {unitLabel(item.unit)} on hand
                     </div>
+                    {mismatch && (
+                      <div style={{ color: 'var(--warn)', fontSize: 12, fontWeight: 700 }}>
+                        ⚠ {Number(rawCount) < Number(rawReceipt) ? 'Short' : 'Over'} by{' '}
+                        {fmtQty(Math.abs(Number(rawCount) - Number(rawReceipt)))}
+                      </div>
+                    )}
                   </div>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="Receipt"
+                    aria-label={`Quantity on the receipt for ${item.name}`}
+                    value={rawReceipt}
+                    onChange={(e) => setExpected((current) => ({ ...current, [item.id]: e.target.value }))}
+                  />
                   <input
                     className={styles.input}
                     type="number"
@@ -1484,7 +1822,8 @@ function BulkModal({
                     onChange={(e) => setQuantities((current) => ({ ...current, [item.id]: e.target.value }))}
                   />
                 </div>
-              ))}
+                )
+              })}
               {items.length === 0 && <div style={{ opacity: 0.6 }}>No items yet. Use Add new items.</div>}
             </div>
           </>
@@ -1561,6 +1900,10 @@ function BulkModal({
               </button>
             </div>
           </>
+        )}
+
+        {(mode === 'restock' || rows.some((row) => Number(row.qty || 0) > 0)) && (
+          <ReceivingPhotoPicker files={photos} onChange={setPhotos} />
         )}
 
         {formError && <div className={styles.formError} role="alert">{formError}</div>}
