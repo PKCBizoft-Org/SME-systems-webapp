@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://bizoftph.com"),
   title: {
-    default: "Business Systems Solutions | PKC BIZOFT",
+    default: "PKC BIZOFT | Business Systems Solutions",
     template: "%s | PKC BIZOFT",
   },
   description:
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "PKC BIZOFT",
-    title: "Business Systems Solutions | PKC BIZOFT",
+    title: "PKC BIZOFT | Business Systems Solutions",
     description: "Home WiFi installation, bills, repairs and technician tracking in one app.",
     images: ["/pkc-logo.webp"],
   },
