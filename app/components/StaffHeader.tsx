@@ -14,6 +14,25 @@ import { YesNoDialog } from "./YesNoDialog";
 
 const supabase = createClient();
 
+// The tab rows scroll sideways with a hidden scrollbar, which a phone swipes but a mouse can't reach.
+// This lets the mouse wheel move them sideways (handing back to the page at either end) and brings
+// the current tab into view.
+function sideScroll(el: HTMLElement | null) {
+  if (!el) return;
+  el.querySelector<HTMLElement>('[aria-current]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  el.addEventListener(
+    "wheel",
+    (event) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || el.scrollWidth <= el.clientWidth) return;
+      const atStart = el.scrollLeft <= 0, atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+      if ((event.deltaY < 0 && atStart) || (event.deltaY > 0 && atEnd)) return;
+      event.preventDefault();
+      el.scrollLeft += event.deltaY;
+    },
+    { passive: false },
+  );
+}
+
 export type StaffSection = "clients" | "inventory" | "accounting" | "ratings" | "insights" | "users" | "account";
 
 type GroupKey = "customers" | "field" | "inventory" | "billing" | "reports" | "admin";
@@ -221,7 +240,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
         </span>
       </Link>
 
-      <nav className={styles.nav} aria-label="Primary">
+      <nav ref={sideScroll} className={styles.nav} aria-label="Primary">
         {visible.map((group) => (
           <Link
             key={group.key}
@@ -250,7 +269,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
       </header>
 
       {active && active.items.length > 1 ? (
-        <nav className={styles.subnav} aria-label={active.label}>
+        <nav ref={sideScroll} className={styles.subnav} aria-label={active.label}>
           <span className={styles.subnavTitle}>{active.label}</span>
           {active.items.map((item) => (
             <Link

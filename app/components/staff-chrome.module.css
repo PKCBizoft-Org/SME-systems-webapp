@@ -321,6 +321,25 @@
   display: none;
 }
 
+/* With a mouse, show a slim scrollbar so the tabs past the edge can be reached. */
+@media (hover: hover) and (pointer: fine) {
+  .nav,
+  .subnav {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(76, 232, 255, 0.35) transparent;
+  }
+  .nav::-webkit-scrollbar,
+  .subnav::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+  .nav::-webkit-scrollbar-thumb,
+  .subnav::-webkit-scrollbar-thumb {
+    background: rgba(76, 232, 255, 0.35);
+    border-radius: 999px;
+  }
+}
+
 .subnavTitle {
   flex: 0 0 auto;
   margin-right: 10px;
