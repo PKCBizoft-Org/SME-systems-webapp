@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabaseClient'
 import { StaffHeader } from '../components/StaffHeader'
 import { StaffMotion } from '../components/StaffMotion'
 import styles from './inventory.module.css'
+import { BarcodeScanner, findByCode } from './BarcodeScanner'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,6 +21,7 @@ type Item = {
   id: string
   tenant_id: string
   sku: string | null
+  barcode: string | null
   name: string
   category: Category
   unit: Unit
@@ -77,7 +79,7 @@ type ClientRow = {
 }
 
 type Modal =
-  | { kind: 'item'; item: Item | null }
+  | { kind: 'item'; item: Item | null; barcode?: string }
   | { kind: 'move'; item: Item | null; type: MovementType }
   | { kind: 'kits' }
   | { kind: 'bulk' }
@@ -187,6 +189,8 @@ export default function InventoryPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<'all' | Category>('all')
   const [lowOnly, setLowOnly] = useState(false)
+  const [location, setLocation] = useState('all')
+  const [scanning, setScanning] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [modal, setModal] = useState<Modal>(null)
 
@@ -291,6 +295,29 @@ export default function InventoryPage() {
 
   const activeItems = useMemo(() => items.filter((item) => item.is_active), [items])
 
+  const locations = useMemo(
+    () =>
+      Array.from(new Set(items.map((item) => item.location?.trim()).filter((l): l is string => Boolean(l)))).sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [items],
+  )
+
+  const lowItems = useMemo(() => activeItems.filter((item) => stockState(item).tone !== 'good'), [activeItems])
+
+  function handleScan(code: string) {
+    setScanning(false)
+    const found = findByCode(items, code)
+    if (found) {
+      setSearch(code)
+      setNotice(`Found ${found.name}.`)
+    } else if (isAdmin) {
+      setModal({ kind: 'item', item: null, barcode: code })
+    } else {
+      setError(`No item has the barcode ${code}.`)
+    }
+  }
+
   const stats = useMemo(() => {
     let low = 0
     let out = 0
@@ -311,15 +338,19 @@ export default function InventoryPage() {
       if (showArchived && item.is_active) return false
       if (category !== 'all' && item.category !== category) return false
       if (lowOnly && stockState(item).tone === 'good') return false
+      if (location !== 'all' && (item.location?.trim() || '') !== location) return false
       if (!term) return true
-      return [item.name, item.sku, item.location].some((field) => String(field || '').toLowerCase().includes(term))
+      return [item.name, item.sku, item.barcode, item.location].some((field) =>
+        String(field || '').toLowerCase().includes(term),
+      )
     })
-  }, [items, search, category, lowOnly, showArchived])
+  }, [items, search, category, lowOnly, location, showArchived])
 
   function exportCsv() {
-    const header = ['SKU', 'Name', 'Category', 'Unit', 'On hand', 'Reorder level', 'Unit cost', 'Location']
+    const header = ['SKU', 'Barcode', 'Name', 'Category', 'Unit', 'On hand', 'Reorder level', 'Unit cost', 'Location']
     const rows = visibleItems.map((item) => [
       item.sku || '',
+      item.barcode || '',
       item.name,
       categoryInfo(item.category).label,
       item.unit,
@@ -431,6 +462,23 @@ export default function InventoryPage() {
           </div>
         )}
 
+        {isTenantAdmin && !loading && !needsMigration && lowItems.length > 0 && (
+          <div className={styles.banner} role="alert">
+            ⚠
+            <span>
+              {lowItems.length} item{lowItems.length === 1 ? ' is' : 's are'} at or below the reorder level:{' '}
+              {lowItems
+                .slice(0, 4)
+                .map((item) => `${item.name} (${fmtQty(num(item.quantity_on_hand))})`)
+                .join(', ')}
+              {lowItems.length > 4 ? ` and ${lowItems.length - 4} more` : ''}.{' '}
+              <button type="button" className={`${styles.btn} ${styles.btnSmall}`} onClick={() => setLowOnly(true)}>
+                Show them
+              </button>
+            </span>
+          </div>
+        )}
+
         {needsMigration && (
           <div className={styles.banner} role="alert">
             ⚠
@@ -474,12 +522,32 @@ export default function InventoryPage() {
                 <input
                   className={styles.input}
                   type="search"
-                  placeholder="Search name, SKU or location…"
+                  placeholder="Search name, SKU, barcode or location…"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    // A USB scanner types the code then Enter.
+                    if (event.key === 'Enter' && search.trim()) handleScan(search.trim())
+                  }}
                   aria-label="Search inventory"
                 />
               </div>
+              <button type="button" className={styles.btn} onClick={() => setScanning(true)}>
+                📷 Scan
+              </button>
+              <select
+                className={styles.select}
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+                aria-label="Filter by location"
+              >
+                <option value="all">All locations</option>
+                {locations.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
               <select
                 className={styles.select}
                 value={category}
@@ -560,7 +628,7 @@ export default function InventoryPage() {
                               <td>
                                 <div className={styles.itemName}>{item.name}</div>
                                 <div className={styles.itemSub}>
-                                  {[item.sku, item.location].filter(Boolean).join(' · ') || '—'}
+                                  {[item.sku, item.barcode, item.location].filter(Boolean).join(' · ') || '—'}
                                 </div>
                               </td>
                               <td>
@@ -718,6 +786,8 @@ export default function InventoryPage() {
       {modal?.kind === 'item' && (
         <ItemModal
           item={modal.item}
+          initialBarcode={modal.barcode}
+          locations={locations}
           tenantId={tenantId}
           onClose={() => setModal(null)}
           onArchive={modal.item ? () => { setModal(null); setArchived(modal.item as Item, true) } : undefined}
@@ -755,6 +825,8 @@ export default function InventoryPage() {
           }}
         />
       )}
+
+      {scanning && <BarcodeScanner title="Find item by barcode" onDetected={handleScan} onClose={() => setScanning(false)} />}
 
       {modal?.kind === 'photos' && (
         <PhotosModal
@@ -1049,12 +1121,16 @@ function PhotosModal({ move, itemName, onClose }: { move: Movement; itemName: st
 
 function ItemModal({
   item,
+  initialBarcode,
+  locations,
   tenantId,
   onClose,
   onSaved,
   onArchive,
 }: {
   item: Item | null
+  initialBarcode?: string
+  locations: string[]
   tenantId: string
   onClose: () => void
   onSaved: (message: string) => void
@@ -1068,6 +1144,9 @@ function ItemModal({
   const [reorder, setReorder] = useState(item ? String(item.reorder_level) : '0')
   const [cost, setCost] = useState(item?.unit_cost != null ? String(item.unit_cost) : '')
   const [location, setLocation] = useState(item?.location || '')
+  const [newLocation, setNewLocation] = useState(false)
+  const [barcode, setBarcode] = useState(item?.barcode || initialBarcode || '')
+  const [scanning, setScanning] = useState(false)
   const [notes, setNotes] = useState(item?.notes || '')
   const [initial, setInitial] = useState('')
   const [photos, setPhotos] = useState<ReceivingFiles>(noPhotos)
@@ -1090,6 +1169,7 @@ function ItemModal({
     const fields = {
       name: name.trim(),
       sku: sku.trim() || null,
+      barcode: barcode.trim() || null,
       category,
       unit,
       reorder_level: reorderNum,
@@ -1134,7 +1214,11 @@ function ItemModal({
     } catch (err) {
       const message = err instanceof Error ? err.message : (err as { message?: string })?.message || 'Could not save.'
       setFormError(
-        /duplicate key|inventory_items_tenant_sku_key/i.test(message) ? 'Another item already uses that SKU.' : message,
+        /inventory_items_tenant_barcode_key/i.test(message)
+          ? 'Another item already uses that barcode.'
+          : /duplicate key|inventory_items_tenant_sku_key/i.test(message)
+            ? 'Another item already uses that SKU.'
+            : message,
       )
     } finally {
       setBusy(false)
@@ -1175,9 +1259,47 @@ function ItemModal({
           </div>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="inv-location">Location</label>
-            <input id="inv-location" className={styles.input} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Main warehouse" />
+            {newLocation || locations.length === 0 ? (
+              <input id="inv-location" className={styles.input} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Main warehouse" autoFocus={newLocation} />
+            ) : (
+              <select
+                id="inv-location"
+                className={`${styles.select} ${styles.input}`}
+                value={location}
+                onChange={(e) => {
+                  if (e.target.value === '__new') {
+                    setNewLocation(true)
+                    setLocation('')
+                  } else setLocation(e.target.value)
+                }}
+              >
+                <option value="">No location</option>
+                {location && !locations.includes(location) && <option value={location}>{location}</option>}
+                {locations.map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+                <option value="__new">+ New location…</option>
+              </select>
+            )}
           </div>
         </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="inv-barcode">Barcode (optional)</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input id="inv-barcode" className={styles.input} style={{ flex: 1 }} value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Scan or type the code on the box" autoComplete="off" />
+            <button type="button" className={styles.btn} onClick={() => setScanning(true)}>📷 Scan</button>
+          </div>
+        </div>
+        {scanning && (
+          <BarcodeScanner
+            onDetected={(code) => {
+              setBarcode(code)
+              setScanning(false)
+            }}
+            onClose={() => setScanning(false)}
+          />
+        )}
 
         <div className={styles.row}>
           <div className={styles.field}>
@@ -1417,6 +1539,7 @@ function MoveModal({
   const [notes, setNotes] = useState('')
   const [expected, setExpected] = useState('')
   const [photos, setPhotos] = useState<ReceivingFiles>(noPhotos)
+  const [scanning, setScanning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -1515,14 +1638,30 @@ function MoveModal({
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="mv-item">Item</label>
-          <select id="mv-item" className={`${styles.select} ${styles.input}`} value={itemId} onChange={(e) => setItemId(e.target.value)}>
-            {items.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.name} — {fmtQty(num(i.quantity_on_hand))} {unitLabel(i.unit)}
-              </option>
-            ))}
-          </select>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select id="mv-item" className={`${styles.select} ${styles.input}`} style={{ flex: 1, minWidth: 0 }} value={itemId} onChange={(e) => setItemId(e.target.value)}>
+              {items.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name} — {fmtQty(num(i.quantity_on_hand))} {unitLabel(i.unit)}
+                </option>
+              ))}
+            </select>
+            <button type="button" className={styles.btn} onClick={() => setScanning(true)}>📷 Scan</button>
+          </div>
         </div>
+        {scanning && (
+          <BarcodeScanner
+            onDetected={(code) => {
+              setScanning(false)
+              const found = findByCode(items, code)
+              if (found) {
+                setItemId(found.id)
+                setFormError('')
+              } else setFormError(`No item has the barcode ${code}. Add it to the item first.`)
+            }}
+            onClose={() => setScanning(false)}
+          />
+        )}
 
         <div className={styles.row}>
           <div className={styles.field}>
@@ -1622,8 +1761,19 @@ function BulkModal({
   const [rows, setRows] = useState<NewRow[]>([blankRow(), blankRow(), blankRow()])
   const [expected, setExpected] = useState<Record<string, string>>({})
   const [photos, setPhotos] = useState<ReceivingFiles>(noPhotos)
+  const [scanning, setScanning] = useState(false)
+  const [scanNote, setScanNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
+
+  // Each scan counts one more of that item, so you can scan boxes as you unpack.
+  function countScan(code: string) {
+    const found = findByCode(items, code)
+    if (!found) return setScanNote(`⚠ No item has the barcode ${code}.`)
+    const next = Number(quantities[found.id] || 0) + 1
+    setQuantities((current) => ({ ...current, [found.id]: String(next) }))
+    setScanNote(`✓ ${found.name}: ${fmtQty(next)} counted`)
+  }
 
   const setRow = (index: number, patch: Partial<NewRow>) =>
     setRows((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)))
@@ -1772,6 +1922,37 @@ function BulkModal({
                 placeholder="Supplier / PO #"
               />
             </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="bulk-scan">Count by barcode</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  id="bulk-scan"
+                  className={styles.input}
+                  style={{ flex: 1 }}
+                  placeholder="Scan or type a barcode, then Enter"
+                  autoComplete="off"
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return
+                    e.preventDefault()
+                    const input = e.currentTarget
+                    if (input.value.trim()) countScan(input.value.trim())
+                    input.value = ''
+                  }}
+                />
+                <button type="button" className={styles.btn} onClick={() => setScanning(true)}>📷 Scan</button>
+              </div>
+              {scanNote && <span className={styles.hint}>{scanNote}</span>}
+            </div>
+            {scanning && (
+              <BarcodeScanner
+                title="Scan each item"
+                onDetected={(code) => {
+                  setScanning(false)
+                  countScan(code)
+                }}
+                onClose={() => setScanning(false)}
+              />
+            )}
             <div style={{ maxHeight: '45vh', overflow: 'auto', display: 'grid', gap: 6 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 8, fontSize: 11, opacity: 0.7 }}>
                 <span>Item</span>
