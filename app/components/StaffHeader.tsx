@@ -70,13 +70,18 @@ const GROUPS: { key: GroupKey; label: string; roles: string[]; badge?: Item["bad
       { label: "Tickets", href: "/insights/tickets", permission: "tickets" },
       { label: "Outages", href: "/insights/outages", permission: "dispatch" },
       { label: "Truck stock", href: "/insights/trucks", permission: "inventory" },
+      { label: "Backbone jobs", href: "/insights/backbone", permission: "dispatch" },
     ],
   },
   {
     key: "inventory",
     label: "Inventory",
     roles: ["admin", "inventory"],
-    items: [{ label: "Inventory", href: "/inventory" }],
+    items: [
+      { label: "Inventory", href: "/inventory" },
+      { label: "Job materials", href: "/insights/job-materials", permission: "inventory" },
+      { label: "Stock audit", href: "/insights/stock-audit", permission: "inventory" },
+    ],
   },
   {
     key: "billing",
