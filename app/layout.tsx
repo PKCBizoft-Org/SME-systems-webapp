@@ -30,16 +30,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://bizoftph.com"),
   title: {
-    default: "PKC BIZOFT | WiFi Installation & Internet Service",
+    default: "Business Systems Solutions | PKC BIZOFT",
     template: "%s | PKC BIZOFT",
   },
   description:
-    "PKC BIZOFT (bizoftph) installs home WiFi and internet. Request an installation, pay your bills, track your technician and get help, all in one app.",
-  keywords: ["PKC BIZOFT", "PKC Bizoft", "bizoft", "bizoftph", "WiFi installation", "internet service", "Philippines"],
+    "PKC BIZOFT (bizoftph) Business Systems Solutions: home WiFi and internet installation. Request an installation, pay your bills, track your technician and get help, all in one app.",
+  keywords: ["Business Systems Solutions", "PKC BIZOFT", "PKC Bizoft", "bizoft", "bizoftph", "WiFi installation", "internet service", "Philippines"],
   openGraph: {
     type: "website",
     siteName: "PKC BIZOFT",
-    title: "PKC BIZOFT | WiFi Installation & Internet Service",
+    title: "Business Systems Solutions | PKC BIZOFT",
     description: "Home WiFi installation, bills, repairs and technician tracking in one app.",
     images: ["/pkc-logo.webp"],
   },
@@ -50,7 +50,7 @@ const ORGANIZATION_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "PKC BIZOFT",
-  alternateName: ["PKC Bizoft", "Bizoft", "bizoftph", "bizoftph.com"],
+  alternateName: ["Business Systems Solutions", "PKC Bizoft", "Bizoft", "bizoftph", "bizoftph.com"],
   url: "https://bizoftph.com",
   logo: "https://bizoftph.com/pkc-logo.webp",
   description: "Home WiFi installation and internet service in the Philippines.",
