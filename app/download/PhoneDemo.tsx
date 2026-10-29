@@ -59,12 +59,12 @@ function HomeScreen({ onOpenBilling, onOpenRequests, onPlay }: { onOpenBilling: 
         <button className={styles.bell} type="button" aria-label="Notifications"><AppIcon name="bell" size={17} /><i /></button>
       </div>
 
-      <button type="button" className={styles.storyButton} onClick={onPlay} aria-label="Play the 25 second story">
+      <button type="button" className={styles.storyButton} onClick={onPlay} aria-label="Play the 30 second story">
         <span className={styles.storyPlay} aria-hidden="true">▶</span>
         <span className={styles.storyText}>
           <em>WATCH THE STORY</em>
-          <strong>11:47 PM. Which would you tap?</strong>
-          <small>25 seconds · tap to play</small>
+          <strong>Movie night. Then it freezes…</strong>
+          <small>30 seconds · tap to play</small>
         </span>
       </button>
 
@@ -284,8 +284,8 @@ export function PhoneDemo() {
             <div className={styles.storyLayer}>
               <video
                 className={styles.storyVideo}
-                src="/media/pkc-promo-vertical.mp4"
-                poster="/media/pkc-promo-vertical.jpg"
+                src="/media/pkc-buffering-vertical.mp4"
+                poster="/media/pkc-buffering-vertical.jpg"
                 autoPlay
                 muted
                 playsInline
@@ -310,7 +310,7 @@ export function PhoneDemo() {
           </div>
         </div>
       </div>
-      <p className={styles.caption}>Tap the glowing ▶ on Home to replay the 25 second story, or tap around. Sample screens, not real data.</p>
+      <p className={styles.caption}>Tap the glowing ▶ on Home to replay the 30 second story, or tap around. Sample screens, not real data.</p>
     </div>
   );
 }
