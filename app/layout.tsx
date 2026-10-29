@@ -64,11 +64,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <head>
-        {/* Marks phones and weaker devices (touch screens under 900px, little memory, few cores, data saver) so heavy effects are skipped. */}
+        {/* Marks weaker devices (4 GB of memory or less, data saver, or lag saved by LagWatch) so heavy effects are skipped. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var n=navigator,c=n.connection||{};if(localStorage.getItem('pkc_lite_v1')||(n.deviceMemory&&n.deviceMemory<=6)||(n.hardwareConcurrency&&n.hardwareConcurrency<=6)||c.saveData||(matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:900px)').matches)){document.documentElement.classList.add('lite')}}catch(e){}})();",
+              "(function(){try{var n=navigator,c=n.connection||{};if(localStorage.getItem('pkc_lite_v1')||(n.deviceMemory&&n.deviceMemory<=4)||c.saveData){document.documentElement.classList.add('lite')}}catch(e){}})();",
           }}
         />
         <script

@@ -307,6 +307,7 @@ export default function HomePage() {
   const [selectedNode, setSelectedNode] = useState(NETWORK_POINTS.find((point) => point.id === "philippines") ?? NETWORK_POINTS[0]);
   const [showFeatureDetail, setShowFeatureDetail] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
+  const [globeSize, setGlobeSize] = useState(680);
   // react-globe.gl takes the globe's material as a prop (its ref has no globeMaterial() method).
   // three is already in the globe's chunk, so loading it here costs nothing extra.
   const [globeMaterial, setGlobeMaterial] = useState<MeshPhongMaterial | null>(null);
@@ -338,26 +339,29 @@ export default function HomePage() {
   }, [introVisible]);
 
   useEffect(() => {
-    // The 3D globe is too heavy for weaker phones; they get the flat fallback straight away. Creating a
-    // WebGL context just to test for it can block the page for most of a second on weak hardware, so
-    // lite devices never do it, and others only after the intro (LagWatch may switch to lite by then).
-    if (document.documentElement.classList.contains("lite")) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setWebglAvailable(false);
-      return;
-    }
+    // The globe shows on every device with real WebGL, lite ones included. Creating a WebGL context just
+    // to test for it can stall weak hardware, so the check waits until the intro has finished.
     if (introVisible) return;
     try {
       const canvas = document.createElement("canvas");
       // failIfMajorPerformanceCaveat: no globe on slow software-only WebGL either.
       const gl = (canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true }) as WebGLRenderingContext | null) ||
         (canvas.getContext("experimental-webgl", { failIfMajorPerformanceCaveat: true }) as WebGLRenderingContext | null);
-      setWebglAvailable(Boolean(gl && !gl.isContextLost()) && !document.documentElement.classList.contains("lite"));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWebglAvailable(Boolean(gl && !gl.isContextLost()));
       gl?.getExtension("WEBGL_lose_context")?.loseContext();
     } catch {
       setWebglAvailable(false);
     }
   }, [introVisible]);
+
+  useEffect(() => {
+    // Phones get a globe that fits their screen instead of the 680px desktop one.
+    const fit = () => setGlobeSize(Math.min(680, Math.max(260, window.innerWidth - 24)));
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
 
   const configureGlobe = useCallback(() => {
     const globe = globeRef.current;
@@ -728,8 +732,8 @@ export default function HomePage() {
               ref={globeRef}
               onGlobeReady={configureGlobe}
               globeMaterial={globeMaterial}
-              width={680}
-              height={680}
+              width={globeSize}
+              height={globeSize}
               backgroundColor="rgba(0,0,0,0)"
               showAtmosphere
               atmosphereColor="#16d9ff"
