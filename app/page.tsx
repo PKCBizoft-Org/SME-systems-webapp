@@ -1192,7 +1192,7 @@ export default function HomePage() {
           gap: 13px;
         }
 
-        .clock {
+        :global(.clock) {
           font-size: 10px;
           letter-spacing: 0.12em;
           opacity: 0.45;
@@ -3393,7 +3393,7 @@ export default function HomePage() {
         }
 
         @media (max-width: 800px) {
-          .navLinks,.navRight .clock{display:none}
+          .navLinks,.navRight :global(.clock){display:none}
           .navRight{margin-left:auto}
           .menuButton{display:flex;width:42px;height:42px;align-items:center;justify-content:center;flex-direction:column;gap:6px;border:1px solid rgba(106,231,255,.14);background:rgba(4,17,23,.72);color:#a9f6ff;border-radius:7px;cursor:pointer}
           .menuButton span{width:15px;height:1px;background:currentColor;transition:transform .3s ease}
@@ -3405,7 +3405,7 @@ export default function HomePage() {
           .mobileMenu a:last-child{border:0;color:#86efff}.mobileMenu b{font-weight:500;color: rgba(126, 238, 255, 0.53)}
 
           .navLinks,
-          .clock {
+          :global(.clock) {
             display: none;
           }
 
@@ -3962,7 +3962,7 @@ export default function HomePage() {
           .nav { height: 68px; }
           .navLinks { display: none; }
           .navRight { gap: 8px; }
-          .clock { display: none; }
+          :global(.clock) { display: none; }
           .loginButton { padding: 9px 10px; }
           .heroCopy { padding-top: 38px; }
           h1 { font-size: clamp(46px, 13vw, 62px); }
@@ -4451,7 +4451,7 @@ export default function HomePage() {
 
         @media (max-width: 1180px) {
           .hero {
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
             gap: 8px;
             padding-top: 48px;
             min-height: auto;
@@ -4567,8 +4567,8 @@ export default function HomePage() {
           }
 
           .globeStage {
-            width: 470px;
-            height: 470px;
+            width: min(470px, calc(100vw - 24px));
+            height: min(470px, calc(100vw - 24px));
             transform: scale(.84);
             transform-origin: center center;
           }
@@ -4589,7 +4589,11 @@ export default function HomePage() {
 
           .nodeInspector {
             bottom: 0;
-            width: min(320px, calc(100% - 20px));
+            left: 10px;
+            right: 10px;
+            width: auto;
+            max-width: none;
+            transform: none;
           }
 
           .systemCard.large {

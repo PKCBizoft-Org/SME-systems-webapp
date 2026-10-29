@@ -2502,6 +2502,9 @@ export default function WhoWeArePage() {
           .peopleCta {
             margin: 10px auto 65px;
             padding: 40px 22px;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 28px;
           }
           .peopleCta h3 {
             font-size: clamp(43px, 12vw, 62px);
