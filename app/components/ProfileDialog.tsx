@@ -9,6 +9,7 @@ export type ProfileDetails = {
   role: string;
   description: string;
   details: { label: string; value: string }[];
+  links?: { label: string; href: string }[];
 };
 
 // Modal "ID card" for a person on the Who We Are page. It only shows what the
@@ -23,6 +24,7 @@ export function ProfileDialog({
   onClose: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const open = profile !== null;
 
   useEffect(() => {
@@ -35,10 +37,13 @@ export function ProfileDialog({
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
-      // Keep keyboard focus inside the dialog while it is open.
+      // Keep keyboard focus inside the dialog while it is open (close button and profile links).
       if (event.key === "Tab") {
         event.preventDefault();
-        closeRef.current?.focus();
+        const stops = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button, a[href]") ?? []);
+        const at = stops.indexOf(document.activeElement as HTMLElement);
+        const next = (at + (event.shiftKey ? -1 : 1) + stops.length) % stops.length;
+        (stops[next] ?? closeRef.current)?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -55,6 +60,7 @@ export function ProfileDialog({
   return (
     <div className={styles.backdrop} onClick={onClose}>
       <div
+        ref={dialogRef}
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
@@ -89,6 +95,16 @@ export function ProfileDialog({
               </div>
             ))}
           </dl>
+
+          {profile.links?.length ? (
+            <div className={styles.links}>
+              {profile.links.map((link) => (
+                <a key={link.href} className={styles.link} href={link.href} target="_blank" rel="noopener noreferrer me">
+                  {link.label} <span aria-hidden="true">↗</span>
+                </a>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

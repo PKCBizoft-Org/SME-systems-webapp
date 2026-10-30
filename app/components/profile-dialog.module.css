@@ -198,6 +198,33 @@
   font-weight: 700;
 }
 
+.links {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.link {
+  padding: 9px 14px;
+  border: 1px solid rgba(95, 229, 255, 0.28);
+  border-radius: 999px;
+  color: #eaf8ff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.link:hover,
+.link:focus-visible {
+  border-color: #5fe5ff;
+  background: rgba(95, 229, 255, 0.1);
+  color: #5fe5ff;
+  outline: none;
+}
+
 @keyframes fade {
   from { opacity: 0; }
 }

@@ -22,7 +22,17 @@ const founder = {
     "The founder and group creator of PKC BIZOFT, guiding the organization’s direction, culture and long-term vision.",
 };
 
+// Public profiles shown on each person's card (and the same ones search engines see in layout.tsx).
 const coFounders = ["Prince AJ Y. Cuyos"];
+const coFounderLinks: Record<string, { label: string; href: string }[]> = {
+  "Prince AJ Y. Cuyos": [
+    { label: "Portfolio", href: "https://prince-aj-cuyos.princeajycuyos28.workers.dev/" },
+    { label: "Facebook", href: "https://www.facebook.com/Underrated.Prince.AJ" },
+    { label: "Instagram", href: "https://www.instagram.com/prinx_cys" },
+    { label: "GitHub", href: "https://github.com/PRiNXCYS" },
+  ],
+};
+const pkcFacebook = { label: "PKC on Facebook", href: "https://www.facebook.com/PKCGrpofCmpny" };
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const common = {
@@ -93,6 +103,7 @@ export default function WhoWeArePage() {
         { label: "Node", value: "Origin / PKC" },
         { label: "Profile", value: "Private" },
       ],
+      links: [pkcFacebook],
     };
   } else if (profileKey !== null) {
     const node = String(profileKey + 1).padStart(2, "0");
@@ -105,8 +116,9 @@ export default function WhoWeArePage() {
       details: [
         { label: "Node", value: node },
         { label: "Status", value: "Connected" },
-        { label: "Profile", value: "Private" },
+        { label: "Profile", value: coFounderLinks[coFounders[profileKey]] ? "Public" : "Private" },
       ],
+      links: coFounderLinks[coFounders[profileKey]],
     };
   }
   const [scrollProgress, setScrollProgress] = useState(0);
