@@ -54,6 +54,11 @@ const ORGANIZATION_JSON_LD = {
   url: "https://bizoftph.com",
   logo: "https://bizoftph.com/pkc-logo.webp",
   description: "Home WiFi installation and internet service in the Philippines.",
+  // Founder first, then co-founders; the Who We Are page says who is which.
+  founder: [
+    { "@type": "Person", name: "Paul Kent Cairel", jobTitle: "Founder", url: "https://bizoftph.com/who-we-are" },
+    { "@type": "Person", name: "Prince AJ Y. Cuyos", jobTitle: "Co-Founder", url: "https://bizoftph.com/who-we-are" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
