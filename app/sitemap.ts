@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://bizoftph.com";
   const pages: { path: string; priority: number }[] = [
-    { path: "", priority: 1 },
+    { path: "/", priority: 1 },
     { path: "/who-we-are", priority: 0.8 },
     { path: "/download", priority: 0.8 },
     { path: "/guide", priority: 0.6 },
@@ -15,6 +15,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
   return pages.map(({ path, priority }) => ({
     url: `${base}${path}`,
+    // Tells crawlers the page changed, so they come back sooner after a deploy.
+    lastModified: new Date(),
     changeFrequency: "monthly",
     priority,
   }));
