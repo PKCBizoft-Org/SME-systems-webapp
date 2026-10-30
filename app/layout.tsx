@@ -51,13 +51,26 @@ const ORGANIZATION_JSON_LD = {
   "@type": "Organization",
   name: "PKC BIZOFT",
   alternateName: ["Business Systems Solutions", "PKC Bizoft", "Bizoft", "bizoftph", "bizoftph.com"],
+  sameAs: ["https://www.facebook.com/PKCGrpofCmpny"],
   url: "https://bizoftph.com",
   logo: "https://bizoftph.com/pkc-logo.webp",
   description: "Home WiFi installation and internet service in the Philippines.",
   // Founder first, then co-founders; the Who We Are page says who is which.
   founder: [
     { "@type": "Person", name: "Paul Kent Cairel", jobTitle: "Founder", url: "https://bizoftph.com/who-we-are" },
-    { "@type": "Person", name: "Prince AJ Y. Cuyos", jobTitle: "Co-Founder", url: "https://bizoftph.com/who-we-are" },
+    {
+      "@type": "Person",
+      "@id": "https://prince-aj-cuyos.princeajycuyos28.workers.dev/#me",
+      name: "Prince AJ Y. Cuyos",
+      jobTitle: "Co-Founder",
+      url: "https://prince-aj-cuyos.princeajycuyos28.workers.dev/",
+      sameAs: [
+        "https://bizoftph.com/who-we-are",
+        "https://www.facebook.com/Underrated.Prince.AJ",
+        "https://www.instagram.com/prinx_cys",
+        "https://github.com/PRiNXCYS",
+      ],
+    },
   ],
 };
 
