@@ -35,8 +35,8 @@ export const metadata: Metadata = {
     template: "%s | PKC BIZOFT",
   },
   description:
-    "PKC BIZOFT builds business systems for SMEs: billing, accounting, inventory and field service. Also home internet in Mabini and Bongabong, Davao de Oro.",
-  keywords: ["Business Systems Solutions", "PKC BIZOFT", "PKC Bizoft", "bizoft", "bizoftph", "phbizoft", "Bizoft PH", "business software Philippines", "billing system", "accounting system", "inventory system", "field service management", "SME systems", "home WiFi Davao de Oro", "Philippines"],
+    "PKC BIZOFT builds business systems for small and medium businesses in the Philippines: billing, online payments, accounting, inventory and field service.",
+  keywords: ["Business Systems Solutions", "PKC BIZOFT", "PKC Bizoft", "bizoft", "bizoftph", "phbizoft", "Bizoft PH", "business software Philippines", "billing system", "accounting system", "inventory system", "field service management", "SME systems", "Philippines"],
   openGraph: {
     type: "website",
     siteName: "PKC BIZOFT",
@@ -55,7 +55,7 @@ const ORGANIZATION_JSON_LD = {
   sameAs: ["https://www.facebook.com/PKCGrpofCmpny"],
   url: "https://bizoftph.com",
   logo: "https://bizoftph.com/pkc-logo.webp",
-  description: "Business systems solutions for small and medium businesses: billing and online payments, accounting, inventory and field-service management. Also runs home internet in Mabini and Bongabong (Pantukan), Davao de Oro, Philippines.",
+  description: "Business systems solutions for small and medium businesses: billing and online payments, accounting, inventory and field-service management.",
   areaServed: [
     { "@type": "AdministrativeArea", name: "Mabini, Davao de Oro, Philippines" },
     { "@type": "Place", name: "Bongabong, Pantukan, Davao de Oro, Philippines" },

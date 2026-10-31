@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: { absolute: "Founders of PKC BIZOFT (bizoftph) | Paul Kent Cairel & Team" },
   description:
-    "Who founded PKC BIZOFT (bizoftph.com)? Founder Paul Kent Cairel and co-founder Prince AJ Y. Cuyos, the team behind the business systems, the customer app and the home internet service.",
+    "Who founded PKC BIZOFT (bizoftph.com)? Founder Paul Kent Cairel and co-founder Prince AJ Y. Cuyos, the team behind the business systems and the customer app.",
   alternates: { canonical: "/who-we-are" },
   openGraph: {
     title: "PKC BIZOFT Founders & Team",

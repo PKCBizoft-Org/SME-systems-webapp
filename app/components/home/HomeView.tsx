@@ -1,21 +1,17 @@
 "use client";
 
 /* The public home page. Plain <a> on purpose, same as the other public pages. */
-/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState } from "react";
-import { INSTALL_FEE, SPEED_BY_PRICE } from "@/lib/plans";
-import { CoverageCheck, HomeFaq, PlanPicker, ProofSection } from "./HomeExtras";
-import { fill, HOME_TEXT, LANG_KEY, LANGS, type Lang } from "./homeText";
+import { HomeFaq } from "./HomeExtras";
+import { HOME_TEXT, LANG_KEY, LANGS, type Lang } from "./homeText";
 import styles from "./home.module.css";
 
 const APP_DOWNLOAD_URL = "/download";
-const SIGNUP_URL = "/login/SignUp";
 const CONTACT_PHONE = "09537404840";
 const CONTACT_PHONE_LABEL = "0953 740 4840";
 const FACEBOOK_URL = "https://www.facebook.com/PKCGrpofCmpny";
-// Same price list the app uses, so the home page never shows a different price.
-const PLANS = Object.entries(SPEED_BY_PRICE).map(([price, mbps]) => ({ price: Number(price), mbps }));
 
 // The FAQ in the format Google and Bing read (always the English answers).
 const FAQ_JSON_LD = {
@@ -88,7 +84,6 @@ export default function HomeView() {
           </a>
           <nav className={styles.links} aria-label="Primary">
             <a href="#systems">{t.navSystems}</a>
-            <a href="#network">{t.navNetwork}</a>
             <a href="/who-we-are">{t.navWho}</a>
             <a href="#contact">{t.navContact}</a>
           </nav>
@@ -120,10 +115,8 @@ export default function HomeView() {
           <div className={styles.menu} id="mobile-menu">
             <div className={styles.wrap}>
               <a href="#systems" onClick={close}>{t.navSystems}</a>
-              <a href="#network" onClick={close}>{t.navNetwork}</a>
               <a href="/who-we-are">{t.navWho}</a>
               <a href="#contact" onClick={close}>{t.navContact}</a>
-              <a href={SIGNUP_URL}>{t.menuApply}</a>
               <a href={APP_DOWNLOAD_URL}>{t.getApp}</a>
               <a href="/login">{t.logIn}</a>
               <div className={styles.menuLang}>{langSwitch}</div>
@@ -141,11 +134,6 @@ export default function HomeView() {
             <a className={styles.btn} href="#contact">{t.talk}</a>
             <a className={styles.link} href="#systems">{t.seeSystems}</a>
           </div>
-          <p className={styles.heroNote}>
-            <i aria-hidden="true" />
-            <span>{t.heroNote}</span>{" "}
-            <a className={styles.link} href="#network">{t.heroNoteLink}</a>
-          </p>
         </div>
       </section>
 
@@ -174,47 +162,6 @@ export default function HomeView() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className={styles.section} id="network">
-        <div className={styles.wrap}>
-          <div className={styles.netIntro}>
-            <h2>{t.netTitle}</h2>
-            <p className={styles.lead}>{t.netText}</p>
-          </div>
-
-          <div className={styles.plans} id="plans">
-            <div className={styles.plansHead}>
-              <h3>{t.plansTitle}</h3>
-              <p>{fill(t.plansText, { fee: INSTALL_FEE.toLocaleString() })}</p>
-            </div>
-            <ul>
-              {PLANS.map((plan) => (
-                <li key={plan.price}>
-                  <strong>{plan.mbps} Mbps</strong>
-                  <span>
-                    ₱{plan.price.toLocaleString()} {t.perMonth}
-                  </span>
-                  <a className={styles.link} href={SIGNUP_URL}>{t.applyShort}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className={styles.tools}>
-            <PlanPicker t={t} plans={PLANS} signupUrl={SIGNUP_URL} />
-            <CoverageCheck t={t} phone={CONTACT_PHONE} facebook={FACEBOOK_URL} />
-          </div>
-
-          <div className={styles.existing}>
-            <span>{t.existing}</span>
-            <a className={styles.btn} href="/login">{t.payLogin}</a>
-            <a className={styles.link} href={APP_DOWNLOAD_URL}>{t.appLink}</a>
-            <a className={styles.link} href={SIGNUP_URL}>{t.apply}</a>
-          </div>
-
-          <ProofSection t={t} />
         </div>
       </section>
 

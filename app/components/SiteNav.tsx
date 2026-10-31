@@ -8,7 +8,6 @@ import styles from "./site-nav.module.css";
 // Plain <a> on purpose, same as the other public pages. Same links, same order as the home page.
 export const NAV_LINKS = [
   { href: "/#systems", label: "Systems" },
-  { href: "/#network", label: "Our network" },
   { href: "/who-we-are", label: "Who we are" },
   { href: "/#contact", label: "Contact" },
 ];
@@ -71,7 +70,6 @@ export function SiteNav({ current }: { current?: string }) {
               {l.label}
             </a>
           ))}
-          <a href="/login/SignUp">Apply for home WiFi</a>
           <a href="/download">Get the app</a>
           <a href="/login">Log in</a>
           <a className={styles.cta} href="/#contact" onClick={() => setOpen(false)}>

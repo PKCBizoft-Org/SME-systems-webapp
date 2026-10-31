@@ -44,8 +44,8 @@ const whatWeDo = [
     text: "Customers apply, pay bills with GCash, bank transfer or cash, report problems and chat with their technician from their phone.",
   },
   {
-    title: "Our own network",
-    text: "We run home internet in all of Mabini and Bongabong (Pantukan), Davao de Oro, on these same systems.",
+    title: "Built in-house",
+    text: "We design, build and run the systems ourselves, from the website to the Android app.",
   },
 ];
 
@@ -109,8 +109,7 @@ export default function WhoWeArePage() {
               <h1>The people behind PKC BIZOFT.</h1>
               <p className={styles.lead}>
                 PKC BIZOFT (bizoftph.com, also known as Bizoft PH) provides business systems solutions: billing, accounting, inventory and
-                field-service systems for small and medium businesses. It was founded by Paul Kent Cairel with co-founder Prince AJ Y. Cuyos,
-                and runs its own home internet service in Davao de Oro on the same systems.
+                field-service systems for small and medium businesses. It was founded by Paul Kent Cairel with co-founder Prince AJ Y. Cuyos.
               </p>
               <dl className={styles.glance}>
                 <div>
@@ -252,8 +251,8 @@ export default function WhoWeArePage() {
             <a className={styles.btn} href="/#contact">
               Talk to us
             </a>
-            <a className={styles.link} href="/#network">
-              See our home WiFi
+            <a className={styles.link} href="/#systems">
+              See the systems
             </a>
           </div>
         </div>
