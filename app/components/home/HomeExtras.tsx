@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { HomeStats } from "@/app/api/public/home-stats/route";
-import { fill, SERVICE_AREAS, type HomeText } from "./homeText";
+import { fill, PARTIAL_TOWNS, SERVICE_AREAS, type HomeText } from "./homeText";
 import styles from "./home-extras.module.css";
 
 type Plan = { price: number; mbps: number };
@@ -63,12 +63,27 @@ export function PlanPicker({ t, plans, signupUrl }: { t: HomeText; plans: Plan[]
   );
 }
 
+// "golden valley" -> "Golden Valley"
+const titleCase = (text: string) => text.replace(/\b\w/g, (c) => c.toUpperCase());
+
+// What someone typed -> the covered place it names ("Pindasan, Mabini, Davao de Oro"), "partial" for a town
+// we only partly cover, or null when we cannot tell (then they are asked to text).
+function findCoverage(typed: string): string | "partial" | null {
+  const text = ` ${typed.toLowerCase().replace(/[^a-z0-9ñ ]+/g, " ").replace(/\s+/g, " ").trim()} `;
+  if (text.trim().length < 3) return null;
+  for (const area of SERVICE_AREAS) {
+    const name = area.names.find((n) => text.includes(` ${n} `));
+    if (!name) continue;
+    const town = area.place.split(",")[0].toLowerCase();
+    return name === town ? area.place : `${titleCase(name)}, ${area.place}`;
+  }
+  return PARTIAL_TOWNS.some((town) => text.includes(` ${town} `)) ? "partial" : null;
+}
+
 export function CoverageCheck({ t, phone, facebook }: { t: HomeText; phone: string; facebook: string }) {
   const [area, setArea] = useState("");
   const [checked, setChecked] = useState("");
-  const match = checked
-    ? SERVICE_AREAS.find((a) => a.toLowerCase().includes(checked.toLowerCase()) || checked.toLowerCase().includes(a.toLowerCase()))
-    : undefined;
+  const match = checked ? findCoverage(checked) : null;
   const sms = `sms:${phone}?body=${encodeURIComponent(fill(t.coverSms, { area: checked }))}`;
 
   return (
@@ -80,16 +95,17 @@ export function CoverageCheck({ t, phone, facebook }: { t: HomeText; phone: stri
       }}
     >
       <strong className={styles.pickerTitle}>{t.coverTitle}</strong>
+      <p className={styles.coverNow}>{t.coverNow}</p>
       <div className={styles.coverRow}>
         <input value={area} onChange={(e) => setArea(e.target.value)} placeholder={t.coverPlaceholder} aria-label={t.coverPlaceholder} maxLength={60} />
         <button type="submit">{t.coverCheck}</button>
       </div>
       {checked ? (
-        match ? (
+        match && match !== "partial" ? (
           <p className={styles.coverYes}>{fill(t.coverYes, { area: match })}</p>
         ) : (
           <div className={styles.coverAsk}>
-            <p>{t.coverUnknown}</p>
+            <p>{match === "partial" ? t.coverPartial : t.coverUnknown}</p>
             <div>
               <a href={sms}>{t.coverText}</a>
               <a href={facebook} target="_blank" rel="noopener noreferrer">

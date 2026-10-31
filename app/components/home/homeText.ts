@@ -9,9 +9,20 @@ export const LANGS: { id: Lang; label: string }[] = [
 ];
 export const LANG_KEY = "pkc_lang_v1";
 
-// Barangays and puroks PKC already installs in. Empty until PKC sends the list; while empty the
-// coverage checker asks people to text instead of answering yes or no.
-export const SERVICE_AREAS: string[] = [];
+// Where PKC installs today (from PKC, 2026-10-31): all of Mabini, and Bongabong in Pantukan,
+// both in Davao de Oro. `names` are what people might type (lowercase), old barangay names included.
+export const SERVICE_AREAS: { place: string; names: string[] }[] = [
+  {
+    place: "Mabini, Davao de Oro",
+    names: [
+      "mabini", "anitapan", "cabuyuan", "cabuyoan", "cadunan", "cuambog", "poblacion", "del pilar",
+      "golden valley", "maraut", "libodon", "pangibiran", "pindasan", "san antonio", "tagnanan", "mampising",
+    ],
+  },
+  { place: "Pantukan, Davao de Oro", names: ["bongabong"] },
+];
+// Towns where only part is covered: typing just the town gets a "this part only" answer.
+export const PARTIAL_TOWNS = ["pantukan"];
 
 const en = {
   navPlans: "Plans",
@@ -21,7 +32,7 @@ const en = {
   heroTitleA: "Fast home WiFi.",
   heroTitleB: "Connected.",
   heroText:
-    "PKC BIZOFT (bizoftph.com) installs home WiFi up to 200 Mbps, from ₱750 a month. Apply online, pay your bills, and track your technician, all in one app.",
+    "PKC BIZOFT (bizoftph.com) installs home WiFi in Mabini and Bongabong, Pantukan (Davao de Oro), up to 200 Mbps from ₱750 a month. Apply online, pay your bills, and track your technician, all in one app.",
   apply: "APPLY FOR WIFI",
   payLogin: "PAY BILL / LOG IN",
   meetTeam: "MEET THE TEAM",
@@ -40,6 +51,8 @@ const en = {
   useWork: "Work or class from home",
   pickerResult: "We recommend",
   coverTitle: "Do we cover your area?",
+  coverNow: "Now serving all of Mabini and Bongabong (Pantukan), Davao de Oro.",
+  coverPartial: "In Pantukan we cover Bongabong for now. Text us to check your exact place.",
   coverPlaceholder: "Your barangay or purok",
   coverCheck: "CHECK",
   coverYes: "Yes! We cover {area}. Apply now.",
@@ -68,6 +81,7 @@ const en = {
   faqKicker: "FAQ",
   faqTitle: "Questions, answered.",
   faq: [
+    ["Where do you install?", "Right now: the whole Municipality of Mabini, and Barangay Bongabong in Pantukan, both in Davao de Oro. If you live nearby, text us and ask."],
     ["How much does installation cost?", "₱750, paid once when you apply. After that you only pay your monthly plan."],
     ["When is my bill due?", "Your bill is issued on the 15th or 25th of the month, depending on your install date, and is due on the last day of the month."],
     ["What if I pay late?", "There is a grace period until the 4th of the next month. Accounts still unpaid on the 5th are disconnected."],
@@ -95,7 +109,7 @@ const tl: HomeText = {
   heroTitleA: "Mabilis na home WiFi.",
   heroTitleB: "Konektado.",
   heroText:
-    "Nag-i-install ang PKC BIZOFT (bizoftph.com) ng home WiFi hanggang 200 Mbps, mula ₱750 kada buwan. Mag-apply online, magbayad ng bill, at i-track ang technician mo, lahat sa iisang app.",
+    "Nag-i-install ang PKC BIZOFT (bizoftph.com) ng home WiFi sa Mabini at Bongabong, Pantukan (Davao de Oro), hanggang 200 Mbps mula ₱750 kada buwan. Mag-apply online, magbayad ng bill, at i-track ang technician mo, lahat sa iisang app.",
   apply: "MAG-APPLY NG WIFI",
   payLogin: "MAGBAYAD / LOG IN",
   meetTeam: "KILALANIN ANG TEAM",
@@ -114,6 +128,8 @@ const tl: HomeText = {
   useWork: "Work o klase sa bahay",
   pickerResult: "Ang rekomendado namin",
   coverTitle: "Sakop ba namin ang lugar mo?",
+  coverNow: "Sakop namin ngayon ang buong Mabini at Bongabong (Pantukan), Davao de Oro.",
+  coverPartial: "Sa Pantukan, Bongabong pa lang ang sakop namin. I-text kami para ma-check ang eksaktong lugar mo.",
   coverPlaceholder: "Barangay o purok mo",
   coverCheck: "I-CHECK",
   coverYes: "Oo! Sakop namin ang {area}. Mag-apply na.",
@@ -142,6 +158,7 @@ const tl: HomeText = {
   faqKicker: "FAQ",
   faqTitle: "Mga madalas itanong.",
   faq: [
+    ["Saan kayo nag-i-install?", "Sa ngayon: buong Munisipyo ng Mabini, at Barangay Bongabong sa Pantukan, parehong sa Davao de Oro. Kung malapit ka, i-text mo kami at magtanong."],
     ["Magkano ang installation?", "₱750, isang beses lang babayaran pag nag-apply ka. Pagkatapos, buwanang plan na lang ang babayaran mo."],
     ["Kailan due ang bill ko?", "Lumalabas ang bill mo tuwing ika-15 o ika-25 ng buwan, depende sa petsa ng install, at due ito sa huling araw ng buwan."],
     ["Paano kung late akong magbayad?", "May palugit hanggang ika-4 ng susunod na buwan. Ang hindi pa bayad pagdating ng ika-5 ay madi-disconnect."],
@@ -167,7 +184,7 @@ const bis: HomeText = {
   heroTitleA: "Paspas nga home WiFi.",
   heroTitleB: "Konektado.",
   heroText:
-    "Nag-install ang PKC BIZOFT (bizoftph.com) og home WiFi hangtod 200 Mbps, sugod sa ₱750 kada bulan. Pag-apply online, bayri imong bill, ug sundi imong technician, tanan sa usa ka app.",
+    "Nag-install ang PKC BIZOFT (bizoftph.com) og home WiFi sa Mabini ug Bongabong, Pantukan (Davao de Oro), hangtod 200 Mbps sugod sa ₱750 kada bulan. Pag-apply online, bayri imong bill, ug sundi imong technician, tanan sa usa ka app.",
   apply: "PAG-APPLY OG WIFI",
   payLogin: "MAGBAYAD / LOG IN",
   meetTeam: "ILAHA ANG TEAM",
@@ -186,6 +203,8 @@ const bis: HomeText = {
   useWork: "Trabaho o klase sa balay",
   pickerResult: "Among girekomenda",
   coverTitle: "Sakop ba namo ang inyong lugar?",
+  coverNow: "Sakop namo karon ang tibuok Mabini ug Bongabong (Pantukan), Davao de Oro.",
+  coverPartial: "Sa Pantukan, Bongabong pa lang among sakop. I-text mi aron ma-check ang eksakto nimong lugar.",
   coverPlaceholder: "Imong barangay o purok",
   coverCheck: "I-CHECK",
   coverYes: "Oo! Sakop namo ang {area}. Pag-apply na.",
@@ -214,6 +233,7 @@ const bis: HomeText = {
   faqKicker: "FAQ",
   faqTitle: "Mga kasagarang pangutana.",
   faq: [
+    ["Asa mo nag-install?", "Karon: tibuok Munisipyo sa Mabini, ug Barangay Bongabong sa Pantukan, parehas sa Davao de Oro. Kung duol ka, i-text mi ug pangutana."],
     ["Pila ang installation?", "₱750, usa ra ka bayad inig apply nimo. Human ana, ang binulan nga plan na lang imong bayran."],
     ["Kanus-a due akong bill?", "Mogawas imong bill matag ika-15 o ika-25 sa bulan, depende sa petsa sa install, ug due kini sa katapusang adlaw sa bulan."],
     ["Unsa kung ma-late kog bayad?", "Naay palugit hangtod sa ika-4 sa sunod bulan. Ang wala pa nabayri pag-abot sa ika-5 ma-disconnect."],

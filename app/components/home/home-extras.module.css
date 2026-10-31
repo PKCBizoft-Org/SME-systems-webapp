@@ -112,6 +112,12 @@
 .coverRow button {
   margin-left: 0;
 }
+.coverNow {
+  margin: -4px 0 2px;
+  color: rgba(214, 245, 255, 0.78);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .coverYes {
   margin: 0;
   color: #3ddc84;

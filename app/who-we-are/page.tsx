@@ -38,7 +38,7 @@ const coFounderBio =
 
 // What the company does, in plain words (the same facts as the home page).
 const whatWeDo = [
-  { title: "Home WiFi installation", text: "Plans from 50 to 200 Mbps, starting at ₱750 a month, installed by our own technicians." },
+  { title: "Home WiFi installation", text: "In all of Mabini and Bongabong, Pantukan (Davao de Oro). Plans from 50 to 200 Mbps, starting at ₱750 a month." },
   { title: "One app for everything", text: "Apply, pay bills with GCash, bank transfer or cash, and report problems from your phone." },
   { title: "Technicians you can track", text: "See your technician on the map and chat with them before they arrive." },
 ];
@@ -351,7 +351,7 @@ export default function WhoWeArePage() {
           </h1>
           <p>
             PKC BIZOFT (bizoftph.com, also known as Bizoft PH) is a home WiFi
-            provider in the Philippines, founded by Paul Kent Cairel with
+            provider in Mabini and Pantukan, Davao de Oro, founded by Paul Kent Cairel with
             co-founder Prince AJ Y. Cuyos. We install home internet and run
             everything else, from bills to repairs, in one app.
           </p>
@@ -416,7 +416,7 @@ export default function WhoWeArePage() {
                   <img src={PKC_LOGO} alt="" />
                   <span className="hcBrand">
                     PKC BIZOFT
-                    <small>HOME WIFI · PHILIPPINES</small>
+                    <small>HOME WIFI · DAVAO DE ORO</small>
                   </span>
                   <i className="hcChip" />
                 </span>

@@ -100,7 +100,7 @@ const isCorePoint = (d: object) => (d as NetworkPoint).id === "philippines";
 const phBeacon = () => {
   const el = document.createElement("div");
   el.className = "phBeacon";
-  el.innerHTML = '<span class="phPulse"></span><span class="phPulse late"></span><span class="phTag"><b>PKC BIZOFT</b><small>PHILIPPINES · HOME WIFI</small></span>';
+  el.innerHTML = '<span class="phPulse"></span><span class="phPulse late"></span><span class="phTag"><b>PKC BIZOFT</b><small>DAVAO DE ORO · HOME WIFI</small></span>';
   return el;
 };
 // Hides the beacon while the globe has turned it to the far side.

@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s | PKC BIZOFT",
   },
   description:
-    "PKC BIZOFT (bizoftph) Business Systems Solutions: home WiFi and internet installation. Request an installation, pay your bills, track your technician and get help, all in one app.",
+    "PKC BIZOFT (bizoftph) Business Systems Solutions: home WiFi and internet installation in Mabini and Pantukan, Davao de Oro. Request an installation, pay your bills, track your technician and get help, all in one app.",
   keywords: ["Business Systems Solutions", "PKC BIZOFT", "PKC Bizoft", "bizoft", "bizoftph", "phbizoft", "Bizoft PH", "WiFi installation", "internet service", "Philippines"],
   openGraph: {
     type: "website",
@@ -55,7 +55,11 @@ const ORGANIZATION_JSON_LD = {
   sameAs: ["https://www.facebook.com/PKCGrpofCmpny"],
   url: "https://bizoftph.com",
   logo: "https://bizoftph.com/pkc-logo.webp",
-  description: "Home WiFi installation and internet service in the Philippines.",
+  description: "Home WiFi installation and internet service in Mabini and Bongabong (Pantukan), Davao de Oro, Philippines.",
+  areaServed: [
+    { "@type": "AdministrativeArea", name: "Mabini, Davao de Oro, Philippines" },
+    { "@type": "Place", name: "Bongabong, Pantukan, Davao de Oro, Philippines" },
+  ],
   // Founder first, then co-founders; the Who We Are page says who is which.
   founder: [
     { "@type": "Person", name: "Paul Kent Cairel", jobTitle: "Founder", url: "https://bizoftph.com/who-we-are" },
