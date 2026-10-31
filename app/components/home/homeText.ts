@@ -15,8 +15,9 @@ export const SERVICE_AREAS: { place: string; names: string[] }[] = [
   {
     place: "Mabini, Davao de Oro",
     names: [
-      "mabini", "anitapan", "cabuyuan", "cabuyoan", "cadunan", "cuambog", "poblacion", "del pilar",
-      "golden valley", "maraut", "libodon", "pangibiran", "pindasan", "san antonio", "tagnanan", "mampising",
+      "anitapan", "cabuyuan", "cabuyoan", "cadunan", "cuambog", "poblacion", "del pilar", "golden valley",
+      "maraut", "libodon", "pangibiran", "pindasan", "san antonio", "tagnanan", "mampising",
+      "mabini", // the town itself last, so a typed barangay is named in the answer
     ],
   },
   { place: "Pantukan, Davao de Oro", names: ["bongabong"] },
