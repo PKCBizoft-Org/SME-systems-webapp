@@ -471,3 +471,67 @@ html.whoIntroSeen .whoIntro {
 body:has(.introScreen, .whoIntro) [aria-label="Cookie notice"] {
   display: none;
 }
+
+/* Home page globe: the Philippines beacon. react-globe.gl builds this element outside React, so it lives here. */
+.phBeacon {
+  position: relative;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.phPulse {
+  position: absolute;
+  left: -10px;
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #8ff8ff;
+  border-radius: 50%;
+  animation: phPing 2s ease-out infinite;
+}
+.phPulse.late {
+  animation-delay: 1s;
+}
+.phTag {
+  position: absolute;
+  left: 18px;
+  top: -44px;
+  display: grid;
+  gap: 2px;
+  padding: 7px 11px;
+  border: 1px solid rgba(143, 248, 255, 0.45);
+  border-radius: 10px;
+  background: rgba(2, 12, 18, 0.88);
+  white-space: nowrap;
+  box-shadow: 0 0 24px rgba(76, 232, 255, 0.25);
+}
+.phTag::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  bottom: -10px;
+  width: 16px;
+  height: 1px;
+  background: rgba(143, 248, 255, 0.6);
+  transform: rotate(-45deg);
+  transform-origin: right;
+}
+.phTag b {
+  color: #eaffff;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+}
+.phTag small {
+  color: #4ce8ff;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+}
+@keyframes phPing {
+  from {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}

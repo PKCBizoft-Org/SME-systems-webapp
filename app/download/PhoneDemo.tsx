@@ -8,7 +8,8 @@ import styles from "./phone-demo.module.css";
 // Home shortcut, while the bottom navigation mirrors the four customer tabs.
 // The 11:47 PM story plays first, then the tour shows each screen once and stops.
 type TabId = "home" | "requests" | "referrals" | "profile";
-type View = TabId | "billing";
+export type DemoView = TabId | "billing";
+type View = DemoView;
 
 const TOUR: View[] = ["home", "billing", "requests", "referrals", "profile"];
 const AUTO_TOUR_MS = 4200;
@@ -219,9 +220,14 @@ const SCREENS: Record<Exclude<TabId, "home">, () => ReactElement> = {
   profile: ProfileScreen,
 };
 
-export function PhoneDemo() {
-  const [view, setView] = useState<View>("home");
-  const [playing, setPlaying] = useState(true);
+// With `view` set, the page drives the screen (the home page scroll tour): no story video,
+// no auto tour and no caption, just the screen it is told to show.
+export function PhoneDemo({ view: controlledView }: { view?: View } = {}) {
+  const controlled = controlledView !== undefined;
+  const [ownView, setView] = useState<View>("home");
+  const view = controlledView ?? ownView;
+  const [ownPlaying, setPlaying] = useState(true);
+  const playing = ownPlaying && !controlled;
   const [touring, setTouring] = useState(false);
   const [paused, setPaused] = useState(false);
   const active: TabId = view === "billing" ? "home" : view;
@@ -231,13 +237,13 @@ export function PhoneDemo() {
   // One pass through the screens after the story; it stops on the last one
   // instead of starting over, and any tap hands control to the visitor.
   useEffect(() => {
-    if (!touring || paused || playing) return;
+    if (!touring || paused || playing || controlled) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const next = TOUR.indexOf(view) + 1;
     if (next <= 0 || next >= TOUR.length) return;
     const timer = window.setTimeout(() => setView(TOUR[next]), AUTO_TOUR_MS);
     return () => window.clearTimeout(timer);
-  }, [view, touring, paused, playing]);
+  }, [view, touring, paused, playing, controlled]);
 
   function go(next: View) {
     setTouring(false);
@@ -310,7 +316,7 @@ export function PhoneDemo() {
           </div>
         </div>
       </div>
-      <p className={styles.caption}>Tap the glowing ▶ on Home to replay the 30 second story, or tap around. Sample screens, not real data.</p>
+      {controlled ? null : <p className={styles.caption}>Tap the glowing ▶ on Home to replay the 30 second story, or tap around. Sample screens, not real data.</p>}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { CardFX } from "./components/CardFX";
+import { PhoneDemo, type DemoView } from "./download/PhoneDemo";
 import { INSTALL_FEE, SPEED_BY_PRICE } from "@/lib/plans";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
@@ -18,6 +19,13 @@ const SIGNUP_URL = "/login/SignUp";
 const CONTACT_PHONE = "09537404840";
 const CONTACT_PHONE_LABEL = "0953 740 4840";
 const FACEBOOK_URL = "https://www.facebook.com/PKCGrpofCmpny";
+// "How it works": the phone stays pinned while these steps scroll past, one app screen each.
+const TOUR_STEPS: { view: DemoView; title: string; text: string }[] = [
+  { view: "home", title: "Apply in minutes", text: "Pick a plan in the app and send your application. No forms to bring to the office." },
+  { view: "requests", title: "Track installs and repairs", text: "See every request and its status, from installation to a slow-connection report." },
+  { view: "billing", title: "Pay your bill in the app", text: "Check your balance and due date, pay with GCash, bank transfer or cash, and upload your receipt." },
+  { view: "referrals", title: "Invite friends, earn rewards", text: "Share your code. When a friend gets connected, a reward is added to your balance." },
+];
 // Same price list the app uses, so the home page never shows a different price.
 const PLANS = Object.entries(SPEED_BY_PRICE).map(([price, mbps]) => ({ price: Number(price), mbps }));
 
@@ -79,6 +87,16 @@ const NETWORK_POINTS = [
 type NetworkPoint = (typeof NETWORK_POINTS)[number];
 const isCorePoint = (d: object) => (d as NetworkPoint).id === "philippines";
 // Only the Philippines gets a pin; the routes still fly in from around the world.
+const phBeacon = () => {
+  const el = document.createElement("div");
+  el.className = "phBeacon";
+  el.innerHTML = '<span class="phPulse"></span><span class="phPulse late"></span><span class="phTag"><b>PKC BIZOFT</b><small>PHILIPPINES · HOME WIFI</small></span>';
+  return el;
+};
+// Hides the beacon while the globe has turned it to the far side.
+const beaconVisibility = (el: HTMLElement, visible: boolean) => {
+  el.style.opacity = visible ? "1" : "0";
+};
 const CORE_POINTS = NETWORK_POINTS.filter(isCorePoint);
 
 const ROUTES = [
@@ -298,6 +316,8 @@ export default function HomePage() {
   const [introExiting, setIntroExiting] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const tourRef = useRef<HTMLElement | null>(null);
   const [showFeatureDetail, setShowFeatureDetail] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
   const [globeSize, setGlobeSize] = useState(680);
@@ -333,6 +353,31 @@ export default function HomePage() {
     return () => {
       phaseTimers.forEach((id) => window.clearTimeout(id));
       window.clearTimeout(timer);
+    };
+  }, []);
+
+  // Which tour step is showing, from how far the pinned "How it works" section has scrolled.
+  useEffect(() => {
+    const el = tourRef.current;
+    if (!el) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const rect = el.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const progress = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+      setTourStep(Math.min(TOUR_STEPS.length - 1, Math.floor(progress * TOUR_STEPS.length)));
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, []);
 
@@ -621,6 +666,8 @@ export default function HomePage() {
             <div className="scanRing ringThree" />
             <div className="scanCross crossH" />
             <div className="scanCross crossV" />
+            <div className="globeOrbit orbitA" aria-hidden="true"><i /></div>
+            <div className="globeOrbit orbitB" aria-hidden="true"><i /></div>
             {webglAvailable === false ? (
               <div className="globeFallback" role="img" aria-label="Network globe unavailable">
                 <div className="globeFallbackCore"><span>PKC</span><i /></div>
@@ -683,10 +730,21 @@ export default function HomePage() {
               pathDashLength={0.24}
               pathDashGap={1.5}
               pathDashAnimateTime={2400}
+              htmlElementsData={CORE_POINTS}
+              htmlLat="lat"
+              htmlLng="lng"
+              htmlAltitude={0.02}
+              htmlElement={phBeacon}
+              htmlElementVisibilityModifier={beaconVisibility}
+              htmlTransitionDuration={0}
               enablePointerInteraction
               />
             )}
           </div>
+          <div className="globeChip chipA"><b>200</b> MBPS MAX</div>
+          <div className="globeChip chipB">FROM <b>₱750</b>/MO</div>
+          <div className="globeChip chipC"><i /> PAY VIA GCASH</div>
+          <div className="globeChip chipD"><i /> LIVE TECH TRACKING</div>
         </div>
       </section>
 
@@ -723,111 +781,33 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="systems storySection" id="systems" data-story-section="systems">
-        <div className="sectionHeading">
-          <div>
+      <section className="phoneTour" id="systems" ref={tourRef} style={{ "--tour-steps": TOUR_STEPS.length } as CSSProperties}>
+        <div className="tourSticky">
+          <div className="tourCopy">
             <span className="sectionKicker">HOW IT WORKS</span>
             <h2>
               One app.
               <br />
               <em>Everything handled.</em>
             </h2>
+            <ol className="tourSteps">
+              {TOUR_STEPS.map((step, index) => (
+                <li key={step.view} className={index === tourStep ? "tourStep on" : "tourStep"}>
+                  <span className="tourNum">0{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{step.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="tourBar" aria-hidden="true">
+              <i style={{ transform: `scaleX(${(tourStep + 1) / TOUR_STEPS.length})` }} />
+            </div>
           </div>
-          <p>
-            Apply, pay your bills, ask for repairs and see when your technician
-            is coming, all from the PKC BIZOFT app.
-          </p>
-        </div>
-        <div className="systemGrid">
-          <article className="systemCard large">
-            <div className="cardTop">
-              <span>NETWORK / 01</span>
-              <b>↗</b>
-            </div>
-            <div className="networkGraphic">
-              <div className="networkCore">
-                <span>PKC</span>
-                <i />
-              </div>
-              <div className="node nodeA">
-                <Icon name="clients" size={12} /> CLIENTS
-              </div>
-              <div className="node nodeB">
-                <Icon name="pulse" size={12} /> BILLING
-              </div>
-              <div className="node nodeC">
-                <Icon name="server" size={12} /> OPS
-              </div>
-              <div className="node nodeD">
-                <Icon name="cloud" size={12} /> DATA
-              </div>
-              <div className="line lineA" />
-              <div className="line lineB" />
-              <div className="line lineC" />
-              <div className="line lineD" />
-              <div className="dataParticle p1" />
-              <div className="dataParticle p2" />
-              <div className="dataParticle p3" />
-            </div>
-            <div className="systemCopy">
-              <h3>Apply and get connected.</h3>
-              <p>
-                Pick a plan and send your application. We schedule a technician
-                to install your WiFi.
-              </p>
-            </div>
-          </article>
-
-          <article className="systemCard">
-            <div className="cardTop">
-              <span>STATUS / 02</span>
-              <b>●</b>
-            </div>
-            <div className="statusGraphic">
-              <div className="statusBar">
-                <span style={{ width: "92%" }} />
-              </div>
-              <div className="statusBar">
-                <span style={{ width: "78%" }} />
-              </div>
-              <div className="statusBar">
-                <span style={{ width: "86%" }} />
-              </div>
-              <div className="statusBar">
-                <span style={{ width: "64%" }} />
-              </div>
-              <div className="statusLegend">
-                <i /> LIVE SIGNALS
-              </div>
-            </div>
-            <div className="systemCopy">
-              <h3>Know what is happening.</h3>
-              <p>
-                See your bills, payments and repair updates as they happen,
-                without calling the office.
-              </p>
-            </div>
-          </article>
-
-          <article className="systemCard">
-            <div className="cardTop">
-              <span>SECURITY / 03</span>
-              <b>◇</b>
-            </div>
-            <div className="shieldGraphic">
-              <div className="shieldIcon">
-                <Icon name="shield" size={58} />
-              </div>
-              <span>SECURE</span>
-            </div>
-            <div className="systemCopy">
-              <h3>Your account stays safe.</h3>
-              <p>
-                Two-step sign-in and protected records keep your details
-                private.
-              </p>
-            </div>
-          </article>
+          <div className="tourPhone">
+            <PhoneDemo view={TOUR_STEPS[tourStep].view} />
+          </div>
         </div>
       </section>
 
@@ -931,6 +911,232 @@ export default function HomePage() {
       <CardFX cards=".systemCard, .featureCard" visuals="" />
 
       <style jsx>{`
+        .phoneTour {
+          position: relative;
+          z-index: 2;
+          height: calc(var(--tour-steps) * 90vh);
+        }
+        .tourSticky {
+          position: sticky;
+          top: 82px;
+          height: calc(100vh - 82px);
+          width: min(1240px, calc(100% - 64px));
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 56px;
+        }
+        .tourCopy h2 {
+          margin: 14px 0 0;
+          font-size: clamp(38px, 5vw, 64px);
+          line-height: 1;
+          letter-spacing: -0.04em;
+          color: #eaffff;
+        }
+        .tourCopy h2 em {
+          font-style: normal;
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(107, 237, 255, 0.75);
+        }
+        .tourSteps {
+          list-style: none;
+          margin: 28px 0 0;
+          padding: 0;
+          display: grid;
+          gap: 10px;
+          max-width: 560px;
+        }
+        .tourStep {
+          display: flex;
+          gap: 16px;
+          padding: 16px 18px;
+          border: 1px solid rgba(76, 232, 255, 0.1);
+          border-radius: 14px;
+          opacity: 0.4;
+          transition: opacity 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+        }
+        .tourStep.on {
+          opacity: 1;
+          border-color: rgba(76, 232, 255, 0.45);
+          background: rgba(10, 34, 44, 0.6);
+        }
+        .tourNum {
+          padding-top: 3px;
+          color: #4ce8ff;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+        }
+        .tourStep strong {
+          display: block;
+          margin-bottom: 4px;
+          color: #eaffff;
+          font-size: 18px;
+        }
+        .tourStep p {
+          margin: 0;
+          color: rgba(214, 245, 255, 0.78);
+          font-size: 14.5px;
+          line-height: 1.55;
+        }
+        .tourBar {
+          max-width: 560px;
+          height: 2px;
+          margin-top: 18px;
+          overflow: hidden;
+          border-radius: 2px;
+          background: rgba(76, 232, 255, 0.12);
+        }
+        .tourBar i {
+          display: block;
+          height: 100%;
+          background: #4ce8ff;
+          transform-origin: left;
+          transition: transform 0.4s ease;
+        }
+        .tourPhone {
+          width: 380px;
+        }
+        @media (max-height: 820px) {
+          .tourPhone {
+            zoom: 0.84;
+          }
+        }
+        @media (max-height: 700px) {
+          .tourPhone {
+            zoom: 0.72;
+          }
+        }
+        @media (max-width: 900px) {
+          .tourSticky {
+            top: 68px;
+            height: calc(100svh - 68px);
+            width: calc(100% - 32px);
+            grid-template-columns: 1fr;
+            align-content: center;
+            gap: 4px;
+          }
+          .tourCopy h2 {
+            display: none;
+          }
+          .tourSteps {
+            margin-top: 0;
+          }
+          .tourStep:not(.on) {
+            display: none;
+          }
+          .tourPhone {
+            order: -1;
+            justify-self: center;
+            width: 320px;
+            zoom: 0.62;
+          }
+        }
+
+        .globeOrbit {
+          position: absolute;
+          left: -9%;
+          top: -9%;
+          width: 118%;
+          height: 118%;
+          border: 1px solid rgba(76, 232, 255, 0.2);
+          border-radius: 50%;
+          pointer-events: none;
+        }
+        .orbitA {
+          z-index: 3;
+          transform: rotate(-20deg) scaleY(0.3);
+        }
+        .orbitB {
+          z-index: 1;
+          left: -14%;
+          top: -14%;
+          width: 128%;
+          height: 128%;
+          border-style: dashed;
+          opacity: 0.7;
+          transform: rotate(26deg) scaleY(0.2);
+        }
+        .globeOrbit i {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          animation: orbitSpin 14s linear infinite;
+        }
+        .orbitB i {
+          animation-duration: 22s;
+          animation-direction: reverse;
+        }
+        .globeOrbit i::before {
+          content: "";
+          position: absolute;
+          top: -5px;
+          left: 50%;
+          width: 10px;
+          height: 10px;
+          margin-left: -5px;
+          border-radius: 50%;
+          background: #a9fbff;
+          box-shadow: 0 0 14px 4px rgba(76, 232, 255, 0.7);
+        }
+        @keyframes orbitSpin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .globeChip {
+          position: absolute;
+          z-index: 4;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 13px;
+          border: 1px solid rgba(76, 232, 255, 0.3);
+          border-radius: 999px;
+          background: rgba(3, 14, 20, 0.82);
+          backdrop-filter: blur(8px);
+          color: #cfefff;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          white-space: nowrap;
+          animation: chipFloat 6s ease-in-out infinite;
+        }
+        .globeChip b {
+          color: #4ce8ff;
+          font-size: 13px;
+        }
+        .globeChip i {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #3ddc84;
+          box-shadow: 0 0 8px #3ddc84;
+        }
+        .chipA { top: 13%; left: 8%; }
+        .chipB { top: 24%; right: 4%; animation-delay: -1.5s; }
+        .chipC { bottom: 22%; left: 2%; animation-delay: -3s; }
+        .chipD { bottom: 10%; right: 12%; animation-delay: -4.5s; }
+        @keyframes chipFloat {
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+        @media (max-width: 620px) {
+          .globeChip {
+            padding: 6px 10px;
+            font-size: 9px;
+          }
+          .globeChip b {
+            font-size: 11px;
+          }
+          .chipC,
+          .chipD {
+            display: none;
+          }
+        }
+
         .plansSection {
           position: relative;
           z-index: 2;
