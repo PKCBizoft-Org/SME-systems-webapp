@@ -2394,6 +2394,7 @@ export default function WhoWeArePage() {
         .hcPeople {
           display: flex;
           gap: 26px;
+          margin-top: auto;
         }
         .hcPeople > span {
           display: grid;
