@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 // The page itself is a client component, so its search title and description live here.
 export const metadata: Metadata = {
-  title: "Founders & Team",
+  title: { absolute: "Founders of PKC BIZOFT (bizoftph) | Paul Kent Cairel & Team" },
   description:
-    "Meet the people behind PKC BIZOFT: founder Paul Kent Cairel and co-founder Prince AJ Y. Cuyos.",
+    "Who founded PKC BIZOFT (bizoftph.com)? Founder Paul Kent Cairel and co-founder Prince AJ Y. Cuyos, the team behind the home WiFi installation and billing app.",
   alternates: { canonical: "/who-we-are" },
   openGraph: {
     title: "PKC BIZOFT Founders & Team",

@@ -341,9 +341,10 @@ export default function WhoWeArePage() {
             the system.
           </h2>
           <p>
-            PKC BIZOFT is shaped by its founding team — people bringing
-            direction, collaboration, and technical thinking together to build a
-            connected business platform.
+            PKC BIZOFT (bizoftph.com) was founded by Paul Kent Cairel, with
+            co-founder Prince AJ Y. Cuyos. The founding team brings direction,
+            collaboration, and technical thinking together to build a connected
+            business platform.
           </p>
           <div className="heroActions">
             <a className="primary" href="#founder">
@@ -614,7 +615,7 @@ export default function WhoWeArePage() {
           <a href="/privacy">PRIVACY</a>
           <a href="/cookies">COOKIES</a>
         </div>
-        <span className="copyright">© 2026 PKC</span>
+        <span className="copyright">© 2026 PKC BIZOFT · bizoftph.com</span>
       </footer>
 
       <CardFX />

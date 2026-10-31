@@ -665,7 +665,7 @@ export default function HomePage() {
             <span>Connected.</span>
           </h1>
           <p>
-            PKC BIZOFT connects the moving parts of your business — clients,
+            PKC BIZOFT (bizoftph.com) connects the moving parts of your business — clients,
             services, people and data — so the work behind the scenes stays
             visible, coordinated and ready to move.
           </p>
@@ -1001,8 +1001,8 @@ export default function HomePage() {
           <a href="/guide">GUIDE</a>
         </div>
         <div className="footerMeta">
-          <span>PRIVATE / BUSINESS OPERATIONS</span>
-          <span>© 2026 PKC</span>
+          <span>FOUNDED BY PAUL KENT CAIREL / BIZOFTPH.COM</span>
+          <span>© 2026 PKC BIZOFT</span>
         </div>
       </footer>
 
