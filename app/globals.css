@@ -491,9 +491,10 @@ body:has(.introScreen, .whoIntro) [aria-label="Cookie notice"] {
 .phPulse.late {
   animation-delay: 1s;
 }
+/* The tag sits left of the pin, pointing inward, so it never runs off the right edge of the screen. */
 .phTag {
   position: absolute;
-  left: 18px;
+  right: 18px;
   top: -44px;
   display: grid;
   gap: 2px;
@@ -507,13 +508,13 @@ body:has(.introScreen, .whoIntro) [aria-label="Cookie notice"] {
 .phTag::before {
   content: "";
   position: absolute;
-  left: -14px;
+  right: -14px;
   bottom: -10px;
   width: 16px;
   height: 1px;
   background: rgba(143, 248, 255, 0.6);
-  transform: rotate(-45deg);
-  transform-origin: right;
+  transform: rotate(45deg);
+  transform-origin: left;
 }
 .phTag b {
   color: #eaffff;
