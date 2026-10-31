@@ -398,14 +398,12 @@ export default function WhoWeArePage() {
             <img src={PKC_LOGO} alt="" />
           </div>
           <div className="htNode htFounder">
-            <StickAvatar accent="cyan" />
             <span>
               <b>FOUNDER</b>
               <strong>Paul Kent Cairel</strong>
             </span>
           </div>
           <div className="htNode htCo">
-            <StickAvatar accent="muted" />
             <span>
               <b>CO-FOUNDER</b>
               <strong>Prince AJ Y. Cuyos</strong>
@@ -2328,17 +2326,13 @@ export default function WhoWeArePage() {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 10px 16px 10px 10px;
+          padding: 10px 16px;
           border: 1px solid rgba(76, 232, 255, 0.35);
           border-radius: 16px;
           background: rgba(3, 14, 20, 0.9);
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
           white-space: nowrap;
           animation: htFloat 6s ease-in-out infinite;
-        }
-        .htNode :global(svg) {
-          width: 44px;
-          height: 44px;
         }
         .htNode span {
           display: grid;
@@ -2358,7 +2352,7 @@ export default function WhoWeArePage() {
           left: -10px;
         }
         .htCo {
-          right: -14px;
+          right: 18px;
           bottom: 70px;
           animation-delay: -3s;
         }
