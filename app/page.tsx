@@ -1300,7 +1300,7 @@ export default function HomePage() {
         }
 
         .heroCopy::before {
-          content: "01 / NETWORK ONLINE";
+          content: none;
           display: inline-block;
           margin-bottom: 18px;
           padding: 6px 9px;
