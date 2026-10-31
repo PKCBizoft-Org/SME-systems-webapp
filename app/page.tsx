@@ -299,7 +299,6 @@ const GEO_ICONS: Record<string, string> = {
 export default function HomePage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const [activeFeature, setActiveFeature] = useState(0);
-  const [storySection, setStorySection] = useState("network");
   const [introVisible, setIntroVisible] = useState(true);
   const [introExiting, setIntroExiting] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
@@ -427,34 +426,6 @@ export default function HomePage() {
         });
       },
       { threshold: 0.16, rootMargin: "0px 0px -8% 0px" },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const sections = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-story-section]"),
-    );
-
-    if (!sections.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (visible) {
-          setStorySection(visible.target.getAttribute("data-story-section") || "network");
-        }
-      },
-      {
-        threshold: [0.2, 0.45, 0.7],
-        rootMargin: "-12% 0px -38% 0px",
-      },
     );
 
     sections.forEach((section) => observer.observe(section));
@@ -616,43 +587,6 @@ export default function HomePage() {
         </div>
       </nav>
 
-          <nav className="whereYouAre" aria-label="Jump to section">
-            <div className="whereYouAreTop">
-              <span className="whereYouAreLabel"><i /> WHERE YOU ARE</span>
-              <span className="whereYouAreCount">{storySection === "network" ? "01" : storySection === "systems" ? "02" : "03"} / 03</span>
-            </div>
-            <div className="whereYouAreChoices">
-              <a href="#network" className={storySection === "network" ? "whereYouAreChoice active" : "whereYouAreChoice"} aria-current={storySection === "network" ? "location" : undefined}>
-                <span className="whereYouAreChoiceDot" />
-                <span className="whereYouAreChoiceCollapsed">Network</span>
-                <span className="whereYouAreChoiceExpanded">
-                  <span className="whereYouAreChoiceNumber">01</span>
-                  <span className="whereYouAreChoiceText"><strong>NETWORK</strong><small>THE CONNECTED BUSINESS NETWORK</small></span>
-                  <span className="whereYouAreChoiceArrow">↗</span>
-                </span>
-              </a>
-              <a href="#systems" className={storySection === "systems" ? "whereYouAreChoice active" : "whereYouAreChoice"} aria-current={storySection === "systems" ? "location" : undefined}>
-                <span className="whereYouAreChoiceDot" />
-                <span className="whereYouAreChoiceCollapsed">Systems</span>
-                <span className="whereYouAreChoiceExpanded">
-                  <span className="whereYouAreChoiceNumber">02</span>
-                  <span className="whereYouAreChoiceText"><strong>SYSTEMS</strong><small>THE OPERATIONAL LAYER</small></span>
-                  <span className="whereYouAreChoiceArrow">↗</span>
-                </span>
-              </a>
-              <a href="#features" className={storySection === "features" ? "whereYouAreChoice active" : "whereYouAreChoice"} aria-current={storySection === "features" ? "location" : undefined}>
-                <span className="whereYouAreChoiceDot" />
-                <span className="whereYouAreChoiceCollapsed">Capabilities</span>
-                <span className="whereYouAreChoiceExpanded">
-                  <span className="whereYouAreChoiceNumber">03</span>
-                  <span className="whereYouAreChoiceText"><strong>CAPABILITIES</strong><small>WHAT PKC BIZOFT CAN DO</small></span>
-                  <span className="whereYouAreChoiceArrow">↗</span>
-                </span>
-              </a>
-            </div>
-            <span className="whereYouAreHint">SELECT A DESTINATION</span>
-          </nav>
-
       <section className="hero storySection storyVisible" id="network" data-story-section="network">
         <div className="heroCopy">
           <div className="eyebrow">
@@ -677,21 +611,6 @@ export default function HomePage() {
               WHO WE ARE
             </a>
           </div>
-          <div className="miniStats">
-            <div>
-              <strong>24/7</strong>
-              <span>NETWORK VISIBILITY</span>
-            </div>
-            <div>
-              <strong>01</strong>
-              <span>CONNECTED WORKSPACE</span>
-            </div>
-            <div>
-              <strong>∞</strong>
-              <span>ROOM TO SCALE</span>
-            </div>
-          </div>
-
           <div className="heroSignalStrip" aria-label="Network capabilities">
             <span><i /> CLIENTS</span>
             <span><i /> SERVICES</span>

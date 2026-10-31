@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 
-const KEY = "pkc_lite_v1";
+const KEY = "pkc_lite_v2";
 
 // Watches how smoothly the page draws during its first seconds (the intro is the heaviest part).
 // If it averages under about 24 frames per second, the lighter mode is switched on and remembered,
-// so the next visit starts light straight away (the head script in layout.tsx reads the same key).
+// so visits in the next 7 days start light straight away (the head script in layout.tsx reads the same key).
+// After that it checks again, so one slow first load never switches the effects off for good.
 export function LagWatch() {
   useEffect(() => {
     const root = document.documentElement;
@@ -34,7 +35,7 @@ export function LagWatch() {
         if (frames >= 20 && total / frames > 42) {
           root.classList.add("lite");
           try {
-            localStorage.setItem(KEY, "1");
+            localStorage.setItem(KEY, String(Date.now()));
           } catch {
             // Private mode: it just checks again next visit.
           }

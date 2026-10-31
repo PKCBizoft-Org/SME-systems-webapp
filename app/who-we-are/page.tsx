@@ -219,11 +219,6 @@ export default function WhoWeArePage() {
         <span style={{ transform: `scaleX(${scrollProgress})` }} />
       </div>
       <div className="cursorAura" aria-hidden="true" />
-      <div className="pageStatus" aria-hidden="true">
-        <span>PKC / PEOPLE</span>
-        <i />
-        <b>{String(Math.round(scrollProgress * 100)).padStart(2, "0")}%</b>
-      </div>
       {introVisible && (
         <div
           className={`whoIntro phase-${phase} ${exiting ? "isExiting" : ""}`}
@@ -313,7 +308,6 @@ export default function WhoWeArePage() {
         <div className="heroField" aria-hidden="true">
           <div className="heroFieldGrid" />
           <div className="heroFieldGlow" />
-          <div className="heroFieldNumber">01</div>
           <div className="heroFieldLine lineTop" />
           <div className="heroFieldLine lineMid" />
           <div className="heroFieldLine lineBottom" />
@@ -329,11 +323,6 @@ export default function WhoWeArePage() {
         <div className="heroCopy">
           <div className="eyebrow">
             <i /> COMPANY / WHO WE ARE
-          </div>
-          <div className="heroMeta">
-            <span>PROFILE 01</span>
-            <span>FOUNDING NETWORK</span>
-            <b>CONNECTED</b>
           </div>
           <h2>
             The people <em>behind</em>
@@ -355,21 +344,6 @@ export default function WhoWeArePage() {
             </a>
           </div>
 
-          <div className="heroPrinciples">
-            <div>
-              <span>01</span>
-              <b>DIRECTION</b>
-            </div>
-            <div>
-              <span>02</span>
-              <b>COLLABORATION</b>
-            </div>
-            <div>
-              <span>03</span>
-              <b>TECHNICAL THINKING</b>
-            </div>
-          </div>
-
           <a className="heroScrollCue" href="#founder" aria-label="Scroll to the founder section">
             <span className="heroScrollLine" />
             <span>
@@ -379,32 +353,7 @@ export default function WhoWeArePage() {
           </a>
         </div>
 
-        <div className="heroSideCode" aria-hidden="true">
-          <span>PKC / PEOPLE</span>
-          <b>2026</b>
-        </div>
       </section>
-
-      <div className="peopleTicker" aria-hidden="true">
-        <div className="peopleTickerTrack">
-          <span>FOUNDER</span>
-          <i />
-          <span>CO-FOUNDER</span>
-          <i />
-          <span>SHARED VISION</span>
-          <i />
-          <span>ONE CONNECTED TEAM</span>
-          <i />
-          <span>FOUNDER</span>
-          <i />
-          <span>CO-FOUNDER</span>
-          <i />
-          <span>SHARED VISION</span>
-          <i />
-          <span>ONE CONNECTED TEAM</span>
-          <i />
-        </div>
-      </div>
 
       <section className="teamSection" id="founder" data-reveal>
         <div className="sectionHeader">
@@ -541,41 +490,6 @@ export default function WhoWeArePage() {
               </div>
             </button>
           ))}
-        </div>
-      </section>
-
-      <section className="constellation" data-reveal>
-        <div className="constellationCopy">
-          <span>PEOPLE / NETWORK MAP</span>
-          <h3>
-            Different roles.
-            <br />
-            <em>One connected system.</em>
-          </h3>
-          <p>
-            The founder establishes the direction and the co-founder helps turn
-            that vision into the product.
-          </p>
-          <a href="/#network" className="textLink">
-            RETURN TO NETWORK <span>↗</span>
-          </a>
-        </div>
-        <div className="map">
-          <div className="mapGrid" />
-          <div className="mapCore">
-            <img src={PKC_LOGO} alt="PKC BIZOFT" />
-          </div>
-          <div className="mapLine ml1" />
-          <div className="mapLine ml2" />
-          <div className="mapNode mapFounder">
-            <b>01</b>
-            <span>FOUNDER</span>
-          </div>
-          <div className="mapNode mapCo">
-            <b>02</b>
-            <span>CO-FOUNDER</span>
-          </div>
-          <div className="mapPulse" />
         </div>
       </section>
 
@@ -3319,7 +3233,7 @@ export default function WhoWeArePage() {
         }
 
         .heroField::after {
-          content: "HUMAN LAYER  /  FOUNDING NETWORK  /  SYSTEM 01";
+          content: none;
           position: absolute;
           right: 4%;
           bottom: 10%;

@@ -438,8 +438,8 @@ img {
   image-rendering: auto;
 }
 
-/* Weaker phones (see the script in layout.tsx): no looping animations, blur or glass effects. */
-/* The home page intro is the default first impression, so it is left alone and plays for everyone. */
+/* Weaker phones (see the script in layout.tsx): looping animations play once, no blur or glass effects. */
+/* Entrance animations still play, so the pages never look frozen. The home intro is left alone. */
 html.lite :not(.introScreen):not(.introScreen *),
 html.lite :not(.introScreen):not(.introScreen *)::before,
 html.lite :not(.introScreen):not(.introScreen *)::after {
@@ -447,10 +447,6 @@ html.lite :not(.introScreen):not(.introScreen *)::after {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   scroll-behavior: auto !important;
-  animation-duration: 0.01ms !important;
-  animation-delay: 0s !important;
-  transition-duration: 0.12s !important;
-  transition-delay: 0s !important;
   text-shadow: none !important;
 }
 /* Loading spinners keep turning so people can tell the page is busy. */
