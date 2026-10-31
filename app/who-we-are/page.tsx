@@ -413,7 +413,7 @@ export default function WhoWeArePage() {
             <span className="hcInner">
               <span className="hcFace hcFront">
                 <span className="hcTop">
-                  <img src={PKC_LOGO} alt="" />
+                  <img src={PKC_LOGO} alt="PKC BIZOFT logo" />
                   <span className="hcBrand">
                     PKC BIZOFT
                     <small>HOME WIFI · DAVAO DE ORO</small>

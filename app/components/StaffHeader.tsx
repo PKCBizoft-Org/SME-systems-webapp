@@ -236,7 +236,7 @@ export function StaffHeader({ current, roles }: { current: StaffSection; roles: 
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/pkc-logo.webp" alt="" width={34} height={34} />
+        <img src="/pkc-logo.webp" alt="PKC BIZOFT logo" width={34} height={34} />
         <span>
           PKC <strong>BIZOFT</strong>
         </span>

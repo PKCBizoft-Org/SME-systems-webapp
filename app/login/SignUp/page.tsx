@@ -318,7 +318,7 @@ export default function SignupPage() {
       <nav className="topbar">
         <Link href="/login" className="brand" aria-label="PKC BIZOFT">
           <span className="brandIcon">
-            <img src={PKC_LOGO} alt="" />
+            <img src={PKC_LOGO} alt="PKC BIZOFT logo" />
           </span>
           <span className="brandText">
             <strong>PKC <em>BIZOFT</em></strong>

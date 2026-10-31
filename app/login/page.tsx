@@ -675,7 +675,7 @@ export default function LoginPage() {
 
       <div className={`systemBoot ${booting ? "visible" : "hidden"}`} aria-hidden={!booting}>
         <div className="bootLogo">
-          <img src={PKC_LOGO} alt="" />
+          <img src={PKC_LOGO} alt="PKC BIZOFT logo" />
         </div>
         <div className="bootLine" />
         <div className="bootTitle">PKC <strong>BIZOFT</strong></div>
@@ -703,7 +703,7 @@ export default function LoginPage() {
             }
           }}
         >
-          <img src={PKC_LOGO} alt="" />
+          <img src={PKC_LOGO} alt="PKC BIZOFT logo" />
           <span className="brandText">
             PKC <strong>BIZOFT</strong>
           </span>

@@ -52,7 +52,7 @@ function HomeScreen({ onOpenBilling, onOpenRequests, onPlay }: { onOpenBilling: 
   return (
     <>
       <div className={styles.homeHeader}>
-        <Image src="/pkc-logo.webp" alt="" width={34} height={34} />
+        <Image src="/pkc-logo.webp" alt="PKC BIZOFT logo" width={34} height={34} />
         <div className={styles.homeBrand}>
           <small>PKC BIZOFT</small>
           <strong>Customer Portal</strong>

@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s | PKC BIZOFT",
   },
   description:
-    "PKC BIZOFT (bizoftph) Business Systems Solutions: home WiFi and internet installation in Mabini and Pantukan, Davao de Oro. Request an installation, pay your bills, track your technician and get help, all in one app.",
+    "PKC BIZOFT (bizoftph) home WiFi in Mabini and Pantukan, Davao de Oro. Up to 200 Mbps from ₱750/month. Apply, pay bills and track your technician in one app.",
   keywords: ["Business Systems Solutions", "PKC BIZOFT", "PKC Bizoft", "bizoft", "bizoftph", "phbizoft", "Bizoft PH", "WiFi installation", "internet service", "Philippines"],
   openGraph: {
     type: "website",

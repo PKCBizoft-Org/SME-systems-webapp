@@ -43,7 +43,7 @@ export function PkcLoader({
           <i />
         </span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/pkc-logo.webp" alt="" width={56} height={56} />
+        <img src="/pkc-logo.webp" alt="PKC BIZOFT logo" width={56} height={56} />
       </div>
 
       <div className={styles.brand}>

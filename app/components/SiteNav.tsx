@@ -28,7 +28,7 @@ export function SiteNav({ current }: { current?: string }) {
     <nav className={styles.nav} aria-label="Primary navigation">
       <a className={styles.brand} href="/" aria-label="PKC BIZOFT home">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className={styles.logo} src="/pkc-logo.webp" alt="" width={34} height={34} />
+        <img className={styles.logo} src="/pkc-logo.webp" alt="PKC BIZOFT logo" width={34} height={34} />
         <span>
           <strong>PKC</strong>
           <small>BIZOFT</small>
