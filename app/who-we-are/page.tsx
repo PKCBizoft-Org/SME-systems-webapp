@@ -19,7 +19,7 @@ const founder = {
   role: "FOUNDER / GROUP CREATOR",
   tag: "FOUNDING LEADERSHIP",
   description:
-    "The founder and group creator of PKC BIZOFT, guiding the organization’s direction, culture and long-term vision.",
+    "The founder and group creator of PKC BIZOFT. Started the company and leads its direction, its team and the service it gives to every home it connects.",
 };
 
 // Public profiles shown on each person's card (and the same ones search engines see in layout.tsx).
@@ -33,6 +33,15 @@ const coFounderLinks: Record<string, { label: string; href: string }[]> = {
   ],
 };
 const pkcFacebook = { label: "PKC on Facebook", href: "https://www.facebook.com/PKCGrpofCmpny" };
+const coFounderBio =
+  "Co-founder of PKC BIZOFT. Built the company's technology: this website, the customer app for Android, and the staff system behind billing, repairs and inventory.";
+
+// What the company does, in plain words (the same facts as the home page).
+const whatWeDo = [
+  { title: "Home WiFi installation", text: "Plans from 50 to 200 Mbps, starting at ₱750 a month, installed by our own technicians." },
+  { title: "One app for everything", text: "Apply, pay bills with GCash, bank transfer or cash, and report problems from your phone." },
+  { title: "Technicians you can track", text: "See your technician on the map and chat with them before they arrive." },
+];
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const common = {
@@ -99,9 +108,9 @@ export default function WhoWeArePage() {
       role: founder.role,
       description: founder.description,
       details: [
-        { label: "Status", value: "Active" },
-        { label: "Node", value: "Origin / PKC" },
-        { label: "Profile", value: "Private" },
+        { label: "Role", value: "Founder" },
+        { label: "Company", value: "PKC BIZOFT" },
+        { label: "Website", value: "bizoftph.com" },
       ],
       links: [pkcFacebook],
     };
@@ -109,13 +118,13 @@ export default function WhoWeArePage() {
     const node = String(profileKey + 1).padStart(2, "0");
     avatarAccent = profileKey % 2 === 0 ? "muted" : "violet";
     profile = {
-      tag: `CO-FOUNDER / NODE ${node}`,
+      tag: `CO-FOUNDER / ${node}`,
       name: coFounders[profileKey],
       role: "PKC BIZOFT • CO-FOUNDER",
-      description: "Founding team member connected to the PKC BIZOFT people network.",
+      description: coFounderBio,
       details: [
-        { label: "Node", value: node },
-        { label: "Status", value: "Connected" },
+        { label: "Role", value: "Co-founder" },
+        { label: "Builds", value: "Web + app" },
         { label: "Profile", value: coFounderLinks[coFounders[profileKey]] ? "Public" : "Private" },
       ],
       links: coFounderLinks[coFounders[profileKey]],
@@ -261,10 +270,10 @@ export default function WhoWeArePage() {
               <img src={PKC_LOGO} alt="PKC BIZOFT" />
             </div>
             <div className="introKicker">PKC BIZOFT / PEOPLE NETWORK</div>
-            <h1>
+            <div className="introHeading">
               <span><Scramble text="THE PEOPLE" delay={450} duration={800} /></span>
-              <strong><Scramble text="BEHIND THE SYSTEM." delay={1000} duration={1100} /></strong>
-            </h1>
+              <strong><Scramble text="BEHIND PKC BIZOFT." delay={1000} duration={1100} /></strong>
+            </div>
             <p>
               Founding leadership, shared vision, and the people building PKC
               BIZOFT.
@@ -332,25 +341,39 @@ export default function WhoWeArePage() {
 
         <div className="heroCopy">
           <div className="eyebrow">
-            <i /> COMPANY / WHO WE ARE
+            <i /> ABOUT PKC BIZOFT
           </div>
-          <h2>
+          <h1>
             The people <em>behind</em>
             <br />
-            the system.
-          </h2>
+            PKC BIZOFT.
+          </h1>
           <p>
-            PKC BIZOFT (bizoftph.com) was founded by Paul Kent Cairel, with
-            co-founder Prince AJ Y. Cuyos. The founding team brings direction,
-            collaboration, and technical thinking together to build a connected
-            business platform.
+            PKC BIZOFT (bizoftph.com, also known as Bizoft PH) is a home WiFi
+            provider in the Philippines, founded by Paul Kent Cairel with
+            co-founder Prince AJ Y. Cuyos. We install home internet and run
+            everything else, from bills to repairs, in one app.
           </p>
+          <dl className="glance">
+            <div>
+              <dt>FOUNDER</dt>
+              <dd>Paul Kent Cairel</dd>
+            </div>
+            <div>
+              <dt>CO-FOUNDER</dt>
+              <dd>Prince AJ Y. Cuyos</dd>
+            </div>
+            <div>
+              <dt>WEBSITE</dt>
+              <dd>bizoftph.com</dd>
+            </div>
+          </dl>
           <div className="heroActions">
             <a className="primary" href="#founder">
               MEET THE FOUNDER <span>↓</span>
             </a>
-            <a className="secondary" href="/#network">
-              BACK TO NETWORK
+            <a className="secondary" href="/#plans">
+              SEE WIFI PLANS
             </a>
           </div>
 
@@ -376,9 +399,9 @@ export default function WhoWeArePage() {
             </h3>
           </div>
           <p>
-            The founder and group creator sits at the center of the PKC BIZOFT
-            story, setting the direction while the wider founding team turns
-            that vision into a working network.
+            Paul Kent Cairel started PKC BIZOFT and leads it: where the company
+            goes, the team that installs and fixes your connection, and the
+            customers it serves.
           </p>
         </div>
         <article
@@ -411,9 +434,9 @@ export default function WhoWeArePage() {
             <span className="node fn2" />
             <span className="node fn3" />
             <div className="cornerCode">
-              ORIGIN / PKC
+              PKC BIZOFT
               <br />
-              ROLE / 01
+              FOUNDER
             </div>
           </div>
           <div className="founderCopy">
@@ -432,12 +455,12 @@ export default function WhoWeArePage() {
             </div>
             <p>{founder.description}</p>
             <div className="signal">
-              <i /> FOUNDING NODE <b>ACTIVE</b>
+              <i /> FOUNDER <b>PKC BIZOFT</b>
             </div>
             <div className="meta">
-              <span>PROFILE / PRIVATE</span>
-              <span>ORIGIN NODE / PKC</span>
-              <span>STATUS / ACTIVE</span>
+              <span>ROLE / FOUNDER</span>
+              <span>COMPANY / PKC BIZOFT</span>
+              <span>WEB / BIZOFTPH.COM</span>
             </div>
             <span className="fxHint">View profile ↗</span>
           </div>
@@ -449,14 +472,15 @@ export default function WhoWeArePage() {
           <div>
             <span>02 / CO-FOUNDER</span>
             <h3>
-              The founding team.
+              The builder.
               <br />
-              <em>Shared roots.</em>
+              <em>Code behind the service.</em>
             </h3>
           </div>
           <p>
-            The co-founder of PKC BIZOFT, working alongside the founder to turn
-            the vision into a working network.
+            Prince AJ Y. Cuyos co-founded PKC BIZOFT and built its technology:
+            this website, the customer app for Android, and the staff system
+            behind billing, repairs and inventory.
           </p>
         </div>
         <div className="coGrid">
@@ -493,12 +517,36 @@ export default function WhoWeArePage() {
                 </div>
               </div>
               <div className="coFooter">
-                <span>NODE {String(index + 1).padStart(2, "0")}</span>
-                <b>
-                  {activeMember === index ? "FOCUS / ACTIVE" : "VIEW PROFILE"}
-                </b>
+                <span>WEB + APP</span>
+                <b>VIEW PROFILE ↗</b>
               </div>
             </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="teamSection whatSection" data-reveal>
+        <div className="sectionHeader">
+          <div>
+            <span>03 / WHAT WE DO</span>
+            <h3>
+              Home WiFi,
+              <br />
+              <em>done properly.</em>
+            </h3>
+          </div>
+          <p>
+            PKC BIZOFT is a local internet provider. The people on this page are
+            the reason it runs on one app instead of paper forms and office visits.
+          </p>
+        </div>
+        <div className="whatGrid">
+          {whatWeDo.map((item, index) => (
+            <article key={item.title} className="whatCard">
+              <b>0{index + 1}</b>
+              <strong>{item.title}</strong>
+              <p>{item.text}</p>
+            </article>
           ))}
         </div>
       </section>
@@ -506,19 +554,19 @@ export default function WhoWeArePage() {
       <section className="peopleCta" data-reveal>
         <div className="ctaGrid" />
         <div>
-          <span>03 / THE NEXT NODE</span>
+          <span>04 / GET CONNECTED</span>
           <h3>
-            Good systems need
+            Ready for faster
             <br />
-            <em>good people.</em>
+            <em>home WiFi?</em>
           </h3>
           <p>
-            The people page is the human side of the network. The next step is
-            seeing what the system can do for the work itself.
+            See the plans, or apply online in a few minutes. The same team on
+            this page will take it from there.
           </p>
         </div>
-        <a href="/login" className="ctaButton">
-          ENTER THE WORKSPACE <b>↗</b>
+        <a href="/#plans" className="ctaButton">
+          SEE PLANS &amp; APPLY <b>→</b>
         </a>
       </section>
 
@@ -539,7 +587,7 @@ export default function WhoWeArePage() {
           <a href="/privacy">PRIVACY</a>
           <a href="/cookies">COOKIES</a>
         </div>
-        <span className="copyright">© 2026 PKC BIZOFT · bizoftph.com</span>
+        <span className="copyright">© 2026 PKC BIZOFT (Bizoft PH) · bizoftph.com · Founded by Paul Kent Cairel</span>
       </footer>
 
       <CardFX />
@@ -825,14 +873,14 @@ export default function WhoWeArePage() {
           color: rgba(120, 241, 255, 0.78);
           font-weight: 700;
         }
-        .hero h2 {
+        .hero h1 {
           margin: 22px 0;
           font-size: clamp(52px, 6vw, 88px);
           line-height: 0.9;
           letter-spacing: -0.065em;
           max-width: 720px;
         }
-        .hero h2 em {
+        .hero h1 em {
           color: transparent;
           -webkit-text-stroke: 1px rgba(150, 244, 255, 0.72);
           font-style: normal;
@@ -1962,20 +2010,20 @@ export default function WhoWeArePage() {
           letter-spacing: 0.28em;
           color: rgba(165, 245, 255, 0.54);
         }
-        .introCenter h1 {
+        .introCenter .introHeading {
           margin: 17px 0 13px;
           font-size: clamp(36px, 5.5vw, 70px);
           line-height: 0.9;
           letter-spacing: -0.06em;
         }
-        .introCenter h1 span,
-        .introCenter h1 strong {
+        .introCenter .introHeading span,
+        .introCenter .introHeading strong {
           display: block;
         }
-        .introCenter h1 span {
+        .introCenter .introHeading span {
           color: rgba(234, 255, 255, 0.9);
         }
-        .introCenter h1 strong {
+        .introCenter .introHeading strong {
           color: transparent;
           -webkit-text-stroke: 1px rgba(142, 240, 255, 0.78);
         }
@@ -2055,7 +2103,7 @@ export default function WhoWeArePage() {
         }
         .phase-0 .introLogo,
         .phase-0 .introKicker,
-        .phase-0 .introCenter h1,
+        .phase-0 .introCenter .introHeading,
         .phase-0 .introCenter p,
         .phase-0 .boot {
           opacity: 0;
@@ -2065,7 +2113,7 @@ export default function WhoWeArePage() {
           animation: appear 0.8s both;
         }
         .phase-2 .introKicker,
-        .phase-2 .introCenter h1 {
+        .phase-2 .introCenter .introHeading {
           animation: appear 0.8s both;
         }
         .phase-3 .introCenter p {
@@ -2174,6 +2222,63 @@ export default function WhoWeArePage() {
           font-size: 9px;
           letter-spacing: 0.18em;
           color: rgba(160, 242, 255, 0.54);
+        }
+        .glance {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin: 0 0 26px;
+        }
+        .glance div {
+          padding: 10px 14px;
+          border: 1px solid rgba(76, 232, 255, 0.2);
+          border-radius: 12px;
+          background: rgba(5, 20, 28, 0.6);
+        }
+        .glance dt {
+          color: #4ce8ff;
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+        }
+        .glance dd {
+          margin: 4px 0 0;
+          color: #eaffff;
+          font-size: 15px;
+          font-weight: 600;
+        }
+        .whatGrid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .whatCard {
+          display: grid;
+          gap: 8px;
+          padding: 24px 22px;
+          border: 1px solid rgba(76, 232, 255, 0.18);
+          border-radius: 18px;
+          background: linear-gradient(180deg, rgba(10, 34, 44, 0.7), rgba(3, 12, 18, 0.8));
+        }
+        .whatCard b {
+          color: #4ce8ff;
+          font-size: 12px;
+          letter-spacing: 0.14em;
+        }
+        .whatCard strong {
+          color: #eaffff;
+          font-size: 20px;
+        }
+        .whatCard p {
+          margin: 0;
+          color: rgba(214, 245, 255, 0.8);
+          font-size: 15px;
+          line-height: 1.6;
+        }
+        @media (max-width: 900px) {
+          .whatGrid {
+            grid-template-columns: 1fr;
+          }
         }
         .peopleCta h3 {
           font-size: clamp(46px, 6vw, 76px);
@@ -2343,7 +2448,7 @@ export default function WhoWeArePage() {
             padding: 10px 11px;
             font-size: 9px;
           }
-          .hero h2 {
+          .hero h1 {
             font-size: clamp(45px, 13vw, 66px);
           }
           .heroMeta {
@@ -3012,12 +3117,12 @@ export default function WhoWeArePage() {
           align-items: center;
         }
 
-        .hero h2 {
+        .hero h1 {
           position: relative;
           text-shadow: 0 12px 50px rgba(0, 0, 0, 0.3);
         }
 
-        .hero h2::after {
+        .hero h1::after {
           content: "";
           display: block;
           width: 64px;
@@ -3151,7 +3256,7 @@ export default function WhoWeArePage() {
             padding: 70px 0 60px;
           }
 
-          .hero h2 {
+          .hero h1 {
             font-size: clamp(45px, 14vw, 66px);
           }
 
@@ -3391,7 +3496,7 @@ export default function WhoWeArePage() {
           box-shadow: 0 0 6px rgba(83, 232, 255, 0.5);
         }
 
-        .hero h2 {
+        .hero h1 {
           max-width: 820px;
           margin-top: 30px;
           margin-bottom: 0;
@@ -3401,12 +3506,12 @@ export default function WhoWeArePage() {
           text-wrap: balance;
         }
 
-        .hero h2 em {
+        .hero h1 em {
           -webkit-text-stroke: 1.35px rgba(150, 244, 255, 0.7);
           text-shadow: 0 0 35px rgba(83, 232, 255, 0.06);
         }
 
-        .hero h2::after {
+        .hero h1::after {
           width: 92px;
           height: 2px;
           margin-top: 34px;
@@ -3689,7 +3794,7 @@ export default function WhoWeArePage() {
             padding-bottom: 84px;
           }
 
-          .hero h2 {
+          .hero h1 {
             font-size: clamp(58px, 12vw, 86px);
           }
 
@@ -3740,12 +3845,12 @@ export default function WhoWeArePage() {
             margin-left: 0;
           }
 
-          .hero h2 {
+          .hero h1 {
             font-size: clamp(48px, 15vw, 68px);
             line-height: 0.86;
           }
 
-          .hero h2::after {
+          .hero h1::after {
             margin-top: 26px;
           }
 
