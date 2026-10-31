@@ -575,19 +575,20 @@ export default function WhoWeArePage() {
           <img src={PKC_LOGO} alt="PKC BIZOFT" />
           <span>
             <strong>PKC BIZOFT</strong>
-            <small>PEOPLE / SYSTEMS / OPERATIONS</small>
+            <small>HOME WIFI / PHILIPPINES</small>
           </span>
         </div>
         <div className="footerLinks">
           <a href="/">HOME</a>
-          <a href="/#systems">SYSTEMS</a>
-          <a href="/#features">CAPABILITIES</a>
-          <a href="/login">ENTER SYSTEM</a>
+          <a href="/#plans">PLANS</a>
+          <a href="/#systems">HOW IT WORKS</a>
+          <a href="/#contact">CONTACT</a>
+          <a href="/login">LOG IN</a>
           <a href="/terms">TERMS</a>
           <a href="/privacy">PRIVACY</a>
           <a href="/cookies">COOKIES</a>
         </div>
-        <span className="copyright">© 2026 PKC BIZOFT (Bizoft PH) · bizoftph.com · Founded by Paul Kent Cairel</span>
+        <span className="copyright">© 2026 PKC BIZOFT (Bizoft PH)</span>
       </footer>
 
       <CardFX />
