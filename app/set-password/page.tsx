@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import { homeForUser } from '@/lib/homeForRole'
 import { PkcLoader } from '../components/PkcLoader'
+import s from '../login/login.module.css'
+
+/* eslint-disable @next/next/no-html-link-for-pages */
+/* Same dark, clean card as the login page. Password logic unchanged. */
 
 export default function SetPasswordPage() {
   const router = useRouter()
@@ -169,251 +173,106 @@ export default function SetPasswordPage() {
     )
   }
 
-  if (!hasSession) {
-    return (
-      <main className="setPasswordPage">
-        <div className="card">
-          <h1>This link isn&apos;t valid</h1>
-          <p className="subtitle">
-            This invite link may have expired or already been used.
-            Ask your admin to send a new invite.
-          </p>
-        </div>
-        <style jsx>{styles}</style>
+  const shell = (title: string, lead: React.ReactNode, body?: React.ReactNode) => (
+    <div className={s.page}>
+      <header className={s.header}>
+        <nav className={s.nav} aria-label="Primary navigation">
+          <a className={s.brand} href="/" aria-label="PKC BIZOFT home">
+            <img src="/pkc-logo.webp" alt="" width={32} height={32} />
+            <span>PKC BIZOFT</span>
+          </a>
+        </nav>
+      </header>
+      <main className={s.main}>
+        <section className={s.card} aria-labelledby="setpw-title">
+          <p className={s.kicker}>PKC BIZOFT</p>
+          <h1 id="setpw-title" className={s.title}>{title}</h1>
+          <p className={s.lead}>{lead}</p>
+          {body}
+        </section>
       </main>
+      <footer className={s.footer}>
+        <span>© 2026 PKC BIZOFT</span>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/cookies">Cookies</a>
+      </footer>
+    </div>
+  )
+
+  if (!hasSession) {
+    return shell(
+      "This link isn't valid",
+      'This invite link may have expired or already been used. Ask your admin to send a new invite.',
+      <p className={s.signup}>
+        Have a password already?
+        <a href="/login">Sign in</a>
+      </p>,
     )
   }
 
-  return (
-    <main className="setPasswordPage">
-      <div className="card">
-        <h1>Set your password</h1>
-        <p className="subtitle">
-          You&apos;re setting a password for <strong>{email}</strong>.
-        </p>
-
-        {success ? (
-          <div className="successBox">
-            {isFirstLogin
-              ? 'Password saved. Taking you to sign in with your new password. Staff will then be asked for their 2-step code.'
-              : 'Password set. Taking you to your dashboard...'}
-          </div>
+  const eye = (shown: boolean, toggle: () => void, what: string) => (
+    <button type="button" className={s.toggle} onClick={toggle} aria-pressed={shown}
+            aria-label={shown ? `Hide ${what}` : `Show ${what}`}>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        {shown ? (
+          <>
+            <path d="M3 3l18 18" />
+            <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+            <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.8 4.1 9.8 7a10.7 10.7 0 0 1-3.1 4.6" />
+            <path d="M6.3 6.3C4.5 7.5 3.3 9.1 2.2 12c1 2.9 4.8 7 9.8 7 1.1 0 2.1-.2 3-.5" />
+          </>
         ) : (
-          <form onSubmit={handleSubmit} className="form">
-            <label>
-              <span>New password</span>
-              <div className="inputRow">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="toggleVisibility"
-                  onClick={() => setShowPassword((v) => !v)}
-                  tabIndex={-1}
-                  aria-label={
-                    showPassword ? 'Hide password' : 'Show password'
-                  }
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-              <span className="fieldHint">At least 8 characters.</span>
-            </label>
-
-            <label>
-              <span>Confirm password</span>
-              <div className="inputRow">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="toggleVisibility"
-                  onClick={() => setShowConfirmPassword((v) => !v)}
-                  tabIndex={-1}
-                  aria-label={
-                    showConfirmPassword
-                      ? 'Hide password'
-                      : 'Show password'
-                  }
-                >
-                  {showConfirmPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-            </label>
-
-            {error && <div className="errorBox">{error}</div>}
-
-            <button type="submit" disabled={saving}>
-              {saving ? 'Setting password...' : 'Set password and continue'}
-            </button>
-
-            {isFirstLogin && (
-              <button type="button" className="secondary" disabled={saving} onClick={() => void keepDefault()}>
-                Keep the default password
-              </button>
-            )}
-          </form>
+          <>
+            <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" />
+            <circle cx="12" cy="12" r="2.5" />
+          </>
         )}
-      </div>
+      </svg>
+    </button>
+  )
 
-      <style jsx>{styles}</style>
-    </main>
+  return shell(
+    'Set your password',
+    <>For <b>{email}</b>. Use at least 8 characters.</>,
+    success ? (
+      <p className={`${s.message} ${s.ok}`} role="status">
+        {isFirstLogin
+          ? 'Password saved. Taking you to sign in with your new password. Staff will then be asked for their 2-step code.'
+          : 'Password set. Taking you to your dashboard…'}
+      </p>
+    ) : (
+      <form className={s.form} onSubmit={handleSubmit}>
+        <label className={s.label}>
+          New password
+          <span className={s.inputWrap}>
+            <input className={`${s.input} ${s.withToggle}`} type={showPassword ? 'text' : 'password'}
+                   value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
+            {eye(showPassword, () => setShowPassword((v) => !v), 'password')}
+          </span>
+        </label>
+        <label className={s.label}>
+          Confirm password
+          <span className={s.inputWrap}>
+            <input className={`${s.input} ${s.withToggle}`} type={showConfirmPassword ? 'text' : 'password'}
+                   value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                   autoComplete="new-password" required
+                   aria-invalid={confirmPassword.length > 0 && confirmPassword !== password} />
+            {eye(showConfirmPassword, () => setShowConfirmPassword((v) => !v), 'confirmation password')}
+          </span>
+        </label>
+
+        {error && <p className={s.message} role="alert">{error}</p>}
+
+        <button className={s.btn} type="submit" disabled={saving} aria-busy={saving}>
+          {saving ? 'Saving…' : 'Set password and continue'}
+        </button>
+        {isFirstLogin && (
+          <button type="button" className={s.textButton} disabled={saving} onClick={() => void keepDefault()}>
+            Keep the default password instead
+          </button>
+        )}
+      </form>
+    ),
   )
 }
-
-const styles = `
-  .setPasswordPage {
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    background: #05090d;
-    color: #eef7ff;
-    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
-      BlinkMacSystemFont, "Segoe UI", sans-serif;
-    padding: 20px;
-  }
-
-  .card {
-    width: min(420px, 100%);
-    padding: 34px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: #0a1017;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
-  }
-
-  h1 {
-    margin: 0 0 8px;
-    font-size: 24px;
-    letter-spacing: -0.03em;
-  }
-
-  .subtitle {
-    margin: 0 0 24px;
-    color: #8ca1b1;
-    font-size: 13px;
-    line-height: 1.6;
-  }
-
-  .subtitle strong {
-    color: #eef7ff;
-  }
-
-  .checking {
-    text-align: center;
-    color: #8ca1b1;
-    font-size: 14px;
-    margin: 0;
-  }
-
-  .form {
-    display: grid;
-    gap: 16px;
-  }
-
-  .form label {
-    display: grid;
-    gap: 7px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #9bb0c0;
-  }
-
-  .inputRow {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .form input {
-    height: 44px;
-    padding: 0 60px 0 12px;
-    border-radius: 9px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: #05090d;
-    color: #eef7ff;
-    font: inherit;
-    font-size: 14px;
-    width: 100%;
-  }
-
-  .form input:focus {
-    outline: none;
-    border-color: rgba(21,153,255,0.5);
-  }
-
-  .toggleVisibility {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #1599ff;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 4px 6px;
-    height: auto;
-  }
-
-  .toggleVisibility:hover {
-    color: #4cb6ff;
-  }
-
-  .secondary {
-    background: transparent;
-    color: #1599ff;
-  }
-
-  .fieldHint {
-    font-size: 11px;
-    font-weight: 400;
-    color: #6f8497;
-  }
-
-  .errorBox {
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,107,107,0.3);
-    background: rgba(255,107,107,0.08);
-    color: #ff9b9b;
-    font-size: 12px;
-  }
-
-  .successBox {
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid rgba(48,224,139,0.3);
-    background: rgba(48,224,139,0.08);
-    color: #76eeb0;
-    font-size: 13px;
-  }
-
-  button {
-    height: 46px;
-    border-radius: 10px;
-    border: 1px solid rgba(21,153,255,0.4);
-    background: #1599ff;
-    color: #04101c;
-    font-weight: 800;
-    font-size: 14px;
-    cursor: pointer;
-    font-family: inherit;
-  }
-
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`
