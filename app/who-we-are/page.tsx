@@ -131,6 +131,7 @@ export default function WhoWeArePage() {
     };
   }
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [cardFlipped, setCardFlipped] = useState(false);
 
   useEffect(() => {
     // Same as the home page: the intro plays once per visit (layout.tsx hides it before paint).
@@ -386,30 +387,73 @@ export default function WhoWeArePage() {
           </a>
         </div>
 
-        {/* The team around the company: logo in the middle, the two founders orbiting it (desktop only). */}
-        <div className="heroTeam" aria-hidden="true">
-          <span className="htRing htRingA" />
-          <span className="htRing htRingB" />
-          <svg className="htLines" viewBox="0 0 460 460">
-            <line x1="230" y1="230" x2="104" y2="96" />
-            <line x1="230" y1="230" x2="360" y2="352" />
-          </svg>
-          <div className="htCore">
-            <img src={PKC_LOGO} alt="" />
-          </div>
-          <div className="htNode htFounder">
-            <span>
-              <b>FOUNDER</b>
-              <strong>Paul Kent Cairel</strong>
+        {/* A holographic company card (desktop only): tilts toward the mouse, flips on click. */}
+        <div className="heroCardWrap">
+          <button
+            type="button"
+            className={cardFlipped ? "heroCard flipped" : "heroCard"}
+            aria-label={cardFlipped ? "Show the front of the PKC BIZOFT card" : "Flip the PKC BIZOFT card"}
+            onClick={() => setCardFlipped((v) => !v)}
+            onPointerMove={(event) => {
+              const box = event.currentTarget.getBoundingClientRect();
+              const x = (event.clientX - box.left) / box.width;
+              const y = (event.clientY - box.top) / box.height;
+              const card = event.currentTarget.style;
+              card.setProperty("--rx", `${(0.5 - y) * 16}deg`);
+              card.setProperty("--ry", `${(x - 0.5) * 20}deg`);
+              card.setProperty("--mx", `${x * 100}%`);
+              card.setProperty("--my", `${y * 100}%`);
+            }}
+            onPointerLeave={(event) => {
+              const card = event.currentTarget.style;
+              card.setProperty("--rx", "0deg");
+              card.setProperty("--ry", "0deg");
+            }}
+          >
+            <span className="hcInner">
+              <span className="hcFace hcFront">
+                <span className="hcTop">
+                  <img src={PKC_LOGO} alt="" />
+                  <span className="hcBrand">
+                    PKC BIZOFT
+                    <small>HOME WIFI · PHILIPPINES</small>
+                  </span>
+                  <i className="hcChip" />
+                </span>
+                <span className="hcPeople">
+                  <span>
+                    <small>FOUNDER</small>
+                    <strong>Paul Kent Cairel</strong>
+                  </span>
+                  <span>
+                    <small>CO-FOUNDER</small>
+                    <strong>Prince AJ Y. Cuyos</strong>
+                  </span>
+                </span>
+                <span className="hcBottom">
+                  <span>BIZOFTPH.COM</span>
+                  <span>TAP TO FLIP ↻</span>
+                </span>
+                <span className="hcShine" />
+              </span>
+              <span className="hcFace hcBack">
+                <span className="hcStripe" />
+                <strong className="hcSpeed">Up to 200 Mbps</strong>
+                <span className="hcPrice">From ₱750 / month</span>
+                <span className="hcList">
+                  <span>✓ Apply online</span>
+                  <span>✓ Pay bills in the app</span>
+                  <span>✓ Track your technician</span>
+                </span>
+                <span className="hcBottom">
+                  <span>BIZOFTPH.COM</span>
+                  <span>TAP TO FLIP ↻</span>
+                </span>
+                <span className="hcShine" />
+              </span>
             </span>
-          </div>
-          <div className="htNode htCo">
-            <span>
-              <b>CO-FOUNDER</b>
-              <strong>Prince AJ Y. Cuyos</strong>
-            </span>
-          </div>
-          <span className="htTag">PKC BIZOFT · BIZOFTPH.COM</span>
+          </button>
+          <span className="hcShadow" aria-hidden="true" />
         </div>
       </section>
 
@@ -2249,130 +2293,173 @@ export default function WhoWeArePage() {
           letter-spacing: 0.18em;
           color: rgba(160, 242, 255, 0.54);
         }
-        .heroTeam {
+        .heroCardWrap {
           position: absolute;
           top: 50%;
-          right: 0;
-          z-index: 2;
-          width: 460px;
-          height: 460px;
-          transform: translateY(-50%);
-          pointer-events: none;
+          right: 10px;
+          z-index: 4;
+          width: 420px;
+          height: 265px;
+          margin-top: -132px;
+          perspective: 1200px;
+          animation: hcFloat 7s ease-in-out infinite;
         }
-        .htRing {
-          position: absolute;
-          inset: 40px;
-          border: 1px solid rgba(76, 232, 255, 0.2);
-          border-radius: 50%;
-        }
-        .htRingB {
-          inset: 0;
-          border-style: dashed;
-          border-color: rgba(76, 232, 255, 0.14);
-          animation: htSpin 40s linear infinite;
-        }
-        .htRingA::after {
-          content: "";
-          position: absolute;
-          top: -4px;
-          left: 50%;
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #a9fbff;
-          box-shadow: 0 0 12px 3px rgba(76, 232, 255, 0.6);
-        }
-        .htRingA {
-          animation: htSpin 18s linear infinite;
-        }
-        @keyframes htSpin {
-          to {
-            transform: rotate(360deg);
+        @keyframes hcFloat {
+          50% {
+            transform: translateY(-12px) rotate(-1deg);
           }
         }
-        .htLines {
-          position: absolute;
-          inset: 0;
+        .heroCard {
+          all: unset;
+          position: relative;
+          display: block;
           width: 100%;
           height: 100%;
+          cursor: pointer;
+          transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+          transform-style: preserve-3d;
+          transition: transform 0.25s ease-out;
         }
-        .htLines line {
-          stroke: rgba(76, 232, 255, 0.35);
-          stroke-width: 1;
-          stroke-dasharray: 4 6;
+        .heroCard:focus-visible {
+          outline: 2px solid #4ce8ff;
+          outline-offset: 6px;
+          border-radius: 22px;
         }
-        .htCore {
+        .hcInner {
           position: absolute;
-          top: 50%;
-          left: 50%;
-          display: grid;
-          place-items: center;
-          width: 128px;
-          height: 128px;
-          border: 1px solid rgba(76, 232, 255, 0.35);
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(10, 40, 52, 0.95), rgba(2, 10, 14, 0.95));
-          box-shadow: 0 0 60px rgba(40, 215, 255, 0.22);
-          transform: translate(-50%, -50%);
+          inset: 0;
+          transform-style: preserve-3d;
+          transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
         }
-        .htCore img {
-          width: 72px;
-          height: 72px;
-          object-fit: contain;
-          filter: drop-shadow(0 0 16px rgba(70, 232, 255, 0.35));
+        .heroCard.flipped .hcInner {
+          transform: rotateY(180deg);
         }
-        .htNode {
+        .hcFace {
           position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 24px 26px;
+          overflow: hidden;
+          border: 1px solid rgba(120, 238, 255, 0.35);
+          border-radius: 22px;
+          background:
+            radial-gradient(circle at 85% 15%, rgba(76, 232, 255, 0.18), transparent 40%),
+            linear-gradient(135deg, #0c3442 0%, #04131b 55%, #0a2a36 100%);
+          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+          color: #eaffff;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+        .hcBack {
+          transform: rotateY(180deg);
+          justify-content: flex-start;
+          gap: 6px;
+        }
+        .hcTop {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 10px 16px;
-          border: 1px solid rgba(76, 232, 255, 0.35);
-          border-radius: 16px;
-          background: rgba(3, 14, 20, 0.9);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-          white-space: nowrap;
-          animation: htFloat 6s ease-in-out infinite;
         }
-        .htNode span {
+        .hcTop img {
+          width: 46px;
+          height: 46px;
+          border-radius: 12px;
+        }
+        .hcBrand {
           display: grid;
           gap: 3px;
+          font-size: 17px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
         }
-        .htNode b {
+        .hcBrand small {
           color: #4ce8ff;
-          font-size: 10.5px;
-          letter-spacing: 0.16em;
-        }
-        .htNode strong {
-          color: #eaffff;
-          font-size: 15px;
-        }
-        .htFounder {
-          top: 52px;
-          left: -10px;
-        }
-        .htCo {
-          right: 18px;
-          bottom: 70px;
-          animation-delay: -3s;
-        }
-        @keyframes htFloat {
-          50% {
-            transform: translateY(-8px);
-          }
-        }
-        .htTag {
-          position: absolute;
-          bottom: -6px;
-          left: 50%;
-          color: rgba(214, 245, 255, 0.6);
-          font-size: 10.5px;
+          font-size: 9.5px;
+          font-weight: 700;
           letter-spacing: 0.18em;
-          transform: translateX(-50%);
-          white-space: nowrap;
+        }
+        .hcChip {
+          width: 44px;
+          height: 34px;
+          margin-left: auto;
+          border-radius: 7px;
+          background:
+            linear-gradient(90deg, transparent 45%, rgba(0, 0, 0, 0.25) 46%, rgba(0, 0, 0, 0.25) 54%, transparent 55%),
+            linear-gradient(0deg, transparent 30%, rgba(0, 0, 0, 0.2) 31%, rgba(0, 0, 0, 0.2) 36%, transparent 37%, transparent 63%, rgba(0, 0, 0, 0.2) 64%, rgba(0, 0, 0, 0.2) 69%, transparent 70%),
+            linear-gradient(135deg, #f6e7a6, #c9a24a 60%, #f1dc8b);
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+        }
+        .hcPeople {
+          display: flex;
+          gap: 26px;
+        }
+        .hcPeople > span {
+          display: grid;
+          gap: 4px;
+        }
+        .hcPeople small,
+        .hcBottom {
+          color: rgba(214, 245, 255, 0.65);
+          font-size: 9.5px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+        }
+        .hcPeople strong {
+          font-size: 16px;
+          letter-spacing: 0.02em;
+        }
+        .hcBottom {
+          display: flex;
+          justify-content: space-between;
+          margin-top: auto;
+        }
+        .hcStripe {
+          height: 34px;
+          margin: -4px -26px 12px;
+          background: linear-gradient(90deg, #020a0e, #0a1e26, #020a0e);
+        }
+        .hcSpeed {
+          font-size: 30px;
+          letter-spacing: -0.02em;
+        }
+        .hcPrice {
+          color: #4ce8ff;
+          font-size: 15px;
+          font-weight: 700;
+        }
+        .hcList {
+          display: grid;
+          gap: 4px;
+          margin-top: 10px;
+          color: rgba(214, 245, 255, 0.85);
+          font-size: 13px;
+        }
+        .hcShine {
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background:
+            radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(170, 250, 255, 0.28), transparent 45%),
+            linear-gradient(115deg, transparent 25%, rgba(76, 232, 255, 0.14) 42%, rgba(176, 148, 255, 0.16) 52%, rgba(255, 210, 120, 0.1) 60%, transparent 75%);
+          background-size: 100% 100%, 220% 220%;
+          background-position: center, var(--mx, 30%) var(--my, 20%);
+          mix-blend-mode: screen;
+          pointer-events: none;
+        }
+        .hcShadow {
+          position: absolute;
+          left: 12%;
+          right: 12%;
+          bottom: -46px;
+          height: 30px;
+          border-radius: 50%;
+          background: radial-gradient(ellipse, rgba(40, 215, 255, 0.28), transparent 70%);
+          filter: blur(8px);
         }
         @media (max-width: 1100px) {
-          .heroTeam {
+          .heroCardWrap {
             display: none;
           }
         }
