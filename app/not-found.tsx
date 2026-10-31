@@ -17,49 +17,35 @@ export default function NotFound() {
       <SiteHeader />
 
       <main className={shared.main}>
-        <div className={styles.layout}>
-          <section>
-            <p className={shared.kicker}>Error 404 · Signal lost</p>
-            <h1 className={shared.title}>
-              This page drifted <em>off the network.</em>
-            </h1>
-            <p className={shared.lead}>
-              The address you opened doesn&apos;t exist, or it was moved. Check the link for typos,
-              or head back to somewhere that does.
-            </p>
+        <section>
+          <p className={shared.kicker}>Error 404</p>
+          <h1 className={shared.title}>This page does not exist.</h1>
+          <p className={shared.lead}>
+            The address you opened does not exist, or it was moved. Check the link for typos, or go back to somewhere that does.
+          </p>
 
-            <div className={shared.actions}>
-              <Link href="/" className={shared.primary}>
-                Back to home
-              </Link>
-              <Link href="/login" className={shared.secondary}>
-                Sign in
-              </Link>
-            </div>
-
-            <nav className={styles.quickLinks} aria-label="Helpful links">
-              <span className={styles.quickLabel}>Try instead</span>
-              <Link href="/who-we-are" className={styles.quickLink}>
-                Who we are
-              </Link>
-              <Link href="/download" className={styles.quickLink}>
-                Get the app
-              </Link>
-              <Link href="/login/SignUp" className={styles.quickLink}>
-                Create an account
-              </Link>
-            </nav>
-          </section>
-
-          <div className={styles.radar} aria-hidden="true">
-            <span className={styles.ring} />
-            <span className={styles.ring} />
-            <span className={styles.ring} />
-            <span className={styles.sweep} />
-            <span className={styles.code}>404</span>
-            <span className={styles.lost}>No route</span>
+          <div className={shared.actions}>
+            <Link href="/" className={shared.primary}>
+              Back to home
+            </Link>
+            <Link href="/login" className={shared.secondary}>
+              Log in
+            </Link>
           </div>
-        </div>
+
+          <nav className={styles.quickLinks} aria-label="Helpful links">
+            <span className={styles.quickLabel}>Try instead</span>
+            <Link href="/who-we-are" className={styles.quickLink}>
+              Who we are
+            </Link>
+            <Link href="/download" className={styles.quickLink}>
+              Get the app
+            </Link>
+            <Link href="/login/SignUp" className={styles.quickLink}>
+              Create an account
+            </Link>
+          </nav>
+        </section>
       </main>
 
       <SiteFooter />

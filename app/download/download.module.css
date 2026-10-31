@@ -1,10 +1,10 @@
-/* ---------- page frame ---------- */
+/* Download page: hairline sections, no cards, one cyan accent. Tokens come from site-pages.module.css (.page). */
 
 .main {
   flex: 1;
-  width: min(1240px, calc(100% - 48px));
+  width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 48px 0 80px;
+  padding: clamp(48px, 7vw, 88px) 0 clamp(56px, 8vw, 96px);
   display: grid;
   gap: clamp(64px, 9vw, 112px);
 }
@@ -15,41 +15,29 @@
 
 .sectionHead {
   max-width: 640px;
-  margin: 0 0 34px;
+  margin: 0 0 clamp(28px, 4vw, 44px);
 }
 
 .sectionKicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 14px;
-  color: #4ce8ff;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.sectionKicker::before {
-  content: "";
-  width: 22px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #4ce8ff);
+  margin: 0 0 10px;
+  color: #8ea6b2;
+  font-size: 14px;
 }
 
 .sectionTitle {
   margin: 0 0 12px;
-  font-size: clamp(26px, 3.6vw, 42px);
-  font-weight: 800;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 500;
   line-height: 1.1;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
   text-wrap: balance;
 }
 
 .sectionLead {
   margin: 0;
-  color: rgba(203, 230, 237, 0.68);
-  font-size: 15px;
+  color: #8ea6b2;
+  font-size: 16px;
   line-height: 1.7;
 }
 
@@ -65,324 +53,223 @@
 .facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin: 0 0 30px;
-  padding: 0;
+  gap: 8px 36px;
+  margin: 0 0 32px;
+  padding: 16px 0 0;
+  border-top: 1px solid rgba(160, 220, 235, 0.16);
   list-style: none;
 }
 
 .fact {
-  padding: 10px 14px;
-  border: 1px solid rgba(95, 229, 255, 0.16);
-  border-radius: 10px;
-  background: rgba(9, 27, 34, 0.55);
-  transition: transform 0.25s ease, border-color 0.25s ease;
-}
-
-.fact:hover {
-  transform: translateY(-3px);
-  border-color: rgba(95, 229, 255, 0.4);
+  display: grid;
+  gap: 2px;
 }
 
 .factLabel {
-  display: block;
-  margin-bottom: 3px;
-  color: rgba(203, 230, 237, 0.56);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  color: #8ea6b2;
+  font-size: 13px;
 }
 
 .factValue {
-  color: #eaf8ff;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .note {
   max-width: 520px;
-  margin: 22px 0 0;
-  color: rgba(203, 230, 237, 0.52);
-  font-size: 12.5px;
+  margin: 24px 0 0;
+  color: #8ea6b2;
+  font-size: 14px;
   line-height: 1.6;
 }
 
-/* ---------- install ---------- */
+/* ---------- install + features ---------- */
 
-.stepGrid {
+.stepGrid,
+.featureGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 40px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.step {
-  position: relative;
-  padding: 24px;
-  border: 1px solid rgba(95, 229, 255, 0.12);
-  border-radius: 18px;
-  background: linear-gradient(160deg, rgba(10, 30, 38, 0.7), rgba(3, 12, 17, 0.85));
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+.stepGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.step:hover {
-  transform: translateY(-6px);
-  border-color: rgba(95, 229, 255, 0.36);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.35), 0 0 40px rgba(76, 232, 255, 0.07);
+.featureGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.step,
+.feature {
+  padding-top: 20px;
+  border-top: 1px solid rgba(160, 220, 235, 0.16);
 }
 
 .stepNumber {
-  width: 42px;
-  height: 42px;
-  margin-bottom: 16px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(76, 232, 255, 0.32);
-  border-radius: 12px;
-  background: rgba(76, 232, 255, 0.07);
+  display: block;
+  margin-bottom: 14px;
   color: #4ce8ff;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.stepTitle {
-  margin: 0 0 6px;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.stepText {
-  margin: 0;
-  color: rgba(203, 230, 237, 0.62);
-  font-size: 13.5px;
-  line-height: 1.6;
-}
-
-/* ---------- features ---------- */
-
-.featureGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.feature {
-  padding: 22px;
-  border: 1px solid rgba(95, 229, 255, 0.1);
-  border-radius: 16px;
-  background: rgba(8, 24, 32, 0.55);
-  transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
-}
-
-.feature:hover {
-  transform: translateY(-5px);
-  border-color: rgba(95, 229, 255, 0.34);
-  background: rgba(10, 32, 42, 0.75);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .featureIcon {
-  width: 40px;
-  height: 40px;
+  display: block;
   margin-bottom: 14px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  background: rgba(76, 232, 255, 0.09);
   color: #4ce8ff;
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1;
 }
 
+.stepTitle,
 .featureTitle {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 700;
+  margin: 0 0 8px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
+.stepText,
 .featureText {
   margin: 0;
-  color: rgba(203, 230, 237, 0.6);
-  font-size: 13px;
-  line-height: 1.55;
+  color: #8ea6b2;
+  font-size: 15px;
+  line-height: 1.65;
 }
 
 /* ---------- referrals ---------- */
 
 .referral {
-  position: relative;
-  padding: clamp(26px, 4vw, 48px);
-  border: 1px solid rgba(95, 229, 255, 0.16);
-  border-radius: 26px;
-  background:
-    radial-gradient(circle at 85% 0%, rgba(76, 232, 255, 0.13), transparent 45%),
-    linear-gradient(160deg, rgba(10, 30, 38, 0.78), rgba(3, 12, 17, 0.9));
-  overflow: hidden;
-}
-
-.referral::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 8%;
-  right: 8%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(76, 232, 255, 0.85), transparent);
+  padding-top: clamp(28px, 4vw, 48px);
+  border-top: 1px solid rgba(160, 220, 235, 0.16);
 }
 
 .referralTop {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  gap: clamp(24px, 5vw, 64px);
-  align-items: center;
+  gap: clamp(32px, 6vw, 80px);
+  align-items: start;
 }
 
 .bigReward {
   display: flex;
   align-items: baseline;
-  gap: 14px;
+  gap: 8px 18px;
   flex-wrap: wrap;
-  margin: 0 0 10px;
+  margin: 0 0 14px;
 }
 
 .bigAmount {
-  font-size: clamp(54px, 8vw, 96px);
-  font-weight: 800;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(52px, 8vw, 88px);
+  font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.05em;
-  color: transparent;
-  -webkit-text-stroke: 2px rgba(76, 232, 255, 0.9);
-  background: linear-gradient(100deg, transparent 35%, rgba(200, 251, 255, 0.95) 50%, transparent 65%) 200% 0 / 250% 100% no-repeat;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: sheen 5.5s ease-in-out 1s infinite;
+  letter-spacing: -0.04em;
 }
 
 .bigLabel {
-  color: rgba(234, 248, 255, 0.85);
-  font-size: 15px;
-  font-weight: 600;
+  color: #8ea6b2;
+  font-size: 16px;
 }
 
 .referralSteps {
-  margin: 22px 0 0;
+  margin: 28px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .referralStep {
   display: grid;
-  grid-template-columns: 30px 1fr;
+  grid-template-columns: 24px 1fr;
   gap: 12px;
   align-items: start;
-  color: rgba(203, 230, 237, 0.78);
-  font-size: 14px;
-  line-height: 1.55;
+  color: #8ea6b2;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .referralStep b {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  border: 1px solid rgba(76, 232, 255, 0.3);
-  background: rgba(76, 232, 255, 0.07);
   color: #4ce8ff;
-  font-size: 12px;
+  font-weight: 600;
 }
 
 .referralStep strong {
-  color: #eaf8ff;
+  color: #e8f1f5;
+  font-weight: 600;
 }
 
 .terms {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 0;
+  border-bottom: 1px solid rgba(160, 220, 235, 0.16);
 }
 
 .term {
-  padding: 18px;
-  border: 1px solid rgba(95, 229, 255, 0.12);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.025);
-  transition: transform 0.3s ease, border-color 0.3s ease;
-}
-
-.term:hover {
-  transform: translateY(-4px);
-  border-color: rgba(95, 229, 255, 0.34);
+  padding: 20px 0;
+  border-top: 1px solid rgba(160, 220, 235, 0.16);
 }
 
 .termValue {
   display: block;
   margin-bottom: 4px;
-  color: #4ce8ff;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 500;
 }
 
 .termTitle {
   display: block;
   margin-bottom: 4px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .termText {
   margin: 0;
-  color: rgba(203, 230, 237, 0.58);
-  font-size: 12.5px;
-  line-height: 1.55;
+  color: #8ea6b2;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .fineprint {
-  margin: 26px 0 0;
-  padding-top: 18px;
-  border-top: 1px solid rgba(95, 229, 255, 0.08);
-  color: rgba(203, 230, 237, 0.52);
-  font-size: 12.5px;
+  max-width: 70ch;
+  margin: 32px 0 0;
+  color: #8ea6b2;
+  font-size: 14px;
   line-height: 1.65;
 }
 
-/* ---------- closing call to action ---------- */
+/* ---------- closing ---------- */
 
 .closing {
-  text-align: center;
+  padding-top: clamp(40px, 6vw, 72px);
+  border-top: 1px solid rgba(160, 220, 235, 0.16);
 }
 
 .closingTitle {
   margin: 0 0 12px;
-  font-size: clamp(26px, 4vw, 44px);
-  font-weight: 800;
-  letter-spacing: -0.035em;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(30px, 4.4vw, 52px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
 }
 
 .closingLead {
-  margin: 0 auto 26px;
-  max-width: 460px;
-  color: rgba(203, 230, 237, 0.65);
+  margin: 0 0 28px;
+  max-width: 50ch;
+  color: #8ea6b2;
   line-height: 1.7;
 }
 
 .closingActions {
   display: flex;
-  justify-content: center;
-}
-
-/* ---------- motion ---------- */
-
-@keyframes sheen {
-  0% { background-position: 200% 0; }
-  55%, 100% { background-position: -100% 0; }
 }
 
 @media (max-width: 960px) {
@@ -393,6 +280,7 @@
 
   .stepGrid {
     grid-template-columns: 1fr;
+    gap: 28px;
   }
 
   .featureGrid {
@@ -403,12 +291,9 @@
 @media (max-width: 560px) {
   .main {
     width: calc(100% - 32px);
-    padding-top: 28px;
   }
 
-  .featureGrid,
-  .terms {
+  .featureGrid {
     grid-template-columns: 1fr;
   }
-
 }

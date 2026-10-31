@@ -60,7 +60,7 @@ function Steps({ title, steps }: { title: string; steps: Step[] }) {
 
 export default function GuidePage() {
   return (
-    <LegalLayout kicker="TUTORIAL" title="How to use PKC BIZOFT" current="/guide">
+    <LegalLayout kicker="Tutorial" title="How to use PKC BIZOFT" current="/guide">
       <p className={styles.lead}>
         A short walk-through for each kind of user. In the mobile app the same tour opens the first time you sign in, and you can
         open it again from Profile &rarr; App tour.

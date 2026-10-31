@@ -264,8 +264,6 @@ export function PhoneDemo({ view: controlledView }: { view?: View } = {}) {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <span className={styles.glow} aria-hidden="true" />
-      <span className={styles.orbit} aria-hidden="true" />
       <div className={styles.phone}>
         <div className={styles.screen}>
           <span className={styles.notch} aria-hidden="true" />

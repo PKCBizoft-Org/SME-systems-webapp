@@ -72,11 +72,7 @@ export function ProfileDialog({
         </button>
 
         <div className={styles.visual} aria-hidden="true">
-          <span className={styles.grid} />
-          <span className={styles.orbit} />
-          <span className={`${styles.orbit} ${styles.orbitTwo}`} />
           <div className={styles.avatar}>{avatar}</div>
-          <span className={styles.scan} />
         </div>
 
         <div className={styles.body}>

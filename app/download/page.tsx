@@ -6,7 +6,7 @@ import { PhoneDemo } from "./PhoneDemo";
 
 export const metadata: Metadata = {
   title: "Get the app",
-  description: "Download the PKC BIZOFT Android app.",
+  description: "Download the PKC BIZOFT Android app: pay bills, follow requests and chat with technicians. Technicians run their jobs in it too.",
 };
 
 const REPO = "pkcbizoft26gh/pkc-bizoft-mobile";
@@ -129,13 +129,11 @@ export default async function DownloadPage() {
         {/* ---------- hero ---------- */}
         <section className={`${styles.section} ${styles.hero}`}>
           <div>
-            <p className={shared.kicker}>Mobile app · Android</p>
-            <h1 className={shared.title}>
-              Take PKC BIZOFT <em>with you.</em>
-            </h1>
+            <p className={shared.kicker}>Android app</p>
+            <h1 className={shared.title}>The PKC BIZOFT app.</h1>
             <p className={shared.lead}>
-              Check your account, pay your bill, follow your requests and earn rewards for every
-              customer you refer, all from your phone.
+              Customers check their account, pay bills, follow requests and chat with their technician.
+              Technicians run their jobs from it. Everything stays in sync with the PKC BIZOFT systems.
             </p>
 
             <ul className={styles.facts} aria-label="App details">
@@ -191,7 +189,7 @@ export default async function DownloadPage() {
         <section className={styles.section} data-reveal>
           <header className={styles.sectionHead}>
             <p className={styles.sectionKicker}>Inside the app</p>
-            <h2 className={styles.sectionTitle}>Everything in one place</h2>
+            <h2 className={styles.sectionTitle}>What is in the app</h2>
           </header>
           <ul className={styles.featureGrid}>
             {FEATURES.map((feature) => (
@@ -254,7 +252,7 @@ export default async function DownloadPage() {
         <section className={`${styles.section} ${styles.closing}`} data-reveal>
           <h2 className={styles.closingTitle}>Ready when you are.</h2>
           <p className={styles.closingLead}>
-            Download the app, sign in, and start earning from your referrals.
+            Download the app and sign in with your PKC BIZOFT account.
           </p>
           <div className={styles.closingActions}>
             <a href={APK_URL} download className={shared.primary}>

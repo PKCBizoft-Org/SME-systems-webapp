@@ -1,0 +1,524 @@
+/* Who We Are: same dark, clean look as the home page. The holographic company card is the one playful element. */
+
+.page {
+  --bg: #050d13;
+  --text: #e8f1f5;
+  --muted: #8ea6b2;
+  --line: rgba(160, 220, 235, 0.16);
+  --accent: #4ce8ff;
+
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.page :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page :is(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.wrap {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.muted {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.hero {
+  padding: clamp(56px, 9vw, 112px) 0 clamp(56px, 8vw, 96px);
+  animation: settle 0.8s ease-out both;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: clamp(40px, 6vw, 88px);
+}
+
+.hero h1 {
+  margin: 0;
+  max-width: 14ch;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(38px, 6vw, 76px);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.lead {
+  max-width: 58ch;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.7;
+}
+
+.glance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 40px;
+  margin: 32px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.glance dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.glance dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+  margin-top: 32px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 24px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #03141a !important;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: #8bf1ff;
+}
+
+.link {
+  color: var(--text);
+  font-weight: 500;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- sections ---------- */
+
+.section {
+  padding: clamp(56px, 8vw, 96px) 0;
+  border-top: 1px solid var(--line);
+}
+
+.section h2 {
+  margin: 0 0 clamp(28px, 4vw, 48px);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.section h3 {
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.people {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.people li {
+  border-top: 1px solid var(--line);
+}
+
+.people button {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 28px;
+  padding: 28px 0;
+  cursor: pointer;
+}
+
+.people button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.monogram {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.personText {
+  display: grid;
+  gap: 2px;
+}
+
+.personText strong {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.personText small {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.personText span {
+  max-width: 62ch;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.more {
+  color: var(--muted);
+  font-size: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.people button:hover .more {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.trio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.trio > div {
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.trio p {
+  margin: 10px 0 0;
+  max-width: 40ch;
+  color: var(--muted);
+}
+
+.cta h2 {
+  max-width: 18ch;
+  margin-bottom: 0;
+}
+
+/* ---------- holographic company card ---------- */
+
+.cardWrap {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 420 / 265;
+  justify-self: end;
+  perspective: 1200px;
+}
+
+.card {
+  all: unset;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease-out;
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: 22px;
+}
+
+.inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.flipped .inner {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6% 6.5%;
+  overflow: hidden;
+  border: 1px solid rgba(120, 238, 255, 0.3);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(76, 232, 255, 0.16), transparent 40%),
+    linear-gradient(135deg, #0c3442 0%, #04131b 55%, #0a2a36 100%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: #eaffff;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.back {
+  transform: rotateY(180deg);
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cardTop img {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.cardBrand {
+  display: grid;
+  gap: 3px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.cardBrand small {
+  color: var(--accent);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.chip {
+  width: 44px;
+  height: 34px;
+  margin-left: auto;
+  border-radius: 7px;
+  background:
+    linear-gradient(90deg, transparent 45%, rgba(0, 0, 0, 0.25) 46%, rgba(0, 0, 0, 0.25) 54%, transparent 55%),
+    linear-gradient(0deg, transparent 30%, rgba(0, 0, 0, 0.2) 31%, rgba(0, 0, 0, 0.2) 36%, transparent 37%, transparent 63%, rgba(0, 0, 0, 0.2) 64%, rgba(0, 0, 0, 0.2) 69%, transparent 70%),
+    linear-gradient(135deg, #f6e7a6, #c9a24a 60%, #f1dc8b);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.cardPeople {
+  display: flex;
+  gap: 26px;
+  margin-top: auto;
+}
+
+.cardPeople > span {
+  display: grid;
+  gap: 4px;
+}
+
+.cardPeople small,
+.cardBottom {
+  color: rgba(214, 245, 255, 0.65);
+  font-size: 11px;
+}
+
+.cardPeople strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cardBottom {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.stripe {
+  height: 10%;
+  margin: -2% -7% 4%;
+  background: linear-gradient(90deg, #020a0e, #0a1e26, #020a0e);
+}
+
+.backTitle {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.backList {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  color: rgba(214, 245, 255, 0.85);
+  font-size: 13px;
+}
+
+.shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at var(--mx, 30%) var(--my, 20%), rgba(170, 250, 255, 0.24), transparent 45%),
+    linear-gradient(115deg, transparent 25%, rgba(76, 232, 255, 0.12) 42%, rgba(176, 148, 255, 0.14) 52%, rgba(255, 210, 120, 0.08) 60%, transparent 75%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* ---------- footer ---------- */
+
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 36px 0 48px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.footInner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px 40px;
+}
+
+.footInner > div {
+  display: grid;
+  gap: 2px;
+}
+
+.footInner strong {
+  color: var(--text);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.footInner nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+
+.footInner nav a:hover {
+  color: var(--text);
+}
+
+.copy {
+  width: 100%;
+  font-size: 13px;
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardWrap {
+    justify-self: start;
+  }
+
+  .trio {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .wrap {
+    width: calc(100% - 32px);
+  }
+
+  .people button {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 16px 18px;
+  }
+
+  .more {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .monogram {
+    width: 52px;
+    height: 52px;
+    font-size: 18px;
+  }
+
+  .actions .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero {
+    animation: none;
+  }
+
+  .card,
+  .inner {
+    transition: none;
+  }
+}

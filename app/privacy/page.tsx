@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Privacy Policy" };
 
 export default function PrivacyPage() {
   return (
-    <LegalLayout kicker="LEGAL" title="Privacy Policy" current="/privacy">
+    <LegalLayout kicker="Legal" title="Privacy Policy" current="/privacy">
       <p className={styles.lead}>
         PKC BIZOFT respects your privacy and follows the Data Privacy Act of 2012 (Republic Act No. 10173) and its rules. This policy
         explains what personal information we collect, why, who sees it, and what rights you have. We are the personal information

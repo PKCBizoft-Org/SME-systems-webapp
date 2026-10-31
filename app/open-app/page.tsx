@@ -32,8 +32,8 @@ export default function OpenAppPage() {
         display: 'grid',
         placeItems: 'center',
         padding: 24,
-        background: '#04121a',
-        color: '#eaf7ff',
+        background: '#050d13',
+        color: '#e8f1f5',
         fontFamily: 'Segoe UI, Arial, sans-serif',
       }}
     >
@@ -41,18 +41,18 @@ export default function OpenAppPage() {
         style={{
           width: '100%',
           maxWidth: 420,
-          background: '#0a2230',
-          border: '1px solid #17475c',
-          borderRadius: 16,
+          background: 'transparent',
+          border: '1px solid rgba(160,220,235,0.16)',
+          borderRadius: 12,
           padding: 24,
           textAlign: 'center',
         }}
       >
-        <div style={{ color: '#22d3ee', fontSize: 11, letterSpacing: 2, fontWeight: 700 }}>PKC BIZOFT</div>
+        <div style={{ color: '#8ea6b2', fontSize: 14, fontWeight: 500 }}>PKC BIZOFT</div>
         <h1 style={{ fontSize: 22, margin: '10px 0 8px' }}>
           {isAndroid === false ? 'Use your Android phone' : 'Opening the app…'}
         </h1>
-        <p style={{ color: '#8fa8b8', fontSize: 14, lineHeight: 1.6, margin: '0 0 18px' }}>
+        <p style={{ color: '#8ea6b2', fontSize: 14, lineHeight: 1.6, margin: '0 0 18px' }}>
           {isAndroid === false
             ? 'The PKC BIZOFT app is for Android phones. Open this email on your phone, or download the app below.'
             : 'If nothing happens, tap Open the app. Not installed yet? Download it first.'}
@@ -63,12 +63,12 @@ export default function OpenAppPage() {
             href={intentUrl}
             style={{
               display: 'block',
-              background: '#22d3ee',
-              color: '#00141b',
+              background: '#4ce8ff',
+              color: '#03141a',
               fontWeight: 800,
               textDecoration: 'none',
               padding: '12px 20px',
-              borderRadius: 10,
+              borderRadius: 8,
               fontSize: 14,
               marginBottom: 10,
             }}
@@ -81,12 +81,12 @@ export default function OpenAppPage() {
           href="/download"
           style={{
             display: 'block',
-            border: '1px solid #22d3ee',
-            color: '#22d3ee',
+            border: '1px solid rgba(160,220,235,0.16)',
+            color: '#e8f1f5',
             fontWeight: 700,
             textDecoration: 'none',
             padding: '12px 20px',
-            borderRadius: 10,
+            borderRadius: 8,
             fontSize: 14,
           }}
         >

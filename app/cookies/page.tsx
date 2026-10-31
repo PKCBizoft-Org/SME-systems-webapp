@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Cookie Notice" };
 
 export default function CookiesPage() {
   return (
-    <LegalLayout kicker="LEGAL" title="Cookie Notice" current="/cookies">
+    <LegalLayout kicker="Legal" title="Cookie Notice" current="/cookies">
       <p className={styles.lead}>
         Cookies and browser storage are small pieces of data a website keeps on your device. PKC BIZOFT uses only what the site needs
         to work. We do not use advertising or tracking cookies, and we do not sell data to advertisers.

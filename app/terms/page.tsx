@@ -7,10 +7,10 @@ export const metadata: Metadata = { title: "Terms and Conditions" };
 
 export default function TermsPage() {
   return (
-    <LegalLayout kicker="LEGAL" title="Terms and Conditions" current="/terms">
+    <LegalLayout kicker="Legal" title="Terms and Conditions" current="/terms">
       <p className={styles.lead}>
         These terms are the agreement between you and PKC BIZOFT (&ldquo;PKC&rdquo;, &ldquo;we&rdquo;) for the PKC BIZOFT website,
-        the PKC BIZOFT mobile app and the home internet service we provide. By creating an account or using the service you
+        the PKC BIZOFT mobile app and the services we provide through them, including our home internet service. By creating an account or using the service you
         agree to them. If you do not agree, please do not create an account.
       </p>
 

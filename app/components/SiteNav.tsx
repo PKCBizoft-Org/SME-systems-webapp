@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-/* eslint-disable @next/next/no-html-link-for-pages */
+/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-img-element */
 import styles from "./site-nav.module.css";
 
-// The public navbar, styled like the home page one. Used by every public page except home
-// (which keeps its own copy because it adds the live clock). Plain <a> on purpose, same as the
-// other public pages. Same links, same order as the home page.
+// The public navbar for every public page except home (home has its own with the language switch).
+// Plain <a> on purpose, same as the other public pages. Same links, same order as the home page.
 export const NAV_LINKS = [
-  { href: "/#plans", label: "Plans" },
-  { href: "/#systems", label: "How It Works" },
-  { href: "/who-we-are", label: "Who We Are" },
+  { href: "/#systems", label: "Systems" },
+  { href: "/#network", label: "Our network" },
+  { href: "/who-we-are", label: "Who we are" },
   { href: "/#contact", label: "Contact" },
 ];
 
@@ -25,56 +24,61 @@ export function SiteNav({ current }: { current?: string }) {
   }, [open]);
 
   return (
-    <nav className={styles.nav} aria-label="Primary navigation">
-      <a className={styles.brand} href="/" aria-label="PKC BIZOFT home">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className={styles.logo} src="/pkc-logo.webp" alt="PKC BIZOFT logo" width={34} height={34} />
-        <span>
-          <strong>PKC</strong>
-          <small>BIZOFT</small>
-        </span>
-      </a>
+    <header className={styles.header}>
+      <nav className={styles.nav} aria-label="Primary navigation">
+        <a className={styles.brand} href="/" aria-label="PKC BIZOFT home">
+          <img src="/pkc-logo.webp" alt="" width={32} height={32} />
+          <span>PKC BIZOFT</span>
+        </a>
 
-      <div className={styles.links}>
-        {NAV_LINKS.map((l) => (
-          <a key={l.href} href={l.href} className={l.href === current ? styles.on : undefined}>
-            {l.label}
+        <div className={styles.links}>
+          {NAV_LINKS.map((l) => (
+            <a key={l.href} href={l.href} className={l.href === current ? styles.on : undefined} aria-current={l.href === current ? "page" : undefined}>
+              {l.label}
+            </a>
+          ))}
+        </div>
+
+        <div className={styles.right}>
+          <a className={styles.text} href="/download">
+            Get the app
           </a>
-        ))}
-      </div>
+          <a className={styles.text} href="/login">
+            Log in
+          </a>
+          <a className={styles.cta} href="/#contact">
+            Talk to us
+          </a>
+        </div>
 
-      <div className={styles.right}>
-        <a className={styles.app} href="/download">
-          GET THE APP <em>ANDROID</em>
-        </a>
-        <a className={styles.enter} href="/login">
-          LOG IN <span>↗</span>
-        </a>
         <button
           type="button"
-          className={`${styles.burger} ${open ? styles.burgerOpen : ""}`}
+          className={styles.burger}
           onClick={() => setOpen((v) => !v)}
-          aria-label="Toggle navigation"
+          aria-label="Menu"
           aria-expanded={open}
+          aria-controls="site-menu"
         >
           <span />
           <span />
         </button>
-      </div>
+      </nav>
 
-      <div className={`${styles.menu} ${open ? styles.menuOpen : ""}`}>
-        {NAV_LINKS.map((l, i) => (
-          <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
-            {l.label.toUpperCase()} <b>0{i + 1}</b>
+      {open ? (
+        <div className={styles.menu} id="site-menu">
+          {NAV_LINKS.map((l) => (
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+              {l.label}
+            </a>
+          ))}
+          <a href="/login/SignUp">Apply for home WiFi</a>
+          <a href="/download">Get the app</a>
+          <a href="/login">Log in</a>
+          <a className={styles.cta} href="/#contact" onClick={() => setOpen(false)}>
+            Talk to us
           </a>
-        ))}
-        <a href="/download" onClick={() => setOpen(false)}>
-          GET THE APP <b>↓</b>
-        </a>
-        <a href="/login" onClick={() => setOpen(false)}>
-          LOG IN <b>↗</b>
-        </a>
-      </div>
-    </nav>
+        </div>
+      ) : null}
+    </header>
   );
 }

@@ -11,12 +11,14 @@ export function SiteHeader({ current }: { current?: string }) {
 export function SiteFooter() {
   return (
     <footer className={styles.footer}>
-      PKC BIZOFT · Business operations platform
-      <div style={{ marginTop: 8, display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-        <a href="/terms" style={{ color: "inherit" }}>Terms</a>
-        <a href="/privacy" style={{ color: "inherit" }}>Privacy</a>
-        <a href="/cookies" style={{ color: "inherit" }}>Cookies</a>
-        <a href="/guide" style={{ color: "inherit" }}>Guide</a>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px 32px" }}>
+        <span>PKC BIZOFT, business systems solutions</span>
+        <span style={{ display: "flex", flexWrap: "wrap", gap: "8px 22px" }}>
+          <a href="/terms">Terms</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/cookies">Cookies</a>
+          <a href="/guide">Guide</a>
+        </span>
       </div>
     </footer>
   );
