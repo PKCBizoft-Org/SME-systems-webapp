@@ -1,8 +1,8 @@
 "use client";
 
-/* Home page sections added on 2026-10-31. Plain <a> on purpose, same as the rest of the public pages. */
+/* Home page sections: plan picker, coverage check, live proof and FAQ. Plain <a> on purpose, same as the rest of the public pages. */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { HomeStats } from "@/app/api/public/home-stats/route";
 import { fill, PARTIAL_TOWNS, SERVICE_AREAS, type HomeText } from "./homeText";
 import styles from "./home-extras.module.css";
@@ -119,70 +119,6 @@ export function CoverageCheck({ t, phone, facebook }: { t: HomeText; phone: stri
   );
 }
 
-// A speedometer that sweeps up to 200 Mbps the first time it scrolls into view.
-export function SpeedTeaser({ t, appUrl }: { t: HomeText; appUrl: string }) {
-  const ref = useRef<HTMLElement | null>(null);
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let raf = 0;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        io.disconnect();
-        const start = performance.now();
-        const tick = (now: number) => {
-          const p = Math.min(1, (now - start) / 1800);
-          setValue(Math.round(200 * (1 - Math.pow(1 - p, 3))));
-          if (p < 1) raf = requestAnimationFrame(tick);
-        };
-        raf = requestAnimationFrame(tick);
-      },
-      { threshold: 0.4 },
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  // Gauge arc: 240 degrees, value 0-200.
-  const r = 88;
-  const length = (240 / 360) * 2 * Math.PI * r;
-  const shown = (value / 200) * length;
-  const angle = -120 + (value / 200) * 240;
-
-  return (
-    <section className={styles.speed} ref={ref}>
-      <div className={styles.gauge} aria-hidden="true">
-        <svg viewBox="0 0 220 200">
-          <path d="M 33.8 154 A 88 88 0 1 1 186.2 154" className={styles.gaugeTrack} />
-          <path d="M 33.8 154 A 88 88 0 1 1 186.2 154" className={styles.gaugeFill} style={{ strokeDasharray: `${shown} ${length}` }} />
-          <line x1="110" y1="110" x2="110" y2="42" className={styles.needle} style={{ transform: `rotate(${angle}deg)` }} />
-          <circle cx="110" cy="110" r="6" className={styles.hub} />
-        </svg>
-        <div className={styles.gaugeValue}>
-          <strong>{value}</strong>
-          <span>Mbps</span>
-        </div>
-      </div>
-      <div className={styles.speedCopy}>
-        <span className={styles.kicker}>{t.speedKicker}</span>
-        <h2>{t.speedTitle}</h2>
-        <p>{t.speedText}</p>
-        <a href={appUrl} className={styles.ghostButton}>
-          {t.speedLink} ↓
-        </a>
-      </div>
-    </section>
-  );
-}
-
-// Real numbers and reviews from the database. Each part stays hidden until there is enough real data,
-// so the page never shows a thin "2 homes connected".
 const MIN_HOMES = 10;
 const MIN_RATINGS = 5;
 const MIN_REVIEWS = 3;
@@ -210,7 +146,6 @@ export function ProofSection({ t }: { t: HomeText }) {
 
   return (
     <section className={styles.proof}>
-      <span className={styles.kicker}>{t.proofKicker}</span>
       {showNumbers ? (
         <div className={styles.numbers}>
           <div>
@@ -246,7 +181,6 @@ export function ProofSection({ t }: { t: HomeText }) {
 export function HomeFaq({ t }: { t: HomeText }) {
   return (
     <section className={styles.faq} id="faq">
-      <span className={styles.kicker}>{t.faqKicker}</span>
       <h2>{t.faqTitle}</h2>
       <div className={styles.faqList}>
         {t.faq.map(([q, a]) => (
@@ -257,25 +191,5 @@ export function HomeFaq({ t }: { t: HomeText }) {
         ))}
       </div>
     </section>
-  );
-}
-
-// Phones only: an Apply bar that slides up once the hero buttons have scrolled away.
-export function MobileApplyBar({ t, href }: { t: HomeText; href: string }) {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setShow(window.scrollY > window.innerHeight * 0.9);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  return (
-    <div className={show ? `${styles.bar} ${styles.barOn}` : styles.bar} aria-hidden={!show}>
-      <span>{t.barFrom}</span>
-      <a href={href} tabIndex={show ? 0 : -1}>
-        {t.apply} →
-      </a>
-    </div>
   );
 }

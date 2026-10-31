@@ -1,0 +1,460 @@
+/* Public home page. Dark and clean: navy base, one cyan accent, hairlines instead of boxes.
+   The tokens below are also read by home-extras.module.css. */
+
+.root {
+  --bg: #050d13;
+  --text: #e8f1f5;
+  --muted: #8ea6b2;
+  --line: rgba(160, 220, 235, 0.16);
+  --accent: #4ce8ff;
+
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.root :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+.root :is(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.wrap {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+/* ---------- header ---------- */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--line);
+  background: rgba(5, 13, 19, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.nav {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.brand img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.links {
+  display: flex;
+  gap: 28px;
+  margin-right: auto;
+  font-size: 14px;
+  color: var(--muted);
+}
+.links a:hover {
+  color: var(--text);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 14px;
+}
+.textLink {
+  color: var(--muted);
+}
+.textLink:hover {
+  color: var(--text);
+}
+.langs {
+  display: flex;
+  gap: 2px;
+  padding-right: 4px;
+}
+.langs button {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.langs button:hover {
+  color: var(--text);
+}
+.langs .langOn {
+  color: var(--accent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #03141a !important;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn:hover {
+  background: #8bf1ff;
+}
+.actions .btn {
+  min-height: 38px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+.link {
+  color: var(--text);
+  font-weight: 500;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+  transition: border-color 0.2s, color 0.2s;
+}
+.link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.burger {
+  display: none;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+.burger span {
+  width: 18px;
+  height: 1.5px;
+  background: var(--text);
+}
+.menu {
+  border-top: 1px solid var(--line);
+  padding: 8px 0 20px;
+  max-height: calc(100vh - 68px);
+  overflow-y: auto;
+}
+.menu .wrap {
+  display: grid;
+}
+.menu .wrap > a:not(.btn) {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 16px;
+}
+.menuLang {
+  padding: 14px 0;
+}
+.menu .btn {
+  margin-top: 6px;
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  padding: clamp(72px, 12vw, 160px) 0 clamp(56px, 8vw, 100px);
+  animation: settle 0.9s ease-out both;
+}
+.hero h1 {
+  max-width: 15ch;
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(40px, 7.4vw, 92px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+.lead {
+  max-width: 60ch;
+  margin: 28px 0 0;
+  color: var(--muted);
+  font-size: clamp(17px, 1.5vw, 19px);
+  line-height: 1.65;
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 32px;
+  margin-top: 36px;
+}
+.heroNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 72px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+}
+.heroNote i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #5fe3a1;
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- sections ---------- */
+
+.section {
+  padding: clamp(56px, 8vw, 104px) 0;
+  scroll-margin-top: 68px;
+}
+.section h2 {
+  max-width: 24ch;
+  margin: 0 0 clamp(32px, 5vw, 56px);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(30px, 4.4vw, 52px);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.section h3 {
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(20px, 2vw, 24px);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+.section :where(p) {
+  margin: 0;
+  color: var(--muted);
+}
+
+.ledger {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--line);
+}
+.ledger li {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 12px 48px;
+  padding: 28px 0;
+  border-top: 1px solid var(--line);
+}
+.ledger p {
+  max-width: 60ch;
+  font-size: 16px;
+}
+
+.trio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+.trio > div {
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.trio p {
+  margin-top: 10px;
+  max-width: 40ch;
+}
+
+/* ---------- our network ---------- */
+
+.netIntro h2 {
+  max-width: 20ch;
+  margin-bottom: 0;
+}
+.section .lead {
+  margin-top: 28px;
+}
+.netIntro .lead {
+  margin-bottom: clamp(40px, 6vw, 72px);
+}
+.plans {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 24px 48px;
+  scroll-margin-top: 90px;
+}
+.plansHead p {
+  margin-top: 8px;
+  max-width: 34ch;
+  font-size: 15px;
+}
+.plans ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--line);
+}
+.plans li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 8px 28px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.plans li strong {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+}
+.plans li span {
+  color: var(--muted);
+}
+.plans li .link {
+  font-size: 15px;
+}
+
+.tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 48px;
+  margin-top: clamp(40px, 6vw, 72px);
+}
+.existing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 28px;
+  margin-top: clamp(40px, 6vw, 64px);
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.existing > span {
+  margin-right: 8px;
+  color: var(--muted);
+}
+
+/* ---------- contact + footer ---------- */
+
+.contact {
+  border-top: 1px solid var(--line);
+}
+.contact h2 {
+  max-width: 18ch;
+  margin-bottom: 0;
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 36px 0 48px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.footInner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px 40px;
+}
+.footInner > div {
+  display: grid;
+  gap: 2px;
+}
+.footInner strong {
+  color: var(--text);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 600;
+}
+.footInner nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.footInner nav a:hover {
+  color: var(--text);
+}
+.copy {
+  width: 100%;
+  font-size: 13px;
+}
+
+/* ---------- smaller screens ---------- */
+
+@media (max-width: 1100px) {
+  .links,
+  .actions {
+    display: none;
+  }
+  .burger {
+    display: flex;
+  }
+}
+
+@media (max-width: 860px) {
+  .ledger li,
+  .plans,
+  .tools {
+    grid-template-columns: 1fr;
+  }
+  .trio {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .wrap {
+    width: calc(100% - 32px);
+  }
+  .heroActions .btn {
+    width: 100%;
+  }
+  .plans li {
+    grid-template-columns: 1fr auto;
+  }
+  .plans li .link {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero {
+    animation: none;
+  }
+}

@@ -1,39 +1,33 @@
-/* Home page extras: plan picker, coverage checker, speed gauge, proof, FAQ, phone Apply bar. */
+/* Home page pieces that hold state: plan picker, coverage check, live proof and FAQ.
+   Dark and clean: hairlines instead of boxes, one cyan accent. Colour tokens come from the page (.root in home.module.css). */
 
-.kicker {
-  color: #4ce8ff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-}
-
-/* Plan picker + coverage checker sit side by side under the plan cards */
 .picker,
 .cover {
   display: grid;
   align-content: start;
-  gap: 12px;
-  padding: 22px;
-  border: 1px solid rgba(76, 232, 255, 0.22);
-  border-radius: 18px;
-  background: rgba(5, 20, 28, 0.7);
+  gap: 14px;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--line, rgba(160, 220, 235, 0.16));
 }
 .pickerTitle {
-  color: #eaffff;
+  color: var(--text, #e8f1f5);
+  font-family: var(--font-display), system-ui, sans-serif;
   font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 .pickerLabel {
   display: grid;
-  gap: 8px;
-  color: rgba(214, 245, 255, 0.82);
+  gap: 10px;
+  color: var(--muted, #8ea6b2);
   font-size: 14px;
 }
 .pickerLabel b {
-  color: #4ce8ff;
+  color: var(--text, #e8f1f5);
 }
 .pickerLabel input {
   width: 100%;
-  accent-color: #4ce8ff;
+  accent-color: var(--accent, #4ce8ff);
 }
 .chips {
   display: flex;
@@ -42,58 +36,60 @@
 }
 .chip,
 .chipOn {
-  padding: 8px 12px;
-  border: 1px solid rgba(76, 232, 255, 0.25);
+  padding: 8px 14px;
+  border: 1px solid var(--line, rgba(160, 220, 235, 0.16));
   border-radius: 999px;
   background: transparent;
-  color: rgba(214, 245, 255, 0.82);
+  color: var(--muted, #8ea6b2);
+  font: inherit;
   font-size: 13px;
   cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.chip:hover {
+  color: var(--text, #e8f1f5);
 }
 .chipOn {
-  border-color: #4ce8ff;
-  background: rgba(76, 232, 255, 0.14);
-  color: #eaffff;
+  border-color: var(--accent, #4ce8ff);
+  color: var(--text, #e8f1f5);
 }
 .pickResult {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  margin-top: 4px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(76, 232, 255, 0.08);
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line, rgba(160, 220, 235, 0.16));
 }
 .pickResult span {
   width: 100%;
-  color: rgba(214, 245, 255, 0.7);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: var(--muted, #8ea6b2);
+  font-size: 13px;
 }
 .pickResult strong {
-  color: #eaffff;
-  font-size: 24px;
+  color: var(--text, #e8f1f5);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 500;
 }
 .pickResult small {
-  color: #4ce8ff;
+  color: var(--muted, #8ea6b2);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
 }
 .pickResult a,
-.coverRow button,
-.coverAsk a:first-child {
+.coverAsk a {
   margin-left: auto;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 10px;
-  background: #c9fbff;
-  color: #02080c;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  cursor: pointer;
+  color: var(--accent, #4ce8ff);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.pickResult a:hover,
+.coverAsk a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .coverRow {
   display: flex;
@@ -103,206 +99,138 @@
   flex: 1;
   min-width: 0;
   padding: 11px 14px;
-  border: 1px solid rgba(76, 232, 255, 0.3);
-  border-radius: 10px;
-  background: rgba(2, 8, 12, 0.8);
-  color: #eaffff;
+  border: 1px solid var(--line, rgba(160, 220, 235, 0.16));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text, #e8f1f5);
+  font: inherit;
   font-size: 15px;
 }
+.coverRow input:focus-visible {
+  outline: 2px solid var(--accent, #4ce8ff);
+  outline-offset: 1px;
+}
 .coverRow button {
-  margin-left: 0;
+  padding: 0 18px;
+  border: 1px solid var(--accent, #4ce8ff);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent, #4ce8ff);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.coverRow button:hover {
+  background: rgba(76, 232, 255, 0.1);
 }
 .coverNow {
-  margin: -4px 0 2px;
-  color: rgba(214, 245, 255, 0.78);
+  margin: -6px 0 0;
+  color: var(--muted, #8ea6b2);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 .coverYes {
   margin: 0;
-  color: #3ddc84;
+  color: #5fe3a1;
   font-size: 15px;
 }
 .coverAsk p {
-  margin: 0 0 12px;
-  color: rgba(214, 245, 255, 0.85);
+  margin: 0 0 10px;
+  color: var(--text, #e8f1f5);
   font-size: 14.5px;
   line-height: 1.55;
 }
 .coverAsk div {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 22px;
 }
-.coverAsk a:first-child {
+.coverAsk a {
   margin-left: 0;
 }
-.coverAsk a:last-child {
-  padding: 10px 14px;
-  border: 1px solid rgba(76, 232, 255, 0.35);
-  border-radius: 10px;
-  color: #cfefff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
 
-/* Speed gauge */
-.speed,
-.proof,
-.faq {
-  position: relative;
-  z-index: 2;
-  width: min(1240px, calc(100% - 64px));
-  margin: 0 auto;
-  padding: 90px 0 30px;
+/* Proof: only shown when the numbers are real and large enough */
+.proof {
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line, rgba(160, 220, 235, 0.16));
 }
-.speed {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 56px;
+.proof h2 {
+  margin: 28px 0 18px;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 500;
 }
-.gauge {
-  position: relative;
-  width: 300px;
-}
-.gauge svg {
-  display: block;
-  width: 100%;
-  overflow: visible;
-}
-.gaugeTrack,
-.gaugeFill {
-  fill: none;
-  stroke-width: 12;
-  stroke-linecap: round;
-}
-.gaugeTrack {
-  stroke: rgba(76, 232, 255, 0.12);
-}
-.gaugeFill {
-  stroke: #4ce8ff;
-  filter: drop-shadow(0 0 8px rgba(76, 232, 255, 0.7));
-}
-.needle {
-  stroke: #eaffff;
-  stroke-width: 3;
-  stroke-linecap: round;
-  transform-origin: 110px 110px;
-}
-.hub {
-  fill: #4ce8ff;
-}
-.gaugeValue {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 18px;
-  display: grid;
-  justify-items: center;
-}
-.gaugeValue strong {
-  color: #eaffff;
-  font-size: 46px;
-  line-height: 1;
-}
-.gaugeValue span {
-  color: #4ce8ff;
-  font-size: 13px;
-  letter-spacing: 0.14em;
-}
-.speedCopy h2,
-.proof h2,
-.faq h2 {
-  margin: 14px 0 14px;
-  color: #eaffff;
-  font-size: clamp(34px, 4.5vw, 56px);
-  line-height: 1.02;
-  letter-spacing: -0.04em;
-}
-.speedCopy p {
-  max-width: 520px;
-  margin: 0 0 22px;
-  color: rgba(214, 245, 255, 0.82);
-  font-size: 16px;
-  line-height: 1.65;
-}
-.ghostButton {
-  display: inline-block;
-  padding: 12px 16px;
-  border: 1px solid rgba(76, 232, 255, 0.4);
-  border-radius: 10px;
-  color: #cfefff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-/* Proof: real numbers and reviews */
 .numbers {
   display: flex;
   flex-wrap: wrap;
-  gap: 40px;
-  margin: 18px 0 10px;
+  gap: 16px 56px;
 }
 .numbers div {
   display: grid;
   gap: 4px;
 }
 .numbers strong {
-  color: #eaffff;
-  font-size: 54px;
+  color: var(--text, #e8f1f5);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 44px;
+  font-weight: 500;
   line-height: 1;
 }
 .numbers span {
-  color: rgba(214, 245, 255, 0.75);
+  color: var(--muted, #8ea6b2);
   font-size: 14px;
 }
 .reviews {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 28px;
 }
 .reviews figure {
   margin: 0;
-  padding: 20px;
-  border: 1px solid rgba(76, 232, 255, 0.2);
-  border-radius: 16px;
-  background: rgba(5, 20, 28, 0.7);
+  padding-top: 14px;
+  border-top: 1px solid var(--line, rgba(160, 220, 235, 0.16));
 }
 .stars {
-  color: #ffd166;
+  color: var(--accent, #4ce8ff);
   letter-spacing: 2px;
+  font-size: 13px;
 }
 .reviews blockquote {
-  margin: 10px 0 12px;
-  color: #eaffff;
+  margin: 8px 0 10px;
+  color: var(--text, #e8f1f5);
   font-size: 15px;
   line-height: 1.6;
 }
 .reviews figcaption {
-  color: rgba(214, 245, 255, 0.6);
-  font-size: 12px;
-  letter-spacing: 0.1em;
+  color: var(--muted, #8ea6b2);
+  font-size: 13px;
 }
 
 /* FAQ */
+.faq h2 {
+  margin: 0 0 28px;
+  color: var(--text, #e8f1f5);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
 .faqList {
-  display: grid;
-  gap: 10px;
-  max-width: 860px;
+  max-width: 820px;
+  border-bottom: 1px solid var(--line, rgba(160, 220, 235, 0.16));
 }
 .faqList details {
-  border: 1px solid rgba(76, 232, 255, 0.18);
-  border-radius: 14px;
-  background: rgba(5, 20, 28, 0.6);
+  border-top: 1px solid var(--line, rgba(160, 220, 235, 0.16));
 }
 .faqList summary {
-  padding: 18px 20px;
-  color: #eaffff;
-  font-size: 17px;
-  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  color: var(--text, #e8f1f5);
+  font-size: 16px;
   cursor: pointer;
   list-style: none;
 }
@@ -311,86 +239,23 @@
 }
 .faqList summary::after {
   content: "+";
-  float: right;
-  color: #4ce8ff;
+  color: var(--accent, #4ce8ff);
+  font-size: 20px;
+  line-height: 1;
 }
 .faqList details[open] summary::after {
-  content: "–";
+  content: "\2212";
 }
-.faqList details p {
-  margin: 0;
-  padding: 0 20px 18px;
-  color: rgba(214, 245, 255, 0.85);
+.faqList p {
+  max-width: 68ch;
+  margin: 0 0 20px;
+  color: var(--muted, #8ea6b2);
   font-size: 15px;
-  line-height: 1.65;
+  line-height: 1.7;
 }
 
-/* Phone Apply bar */
-.bar {
-  display: none;
-}
-@media (max-width: 700px) {
-  .bar {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    z-index: 60;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 8px 8px 8px 16px;
-    border: 1px solid rgba(76, 232, 255, 0.4);
-    border-radius: 14px;
-    background: rgba(3, 12, 18, 0.96);
-    color: #cfefff;
-    font-size: 13px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    transform: translateY(140%);
-    transition: transform 0.3s ease;
-  }
-  .barOn {
-    transform: none;
-  }
-  .bar a {
-    padding: 11px 14px;
-    border-radius: 10px;
-    background: #c9fbff;
-    color: #02080c;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-  }
-}
-
-@media (max-width: 900px) {
-  .speed {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    justify-items: center;
-    text-align: center;
-  }
-  .speedCopy p {
-    margin-left: auto;
-    margin-right: auto;
-  }
+@media (max-width: 760px) {
   .reviews {
     grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 620px) {
-  .speed,
-  .proof,
-  .faq {
-    width: calc(100% - 32px);
-    padding-top: 64px;
-  }
-  .gauge {
-    width: 240px;
-  }
-  .picker,
-  .cover {
-    padding: 18px;
   }
 }

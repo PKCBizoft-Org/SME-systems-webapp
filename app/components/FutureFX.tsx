@@ -10,8 +10,10 @@ const CALM_ROUTES = ["/clients", "/accounting", "/users", "/set-password", "/ins
 // Pages that get scroll-reveal. The home and who-we-are pages already have
 // their own reveal logic, so they are deliberately not listed.
 const REVEAL_SELECTORS: Record<string, string> = {
-  "/download": "[data-reveal]",
 };
+
+// Public pages with the minimal look: no cursor glow, no particles, no scroll-reveal.
+const PLAIN_ROUTES = ["/", "/who-we-are", "/download", "/terms", "/privacy", "/cookies", "/guide"];
 
 const CYAN = "76, 232, 255";
 
@@ -130,7 +132,7 @@ function startConstellation(canvas: HTMLCanvasElement, pointer: { x: number; y: 
 
 export function FutureFX() {
   const pathname = usePathname();
-  const calm = CALM_ROUTES.some((route) => pathname.startsWith(route));
+  const calm = CALM_ROUTES.some((route) => pathname.startsWith(route)) || PLAIN_ROUTES.includes(pathname);
 
   const progressRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
