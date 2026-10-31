@@ -13,7 +13,7 @@ const REVEAL_SELECTORS: Record<string, string> = {
 };
 
 // Public pages with the minimal look: no cursor glow, no particles, no scroll-reveal.
-const PLAIN_ROUTES = ["/", "/who-we-are", "/download", "/terms", "/privacy", "/cookies", "/guide", "/login"];
+const PLAIN_ROUTES = ["/", "/who-we-are", "/download", "/terms", "/privacy", "/cookies", "/guide", "/login", "/login/SignUp"];
 
 const CYAN = "76, 232, 255";
 
