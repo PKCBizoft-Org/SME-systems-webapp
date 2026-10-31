@@ -5,6 +5,18 @@ import { CardFX } from "./components/CardFX";
 import { PhoneDemo, type DemoView } from "./download/PhoneDemo";
 import { CoverageCheck, HomeFaq, MobileApplyBar, PlanPicker, ProofSection, SpeedTeaser } from "./components/home/HomeExtras";
 import { fill, HOME_TEXT, LANG_KEY, LANGS, type Lang } from "./components/home/homeText";
+
+// The FAQ in the format Google and Bing read (always the English answers), so search and AI answers
+// can quote it directly, including who founded the company.
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: HOME_TEXT.en.faq.map(([q, a]) => ({
+    "@type": "Question",
+    name: q,
+    acceptedAnswer: { "@type": "Answer", text: a },
+  })),
+};
 import { INSTALL_FEE, SPEED_BY_PRICE } from "@/lib/plans";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
@@ -943,12 +955,13 @@ export default function HomePage() {
           <a href="/guide">GUIDE</a>
         </div>
         <div className="footerMeta">
-          <span>FOUNDED BY PAUL KENT CAIREL / BIZOFTPH.COM</span>
+          <span>FOUNDED BY PAUL KENT CAIREL / CO-FOUNDER PRINCE AJ Y. CUYOS / BIZOFTPH.COM (BIZOFT PH)</span>
           <span>© 2026 PKC BIZOFT</span>
         </div>
       </footer>
 
       <MobileApplyBar t={t} href={SIGNUP_URL} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }} />
       <CardFX cards=".systemCard, .featureCard" visuals="" />
 
       <style jsx>{`
