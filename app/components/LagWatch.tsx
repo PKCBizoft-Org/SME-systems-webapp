@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { LITE_OFF_KEY } from "./LiteToggle";
 
 const KEY = "pkc_lite_v2";
 
@@ -12,6 +13,12 @@ export function LagWatch() {
   useEffect(() => {
     const root = document.documentElement;
     if (root.classList.contains("lite")) return;
+    try {
+      // Turned off by hand with the lite mode button: never switch it back on.
+      if (localStorage.getItem(LITE_OFF_KEY)) return;
+    } catch {
+      // Private mode: keep watching.
+    }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let raf = 0;

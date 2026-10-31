@@ -4,6 +4,7 @@ import "./globals.css";
 import { FutureFX } from "./components/FutureFX";
 import { CookieNotice } from "./components/CookieNotice";
 import { LagWatch } from "./components/LagWatch";
+import { LiteToggle } from "./components/LiteToggle";
 import StyledJsxRegistry from "./registry";
 
 const geistSans = Geist({
@@ -86,7 +87,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var n=navigator,c=n.connection||{};var t=+localStorage.getItem('pkc_lite_v2')||0;if(Date.now()-t<6048e5||(n.deviceMemory&&n.deviceMemory<=2)||c.saveData){document.documentElement.classList.add('lite')}var h=document.documentElement;if(sessionStorage.getItem('pkc_intro_seen'))h.classList.add('homeIntroSeen');if(sessionStorage.getItem('pkc_who_intro_seen'))h.classList.add('whoIntroSeen')}catch(e){}})();",
+              "(function(){try{var n=navigator,c=n.connection||{};var t=+localStorage.getItem('pkc_lite_v2')||0;if(!localStorage.getItem('pkc_lite_off')&&(Date.now()-t<6048e5||(n.deviceMemory&&n.deviceMemory<=2)||c.saveData)){document.documentElement.classList.add('lite')}var h=document.documentElement;if(sessionStorage.getItem('pkc_intro_seen'))h.classList.add('homeIntroSeen');if(sessionStorage.getItem('pkc_who_intro_seen'))h.classList.add('whoIntroSeen')}catch(e){}})();",
           }}
         />
         <script
@@ -99,6 +100,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <FutureFX />
         <CookieNotice />
         <LagWatch />
+        <LiteToggle />
       </body>
     </html>
   );

@@ -78,6 +78,8 @@ const NETWORK_POINTS = [
 
 type NetworkPoint = (typeof NETWORK_POINTS)[number];
 const isCorePoint = (d: object) => (d as NetworkPoint).id === "philippines";
+// Only the Philippines gets a pin; the routes still fly in from around the world.
+const CORE_POINTS = NETWORK_POINTS.filter(isCorePoint);
 
 const ROUTES = [
   {
@@ -648,13 +650,13 @@ export default function HomePage() {
               hexPolygonColor={hexColor}
               hexPolygonAltitude={hexAltitude}
               hexPolygonsTransitionDuration={0}
-              pointsData={NETWORK_POINTS}
+              pointsData={CORE_POINTS}
               pointLat="lat"
               pointLng="lng"
               pointColor={pointColor}
               pointAltitude={pointAltitude}
               pointRadius={pointRadius}
-              ringsData={NETWORK_POINTS}
+              ringsData={CORE_POINTS}
               ringLat="lat"
               ringLng="lng"
               ringColor={ringColor}
@@ -914,7 +916,6 @@ export default function HomePage() {
           <a href="#plans">PLANS</a>
           <a href="#systems">HOW IT WORKS</a>
           <a href="#contact">CONTACT</a>
-          <a href={`tel:${CONTACT_PHONE}`}>{CONTACT_PHONE_LABEL}</a>
           <a href="/who-we-are">WHO WE ARE</a>
           <a href="/terms">TERMS</a>
           <a href="/privacy">PRIVACY</a>
