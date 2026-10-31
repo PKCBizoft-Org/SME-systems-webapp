@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { CardFX } from "./components/CardFX";
 import { PhoneDemo, type DemoView } from "./download/PhoneDemo";
+import { CoverageCheck, HomeFaq, MobileApplyBar, PlanPicker, ProofSection, SpeedTeaser } from "./components/home/HomeExtras";
+import { fill, HOME_TEXT, LANG_KEY, LANGS, type Lang } from "./components/home/homeText";
 import { INSTALL_FEE, SPEED_BY_PRICE } from "@/lib/plans";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
@@ -20,12 +22,8 @@ const CONTACT_PHONE = "09537404840";
 const CONTACT_PHONE_LABEL = "0953 740 4840";
 const FACEBOOK_URL = "https://www.facebook.com/PKCGrpofCmpny";
 // "How it works": the phone stays pinned while these steps scroll past, one app screen each.
-const TOUR_STEPS: { view: DemoView; title: string; text: string }[] = [
-  { view: "home", title: "Apply in minutes", text: "Pick a plan in the app and send your application. No forms to bring to the office." },
-  { view: "requests", title: "Track installs and repairs", text: "See every request and its status, from installation to a slow-connection report." },
-  { view: "billing", title: "Pay your bill in the app", text: "Check your balance and due date, pay with GCash, bank transfer or cash, and upload your receipt." },
-  { view: "referrals", title: "Invite friends, earn rewards", text: "Share your code. When a friend gets connected, a reward is added to your balance." },
-];
+// The words for each step are in homeText (tour), in the same order.
+const TOUR_STEPS: { view: DemoView }[] = [{ view: "home" }, { view: "requests" }, { view: "billing" }, { view: "referrals" }];
 // Same price list the app uses, so the home page never shows a different price.
 const PLANS = Object.entries(SPEED_BY_PRICE).map(([price, mbps]) => ({ price: Number(price), mbps }));
 
@@ -317,6 +315,8 @@ export default function HomePage() {
   const [introPhase, setIntroPhase] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
+  const [lang, setLang] = useState<Lang>("en");
+  const t = HOME_TEXT[lang];
   const tourRef = useRef<HTMLElement | null>(null);
   const [showFeatureDetail, setShowFeatureDetail] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
@@ -355,6 +355,29 @@ export default function HomePage() {
       window.clearTimeout(timer);
     };
   }, []);
+
+  // The language picked last time (EN / TL / BIS).
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(LANG_KEY);
+    } catch {
+      // Private mode: English.
+    }
+    if (saved === "tl" || saved === "bis") {
+      const restore = window.setTimeout(() => setLang(saved as Lang), 0);
+      return () => window.clearTimeout(restore);
+    }
+  }, []);
+
+  const chooseLang = (next: Lang) => {
+    setLang(next);
+    try {
+      localStorage.setItem(LANG_KEY, next);
+    } catch {
+      // Private mode: it lasts for this visit.
+    }
+  };
 
   // Which tour step is showing, from how far the pinned "How it works" section has scrolled.
   useEffect(() => {
@@ -594,13 +617,20 @@ export default function HomePage() {
           </span>
         </a>
         <div className="navLinks">
-          <a href="#plans">Plans</a>
-          <a href="#systems">How It Works</a>
-          <a href="/who-we-are">Who We Are</a>
-          <a href="#contact">Contact</a>
+          <a href="#plans">{t.navPlans}</a>
+          <a href="#systems">{t.navHow}</a>
+          <a href="/who-we-are">{t.navWho}</a>
+          <a href="#contact">{t.navContact}</a>
         </div>
         <div className="navRight">
           <LiveClock />
+          <div className="langSwitch" role="group" aria-label="Language">
+            {LANGS.map((l) => (
+              <button key={l.id} type="button" className={lang === l.id ? "on" : undefined} aria-pressed={lang === l.id} onClick={() => chooseLang(l.id)}>
+                {l.label}
+              </button>
+            ))}
+          </div>
           <a className="appButton" href={APP_DOWNLOAD_URL}>
             <Icon name="download" size={13} />
             GET THE APP
@@ -614,10 +644,17 @@ export default function HomePage() {
           </button>
         </div>
         <div className={`mobileMenu ${mobileMenuOpen ? "open" : ""}`}>
-          <a href="#plans" onClick={() => setMobileMenuOpen(false)}>PLANS <b>01</b></a>
-          <a href="#systems" onClick={() => setMobileMenuOpen(false)}>HOW IT WORKS <b>02</b></a>
-          <a href="/who-we-are" onClick={() => setMobileMenuOpen(false)}>WHO WE ARE <b>03</b></a>
-          <a href="#contact" onClick={() => setMobileMenuOpen(false)}>CONTACT <b>04</b></a>
+          <div className="langSwitch mobileLang" role="group" aria-label="Language">
+            {LANGS.map((l) => (
+              <button key={l.id} type="button" className={lang === l.id ? "on" : undefined} aria-pressed={lang === l.id} onClick={() => chooseLang(l.id)}>
+                {l.label}
+              </button>
+            ))}
+          </div>
+          <a href="#plans" onClick={() => setMobileMenuOpen(false)}>{t.navPlans.toUpperCase()} <b>01</b></a>
+          <a href="#systems" onClick={() => setMobileMenuOpen(false)}>{t.navHow.toUpperCase()} <b>02</b></a>
+          <a href="/who-we-are" onClick={() => setMobileMenuOpen(false)}>{t.navWho.toUpperCase()} <b>03</b></a>
+          <a href="#contact" onClick={() => setMobileMenuOpen(false)}>{t.navContact.toUpperCase()} <b>04</b></a>
           <a href={APP_DOWNLOAD_URL} onClick={() => setMobileMenuOpen(false)}>GET THE APP <b>⇩</b></a>
           <a href="/login" onClick={() => setMobileMenuOpen(false)}>LOG IN <b>↗</b></a>
         </div>
@@ -630,21 +667,19 @@ export default function HomePage() {
             <span>HOME WIFI INTERNET</span>
           </div>
           <h1>
-            Fast home WiFi.
+            {t.heroTitleA}
             <br />
-            <span>Connected.</span>
+            <span>{t.heroTitleB}</span>
           </h1>
           <p>
-            PKC BIZOFT (bizoftph.com) installs home WiFi up to 200 Mbps, from
-            ₱750 a month. Apply online, pay your bills, and track your
-            technician, all in one app.
+            {t.heroText}
           </p>
           <div className="heroActions">
             <a href={SIGNUP_URL} className="primaryButton">
-              APPLY FOR WIFI <span>→</span>
+              {t.apply} <span>→</span>
             </a>
             <a href="/login" className="secondaryButton">
-              PAY BILL / LOG IN
+              {t.payLogin}
             </a>
           </div>
           <div className="heroSignalStrip" aria-label="Network capabilities">
@@ -654,8 +689,7 @@ export default function HomePage() {
             <b>ALL IN ONE APP</b>
           </div>
           <a href="/who-we-are" className="teamRoute" aria-label="Meet the PKC BIZOFT team">
-            <span><i /> PEOPLE / FOUNDING NETWORK</span>
-            <b>MEET THE TEAM ↗</b>
+            <b><i /> {t.meetTeam} →</b>
           </a>
         </div>
 
@@ -751,16 +785,13 @@ export default function HomePage() {
 
       <section className="plansSection storySection" id="plans" data-story-section="plans">
         <div className="plansHead">
-          <span className="sectionKicker">HOME WIFI PLANS</span>
+          <span className="sectionKicker">{t.plansKicker}</span>
           <h2>
-            Pick your speed.
+            {t.plansTitleA}
             <br />
-            <em>Pay monthly.</em>
+            <em>{t.plansTitleB}</em>
           </h2>
-          <p>
-            One-time installation fee of ₱{INSTALL_FEE.toLocaleString()}, then just your monthly plan.
-            Not sure if we cover your area? Call or text {CONTACT_PHONE_LABEL}.
-          </p>
+          <p>{fill(t.plansText, { fee: INSTALL_FEE.toLocaleString() })}</p>
         </div>
         <div className="planGrid">
           {PLANS.map((plan) => (
@@ -771,32 +802,38 @@ export default function HomePage() {
               </span>
               <strong className="planPrice">
                 ₱{plan.price.toLocaleString()}
-                <small>/ month</small>
+                <small>{t.perMonth}</small>
               </strong>
               <a href={SIGNUP_URL} className="planApply">
-                APPLY <span>→</span>
+                {t.applyShort} <span>→</span>
               </a>
             </article>
           ))}
         </div>
+        <div className="planTools">
+          <PlanPicker t={t} plans={PLANS} signupUrl={SIGNUP_URL} />
+          <CoverageCheck t={t} phone={CONTACT_PHONE} facebook={FACEBOOK_URL} />
+        </div>
       </section>
+
+      <SpeedTeaser t={t} appUrl={APP_DOWNLOAD_URL} />
 
       <section className="phoneTour" id="systems" ref={tourRef} style={{ "--tour-steps": TOUR_STEPS.length } as CSSProperties}>
         <div className="tourSticky">
           <div className="tourCopy">
-            <span className="sectionKicker">HOW IT WORKS</span>
+            <span className="sectionKicker">{t.tourKicker}</span>
             <h2>
-              One app.
+              {t.tourTitleA}
               <br />
-              <em>Everything handled.</em>
+              <em>{t.tourTitleB}</em>
             </h2>
             <ol className="tourSteps">
               {TOUR_STEPS.map((step, index) => (
                 <li key={step.view} className={index === tourStep ? "tourStep on" : "tourStep"}>
                   <span className="tourNum">0{index + 1}</span>
                   <div>
-                    <strong>{step.title}</strong>
-                    <p>{step.text}</p>
+                    <strong>{t.tour[index][0]}</strong>
+                    <p>{t.tour[index][1]}</p>
                   </div>
                 </li>
               ))}
@@ -864,16 +901,19 @@ export default function HomePage() {
         </div>
       )}
 
+      <ProofSection t={t} />
+      <HomeFaq t={t} />
+
       <section className="finalCta storySection" id="contact" data-story-section="features">
         <div className="finalCtaGrid" />
         <div className="finalCtaCopy">
-          <span className="sectionKicker">CONTACT US</span>
-          <h2>Ready for faster<br /><em>home WiFi?</em></h2>
-          <p>Apply online in a few minutes, or call, text or message us and we will check if we cover your area.</p>
+          <span className="sectionKicker">{t.contactKicker}</span>
+          <h2>{t.contactTitleA}<br /><em>{t.contactTitleB}</em></h2>
+          <p>{t.contactText}</p>
           <div className="heroActions">
-            <a href={SIGNUP_URL} className="primaryButton">APPLY FOR WIFI <span>→</span></a>
-            <a href={`tel:${CONTACT_PHONE}`} className="secondaryButton">CALL / TEXT {CONTACT_PHONE_LABEL}</a>
-            <a href={FACEBOOK_URL} className="secondaryButton" target="_blank" rel="noopener noreferrer">FACEBOOK PAGE ↗</a>
+            <a href={SIGNUP_URL} className="primaryButton">{t.apply} <span>→</span></a>
+            <a href={`tel:${CONTACT_PHONE}`} className="secondaryButton">{t.call} {CONTACT_PHONE_LABEL}</a>
+            <a href={FACEBOOK_URL} className="secondaryButton" target="_blank" rel="noopener noreferrer">{t.facebook} ↗</a>
           </div>
         </div>
         <div className="finalCtaCore"><div className="ctaRing ctaRingA" /><div className="ctaRing ctaRingB" /><img src={PKC_LOGO} alt="PKC BIZOFT" /></div>
@@ -908,9 +948,69 @@ export default function HomePage() {
         </div>
       </footer>
 
+      <MobileApplyBar t={t} href={SIGNUP_URL} />
       <CardFX cards=".systemCard, .featureCard" visuals="" />
 
       <style jsx>{`
+        .langSwitch {
+          display: flex;
+          padding: 3px;
+          border: 1px solid rgba(76, 232, 255, 0.22);
+          border-radius: 999px;
+        }
+        .langSwitch button {
+          padding: 6px 9px;
+          border: 0;
+          border-radius: 999px;
+          background: transparent;
+          color: rgba(214, 245, 255, 0.7);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          cursor: pointer;
+        }
+        .langSwitch button.on {
+          background: rgba(76, 232, 255, 0.18);
+          color: #eaffff;
+        }
+        .mobileLang {
+          align-self: flex-start;
+          margin-bottom: 8px;
+        }
+        @media (min-width: 901px) {
+          .mobileLang {
+            display: none;
+          }
+        }
+        @media (max-width: 900px) {
+          .navRight > .langSwitch {
+            display: none;
+          }
+        }
+        .planTools {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+          margin-top: 16px;
+        }
+        @media (max-width: 900px) {
+          .planTools {
+            grid-template-columns: 1fr;
+          }
+        }
+        /* Easier to read: the small all-caps labels were too small and too faint, especially on phones. */
+        .teamRoute,
+        .heroSignalStrip span,
+        .sectionKicker,
+        .cardTop span,
+        .footerMeta span,
+        .siteFooter small {
+          font-size: 11px !important;
+          color: rgba(214, 245, 255, 0.82);
+        }
+        .sectionKicker {
+          color: #4ce8ff;
+        }
         .phoneTour {
           position: relative;
           z-index: 2;

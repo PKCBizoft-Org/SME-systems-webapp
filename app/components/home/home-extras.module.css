@@ -1,0 +1,390 @@
+/* Home page extras: plan picker, coverage checker, speed gauge, proof, FAQ, phone Apply bar. */
+
+.kicker {
+  color: #4ce8ff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+/* Plan picker + coverage checker sit side by side under the plan cards */
+.picker,
+.cover {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid rgba(76, 232, 255, 0.22);
+  border-radius: 18px;
+  background: rgba(5, 20, 28, 0.7);
+}
+.pickerTitle {
+  color: #eaffff;
+  font-size: 20px;
+}
+.pickerLabel {
+  display: grid;
+  gap: 8px;
+  color: rgba(214, 245, 255, 0.82);
+  font-size: 14px;
+}
+.pickerLabel b {
+  color: #4ce8ff;
+}
+.pickerLabel input {
+  width: 100%;
+  accent-color: #4ce8ff;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip,
+.chipOn {
+  padding: 8px 12px;
+  border: 1px solid rgba(76, 232, 255, 0.25);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(214, 245, 255, 0.82);
+  font-size: 13px;
+  cursor: pointer;
+}
+.chipOn {
+  border-color: #4ce8ff;
+  background: rgba(76, 232, 255, 0.14);
+  color: #eaffff;
+}
+.pickResult {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 4px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(76, 232, 255, 0.08);
+}
+.pickResult span {
+  width: 100%;
+  color: rgba(214, 245, 255, 0.7);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.pickResult strong {
+  color: #eaffff;
+  font-size: 24px;
+}
+.pickResult small {
+  color: #4ce8ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.pickResult a,
+.coverRow button,
+.coverAsk a:first-child {
+  margin-left: auto;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #c9fbff;
+  color: #02080c;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.coverRow {
+  display: flex;
+  gap: 8px;
+}
+.coverRow input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid rgba(76, 232, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(2, 8, 12, 0.8);
+  color: #eaffff;
+  font-size: 15px;
+}
+.coverRow button {
+  margin-left: 0;
+}
+.coverYes {
+  margin: 0;
+  color: #3ddc84;
+  font-size: 15px;
+}
+.coverAsk p {
+  margin: 0 0 12px;
+  color: rgba(214, 245, 255, 0.85);
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.coverAsk div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.coverAsk a:first-child {
+  margin-left: 0;
+}
+.coverAsk a:last-child {
+  padding: 10px 14px;
+  border: 1px solid rgba(76, 232, 255, 0.35);
+  border-radius: 10px;
+  color: #cfefff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+/* Speed gauge */
+.speed,
+.proof,
+.faq {
+  position: relative;
+  z-index: 2;
+  width: min(1240px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 90px 0 30px;
+}
+.speed {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 56px;
+}
+.gauge {
+  position: relative;
+  width: 300px;
+}
+.gauge svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.gaugeTrack,
+.gaugeFill {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+.gaugeTrack {
+  stroke: rgba(76, 232, 255, 0.12);
+}
+.gaugeFill {
+  stroke: #4ce8ff;
+  filter: drop-shadow(0 0 8px rgba(76, 232, 255, 0.7));
+}
+.needle {
+  stroke: #eaffff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-origin: 110px 110px;
+}
+.hub {
+  fill: #4ce8ff;
+}
+.gaugeValue {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  display: grid;
+  justify-items: center;
+}
+.gaugeValue strong {
+  color: #eaffff;
+  font-size: 46px;
+  line-height: 1;
+}
+.gaugeValue span {
+  color: #4ce8ff;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+}
+.speedCopy h2,
+.proof h2,
+.faq h2 {
+  margin: 14px 0 14px;
+  color: #eaffff;
+  font-size: clamp(34px, 4.5vw, 56px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+.speedCopy p {
+  max-width: 520px;
+  margin: 0 0 22px;
+  color: rgba(214, 245, 255, 0.82);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.ghostButton {
+  display: inline-block;
+  padding: 12px 16px;
+  border: 1px solid rgba(76, 232, 255, 0.4);
+  border-radius: 10px;
+  color: #cfefff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+/* Proof: real numbers and reviews */
+.numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  margin: 18px 0 10px;
+}
+.numbers div {
+  display: grid;
+  gap: 4px;
+}
+.numbers strong {
+  color: #eaffff;
+  font-size: 54px;
+  line-height: 1;
+}
+.numbers span {
+  color: rgba(214, 245, 255, 0.75);
+  font-size: 14px;
+}
+.reviews {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.reviews figure {
+  margin: 0;
+  padding: 20px;
+  border: 1px solid rgba(76, 232, 255, 0.2);
+  border-radius: 16px;
+  background: rgba(5, 20, 28, 0.7);
+}
+.stars {
+  color: #ffd166;
+  letter-spacing: 2px;
+}
+.reviews blockquote {
+  margin: 10px 0 12px;
+  color: #eaffff;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.reviews figcaption {
+  color: rgba(214, 245, 255, 0.6);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+/* FAQ */
+.faqList {
+  display: grid;
+  gap: 10px;
+  max-width: 860px;
+}
+.faqList details {
+  border: 1px solid rgba(76, 232, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(5, 20, 28, 0.6);
+}
+.faqList summary {
+  padding: 18px 20px;
+  color: #eaffff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.faqList summary::-webkit-details-marker {
+  display: none;
+}
+.faqList summary::after {
+  content: "+";
+  float: right;
+  color: #4ce8ff;
+}
+.faqList details[open] summary::after {
+  content: "–";
+}
+.faqList details p {
+  margin: 0;
+  padding: 0 20px 18px;
+  color: rgba(214, 245, 255, 0.85);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* Phone Apply bar */
+.bar {
+  display: none;
+}
+@media (max-width: 700px) {
+  .bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 8px 8px 16px;
+    border: 1px solid rgba(76, 232, 255, 0.4);
+    border-radius: 14px;
+    background: rgba(3, 12, 18, 0.96);
+    color: #cfefff;
+    font-size: 13px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    transform: translateY(140%);
+    transition: transform 0.3s ease;
+  }
+  .barOn {
+    transform: none;
+  }
+  .bar a {
+    padding: 11px 14px;
+    border-radius: 10px;
+    background: #c9fbff;
+    color: #02080c;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-width: 900px) {
+  .speed {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    justify-items: center;
+    text-align: center;
+  }
+  .speedCopy p {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .reviews {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 620px) {
+  .speed,
+  .proof,
+  .faq {
+    width: calc(100% - 32px);
+    padding-top: 64px;
+  }
+  .gauge {
+    width: 240px;
+  }
+  .picker,
+  .cover {
+    padding: 18px;
+  }
+}
