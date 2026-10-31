@@ -320,13 +320,18 @@ export default function SignupPage() {
         </nav>
       </header>
 
-      <main className={s.main}>
+      <main className={`${s.main} ${sx.main}`}>
         <section className={`${s.card} ${sx.card}`} aria-labelledby="signup-title">
-          <p className={s.kicker}>PKC BIZOFT</p>
-          <h1 id="signup-title" className={s.title}>Create your account</h1>
-          <p className={s.lead}>A few details and you&apos;re in.</p>
+          <div className={sx.top}>
+            <div>
+              <p className={s.kicker}>PKC BIZOFT</p>
+              <h1 id="signup-title" className={`${s.title} ${sx.title}`}>Create your account</h1>
+            </div>
+            <p className={sx.already}>Already have an account? <a href="/login">Sign in</a></p>
+          </div>
 
-          <form className={s.form} onSubmit={handleSubmit} noValidate>
+          <form className={sx.form} onSubmit={handleSubmit} noValidate>
+           <div className={sx.cols}>
             <div className={sx.section}>
               <h2 className={sx.sectionTitle}>Your details</h2>
               <label className={s.label}>
@@ -348,7 +353,7 @@ export default function SignupPage() {
 
             <div className={sx.section}>
               <h2 className={sx.sectionTitle}>Password</h2>
-              <div className={sx.two}>
+              <div className={sx.stack}>
                 <label className={s.label}>
                   Password
                   <span className={s.inputWrap}>
@@ -482,6 +487,12 @@ export default function SignupPage() {
                 <p className={sx.preview}>Address: <b>{addressPreview}</b></p>
               )}
             </div>
+           </div>
+
+            {error && <p className={s.message} role="alert">{error}</p>}
+            {success && <p className={`${s.message} ${s.ok}`} role="status">{success}</p>}
+
+            <div className={sx.bottom}>
 
             <label className={sx.agree}>
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
@@ -493,21 +504,16 @@ export default function SignupPage() {
               </span>
             </label>
 
-            {error && <p className={s.message} role="alert">{error}</p>}
-            {success && <p className={`${s.message} ${s.ok}`} role="status">{success}</p>}
-
-            <button className={s.btn} type="submit" disabled={submitting || loadingLocations} aria-busy={submitting}>
-              {submitting ? "Creating account…" : "Create account"}
-            </button>
-            <p className={sx.fine}>
-              A new account doesn&apos;t get access to a business&apos;s data until that business adds you.
-            </p>
+              <div className={sx.submit}>
+                <button className={s.btn} type="submit" disabled={submitting || loadingLocations} aria-busy={submitting}>
+                  {submitting ? "Creating account…" : "Create account"}
+                </button>
+                <p className={sx.fine}>
+                  You get access to a business&apos;s data once that business adds you.
+                </p>
+              </div>
+            </div>
           </form>
-
-          <p className={s.signup}>
-            Already have an account?
-            <a href="/login">Sign in</a>
-          </p>
         </section>
       </main>
 

@@ -1,7 +1,122 @@
 /* Sign up: extras on top of ../login.module.css (same tokens, same card, just wider). */
 
 .card {
-  width: min(560px, 100%);
+  width: min(1180px, 100%);
+}
+
+/* Wide, not long: on a 1366x768 laptop the whole form fits one screen (three columns side by side). */
+.main {
+  padding: 22px 16px;
+}
+
+.title {
+  font-size: clamp(26px, 5vw, 30px);
+}
+
+.cols :is(input:not([type="checkbox"]), select) {
+  height: 42px;
+}
+
+.top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.already {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.already a {
+  color: var(--text);
+  font-weight: 500;
+  border-bottom: 1px solid var(--line);
+  margin-left: 4px;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.35fr;
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.cols > .section {
+  padding: 14px 28px 16px;
+  border-top: 0;
+  align-content: start;
+  gap: 10px;
+}
+
+.cols > .section:first-child {
+  padding-left: 0;
+}
+
+.cols > .section:last-child {
+  padding-right: 0;
+}
+
+.cols > .section + .section {
+  border-left: 1px solid var(--line);
+}
+
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.bottom {
+  display: grid;
+  grid-template-columns: 1fr minmax(260px, 340px);
+  gap: 16px 40px;
+  align-items: start;
+}
+
+.submit {
+  display: grid;
+  gap: 8px;
+}
+
+@media (max-width: 1020px) {
+  .cols {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cols > .section:last-child {
+    grid-column: 1 / -1;
+    padding: 20px 0 22px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .cols > .section:nth-child(2) {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .cols,
+  .bottom {
+    grid-template-columns: 1fr;
+  }
+  .cols > .section,
+  .cols > .section:nth-child(2) {
+    padding: 20px 0;
+    border-left: 0;
+  }
+  .cols > .section + .section {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
 }
 
 .section {
@@ -11,10 +126,6 @@
   border-top: 1px solid var(--line);
 }
 
-.section:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
 
 .sectionTitle {
   margin: 0;
