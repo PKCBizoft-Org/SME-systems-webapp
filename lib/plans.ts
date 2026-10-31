@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabaseClient";
 export const INSTALL_FEE = 750;
 
 // Plans are stored by price code (G1_P750); people know them by speed.
-const SPEED_BY_PRICE: Record<number, number> = { 750: 50, 1000: 80, 1500: 120, 2000: 200 };
+export const SPEED_BY_PRICE: Record<number, number> = { 750: 50, 1000: 80, 1500: 120, 2000: 200 };
 
 // Speeds from the plans table (plan_catalog), by plan name, e.g. g1_p750 -> "50 Mbps".
 // The price map above is only the fallback until it has loaded.

@@ -8,10 +8,10 @@ import styles from "./site-nav.module.css";
 // (which keeps its own copy because it adds the live clock). Plain <a> on purpose, same as the
 // other public pages. Same links, same order as the home page.
 export const NAV_LINKS = [
-  { href: "/#network", label: "Network" },
-  { href: "/#systems", label: "Systems" },
+  { href: "/#plans", label: "Plans" },
+  { href: "/#systems", label: "How It Works" },
   { href: "/who-we-are", label: "Who We Are" },
-  { href: "/#features", label: "Capabilities" },
+  { href: "/#contact", label: "Contact" },
 ];
 
 export function SiteNav({ current }: { current?: string }) {
@@ -48,7 +48,7 @@ export function SiteNav({ current }: { current?: string }) {
           GET THE APP <em>ANDROID</em>
         </a>
         <a className={styles.enter} href="/login">
-          ENTER SYSTEM <span>↗</span>
+          LOG IN <span>↗</span>
         </a>
         <button
           type="button"
@@ -72,7 +72,7 @@ export function SiteNav({ current }: { current?: string }) {
           GET THE APP <b>↓</b>
         </a>
         <a href="/login" onClick={() => setOpen(false)}>
-          ENTER SYSTEM <b>↗</b>
+          LOG IN <b>↗</b>
         </a>
       </div>
     </nav>

@@ -124,6 +124,16 @@ export default function WhoWeArePage() {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
+    // Same as the home page: the intro plays once per visit (layout.tsx hides it before paint).
+    try {
+      if (sessionStorage.getItem("pkc_who_intro_seen")) {
+        const skip = window.setTimeout(() => setIntroVisible(false), 0);
+        return () => window.clearTimeout(skip);
+      }
+      sessionStorage.setItem("pkc_who_intro_seen", "1");
+    } catch {
+      // Private mode: it just plays.
+    }
     const timers = [
       window.setTimeout(() => setPhase(1), 500),
       window.setTimeout(() => setPhase(2), 1250),

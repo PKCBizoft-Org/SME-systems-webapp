@@ -86,7 +86,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var n=navigator,c=n.connection||{};var t=+localStorage.getItem('pkc_lite_v2')||0;if(Date.now()-t<6048e5||(n.deviceMemory&&n.deviceMemory<=2)||c.saveData){document.documentElement.classList.add('lite')}}catch(e){}})();",
+              "(function(){try{var n=navigator,c=n.connection||{};var t=+localStorage.getItem('pkc_lite_v2')||0;if(Date.now()-t<6048e5||(n.deviceMemory&&n.deviceMemory<=2)||c.saveData){document.documentElement.classList.add('lite')}var h=document.documentElement;if(sessionStorage.getItem('pkc_intro_seen'))h.classList.add('homeIntroSeen');if(sessionStorage.getItem('pkc_who_intro_seen'))h.classList.add('whoIntroSeen')}catch(e){}})();",
           }}
         />
         <script

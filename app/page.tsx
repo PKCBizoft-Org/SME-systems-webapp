@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { CardFX } from "./components/CardFX";
+import { INSTALL_FEE, SPEED_BY_PRICE } from "@/lib/plans";
 import { IntroCounter, IntroFlash, IntroLog, IntroOrbit, IntroRain, IntroSonar, Scramble } from "./components/IntroFX";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
@@ -13,6 +14,12 @@ const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 // The download page explains the install and starts the download when the
 // user clicks there, instead of starting a file download straight from here.
 const APP_DOWNLOAD_URL = "/download";
+const SIGNUP_URL = "/login/SignUp";
+const CONTACT_PHONE = "09537404840";
+const CONTACT_PHONE_LABEL = "0953 740 4840";
+const FACEBOOK_URL = "https://www.facebook.com/PKCGrpofCmpny";
+// Same price list the app uses, so the home page never shows a different price.
+const PLANS = Object.entries(SPEED_BY_PRICE).map(([price, mbps]) => ({ price: Number(price), mbps }));
 
 const PKC_LOGO =
   "data:image/webp;base64,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";
@@ -127,20 +134,20 @@ const ROUTE_ARCS = [
 const features = [
   {
     number: "01",
-    title: "Client Intelligence",
-    text: "Keep customers, plans, installations and account status connected in one operational view.",
+    title: "Pay Bills in the App",
+    text: "See what you owe, pay, and send your receipt from your phone. No need to visit the office.",
     icon: "clients",
   },
   {
     number: "02",
-    title: "Live Operations",
-    text: "See network activity, service routes and business signals without losing the human workflow.",
+    title: "Track Your Technician",
+    text: "See where your technician is on the map and chat with them before they arrive.",
     icon: "pulse",
   },
   {
     number: "03",
-    title: "Secure by Design",
-    text: "Tenant-aware access and protected business data keep every workspace separated.",
+    title: "Quick Repairs and Help",
+    text: "Report a problem in the app and get help from our team, or ask the HelpBot any time.",
     icon: "shield",
   },
 ];
@@ -281,20 +288,6 @@ const hexColor = (d: object) =>
   (d as { properties?: { n?: string } }).properties?.n === "Philippines" ? "#8ff8ff" : "rgba(53,231,255,0.5)";
 const hexAltitude = (d: object) =>
   (d as { properties?: { n?: string } }).properties?.n === "Philippines" ? 0.018 : 0.006;
-const htmlVisibility = (el: HTMLElement, visible: boolean) => {
-  el.style.opacity = visible ? "1" : "0";
-};
-const GEO_ICONS: Record<string, string> = {
-  wifi: '<svg viewBox="0 0 24 24"><path d="M3 8.5a15.4 15.4 0 0 1 18 0"/><path d="M6.5 12a10.5 10.5 0 0 1 11 0"/><path d="M10 15.3a5.7 5.7 0 0 1 4 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>',
-  cloud:
-    '<svg viewBox="0 0 24 24"><path d="M7.5 18.5h9.2a4.3 4.3 0 0 0 .4-8.6A6 6 0 0 0 5.7 8.8 4.8 4.8 0 0 0 7.5 18.5Z"/></svg>',
-  server:
-    '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="16" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M10 7h6M10 17h6"/></svg>',
-  shield:
-    '<svg viewBox="0 0 24 24"><path d="M12 3 19 6v5.5c0 4.8-2.9 7.9-7 9.5-4.1-1.6-7-4.7-7-9.5V6l7-3Z"/><path d="m9.3 12 1.8 1.8 3.7-4"/></svg>',
-  globe:
-    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.8 12h16.4M12 3.5c2.2 2.3 3.2 5.1 3.2 8.5s-1 6.2-3.2 8.5c-2.2-2.3-3.2-5.1-3.2-8.5s1-6.2 3.2-8.5Z"/></svg>',
-};
 
 export default function HomePage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
@@ -303,7 +296,6 @@ export default function HomePage() {
   const [introExiting, setIntroExiting] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(NETWORK_POINTS.find((point) => point.id === "philippines") ?? NETWORK_POINTS[0]);
   const [showFeatureDetail, setShowFeatureDetail] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
   const [globeSize, setGlobeSize] = useState(680);
@@ -314,6 +306,16 @@ export default function HomePage() {
   const [countries, setCountries] = useState<object[]>([]);
 
   useEffect(() => {
+    // The intro plays once per visit; after that the page opens straight away (layout.tsx hides it before paint).
+    try {
+      if (sessionStorage.getItem("pkc_intro_seen")) {
+        const skip = window.setTimeout(() => setIntroVisible(false), 0);
+        return () => window.clearTimeout(skip);
+      }
+      sessionStorage.setItem("pkc_intro_seen", "1");
+    } catch {
+      // Private mode: it just plays.
+    }
     const finishIntro = () => {
       setIntroExiting(true);
       window.setTimeout(() => setIntroVisible(false), 720);
@@ -396,19 +398,6 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [webglAvailable, globeMaterial]);
-
-  const htmlElement = useCallback((obj: object) => {
-    const d = obj as NetworkPoint;
-    const element = document.createElement("div");
-    // Only the PH core shows a full card; the other nodes are small labels that open on hover, so the globe stays visible.
-    if (!isCorePoint(d)) element.className = "geoMini";
-    element.innerHTML = `<span class="geoAnchor"></span><span class="geoHalo"></span><span class="geoLine"></span><span class="geoArrow"></span><button class="geoCard" type="button" aria-label="Inspect ${d.label}"><div class="geoIcon"><span class="iconMount"></span></div><div class="geoText"><strong>${d.label}</strong><small>${d.sub}</small><div class="geoMeta"><em><i></i>${d.status}</em><b>${d.metric}</b></div><span class="geoAction">INSPECT NODE ↗</span></div></button>`;
-    const card = element.querySelector(".geoCard") as HTMLButtonElement | null;
-    if (card) card.addEventListener("click", () => setSelectedNode(d));
-    const mount = element.querySelector(".iconMount");
-    if (mount) mount.innerHTML = GEO_ICONS[d.icon] || GEO_ICONS.globe;
-    return element;
-  }, []);
 
   useEffect(() => {
     const sections = Array.from(
@@ -558,10 +547,10 @@ export default function HomePage() {
           </span>
         </a>
         <div className="navLinks">
-          <a href="#network">Network</a>
-          <a href="#systems">Systems</a>
+          <a href="#plans">Plans</a>
+          <a href="#systems">How It Works</a>
           <a href="/who-we-are">Who We Are</a>
-          <a href="#features">Capabilities</a>
+          <a href="#contact">Contact</a>
         </div>
         <div className="navRight">
           <LiveClock />
@@ -571,19 +560,19 @@ export default function HomePage() {
             <em>ANDROID</em>
           </a>
           <a className="loginButton" href="/login">
-            ENTER SYSTEM <span>↗</span>
+            LOG IN <span>↗</span>
           </a>
           <button className={`menuButton ${mobileMenuOpen ? "open" : ""}`} type="button" onClick={() => setMobileMenuOpen((v) => !v)} aria-label="Toggle navigation" aria-expanded={mobileMenuOpen}>
             <span /><span />
           </button>
         </div>
         <div className={`mobileMenu ${mobileMenuOpen ? "open" : ""}`}>
-          <a href="#network" onClick={() => setMobileMenuOpen(false)}>NETWORK <b>01</b></a>
-          <a href="#systems" onClick={() => setMobileMenuOpen(false)}>SYSTEMS <b>02</b></a>
+          <a href="#plans" onClick={() => setMobileMenuOpen(false)}>PLANS <b>01</b></a>
+          <a href="#systems" onClick={() => setMobileMenuOpen(false)}>HOW IT WORKS <b>02</b></a>
           <a href="/who-we-are" onClick={() => setMobileMenuOpen(false)}>WHO WE ARE <b>03</b></a>
-          <a href="#features" onClick={() => setMobileMenuOpen(false)}>CAPABILITIES <b>04</b></a>
+          <a href="#contact" onClick={() => setMobileMenuOpen(false)}>CONTACT <b>04</b></a>
           <a href={APP_DOWNLOAD_URL} onClick={() => setMobileMenuOpen(false)}>GET THE APP <b>⇩</b></a>
-          <a href="/login" onClick={() => setMobileMenuOpen(false)}>ENTER SYSTEM <b>↗</b></a>
+          <a href="/login" onClick={() => setMobileMenuOpen(false)}>LOG IN <b>↗</b></a>
         </div>
       </nav>
 
@@ -591,32 +580,31 @@ export default function HomePage() {
         <div className="heroCopy">
           <div className="eyebrow">
             <span className="pulse" />
-            <span>BUSINESS OPERATIONS NETWORK</span>
+            <span>HOME WIFI INTERNET</span>
           </div>
           <h1>
-            Your business.
+            Fast home WiFi.
             <br />
             <span>Connected.</span>
           </h1>
           <p>
-            PKC BIZOFT (bizoftph.com) connects the moving parts of your business — clients,
-            services, people and data — so the work behind the scenes stays
-            visible, coordinated and ready to move.
+            PKC BIZOFT (bizoftph.com) installs home WiFi up to 200 Mbps, from
+            ₱750 a month. Apply online, pay your bills, and track your
+            technician, all in one app.
           </p>
           <div className="heroActions">
-            <a href="/login" className="primaryButton">
-              OPEN BIZOFT <span>→</span>
+            <a href={SIGNUP_URL} className="primaryButton">
+              APPLY FOR WIFI <span>→</span>
             </a>
-            <a href="/who-we-are" className="secondaryButton">
-              WHO WE ARE
+            <a href="/login" className="secondaryButton">
+              PAY BILL / LOG IN
             </a>
           </div>
           <div className="heroSignalStrip" aria-label="Network capabilities">
-            <span><i /> CLIENTS</span>
-            <span><i /> SERVICES</span>
-            <span><i /> PEOPLE</span>
-            <span><i /> DATA</span>
-            <b>ALL CONNECTED</b>
+            <span><i /> UP TO 200 MBPS</span>
+            <span><i /> PAY IN THE APP</span>
+            <span><i /> TECH TRACKING</span>
+            <b>ALL IN ONE APP</b>
           </div>
           <a href="/who-we-are" className="teamRoute" aria-label="Meet the PKC BIZOFT team">
             <span><i /> PEOPLE / FOUNDING NETWORK</span>
@@ -625,10 +613,6 @@ export default function HomePage() {
         </div>
 
         <div className="globeWrap">
-          <div className="globeLabel top">
-            <span>GLOBAL NETWORK</span>
-            <b>NODE 07</b>
-          </div>
           <div className="globeStage">
             <div className="scanRing ringOne" />
             <div className="scanRing ringTwo" />
@@ -697,45 +681,59 @@ export default function HomePage() {
               pathDashLength={0.24}
               pathDashGap={1.5}
               pathDashAnimateTime={2400}
-              htmlElementsData={NETWORK_POINTS}
-              htmlLat="lat"
-              htmlLng="lng"
-              htmlAltitude={0.13}
-              htmlTransitionDuration={0}
-              htmlElement={htmlElement}
-              htmlElementVisibilityModifier={htmlVisibility}
               enablePointerInteraction
               />
             )}
-          </div>
-          <div className="globeLabel bottom">
-            <span><i /> NETWORK ROUTES</span>
-            <b>SYNCHRONIZED</b>
-          </div>
-          <div className="nodeInspector" aria-live="polite">
-            <div className="nodeInspectorTop"><span><i /> SELECTED NODE</span><b>{selectedNode.status}</b></div>
-            <strong>{selectedNode.label}</strong>
-            <span>{selectedNode.sub}</span>
-            <div className="nodeInspectorMeta"><span>METRIC <b>{selectedNode.metric}</b></span><span>REGION <b>{selectedNode.id === "philippines" ? "PH" : selectedNode.id.toUpperCase()}</b></span></div>
-
           </div>
         </div>
       </section>
 
 
+      <section className="plansSection storySection" id="plans" data-story-section="plans">
+        <div className="plansHead">
+          <span className="sectionKicker">HOME WIFI PLANS</span>
+          <h2>
+            Pick your speed.
+            <br />
+            <em>Pay monthly.</em>
+          </h2>
+          <p>
+            One-time installation fee of ₱{INSTALL_FEE.toLocaleString()}, then just your monthly plan.
+            Not sure if we cover your area? Call or text {CONTACT_PHONE_LABEL}.
+          </p>
+        </div>
+        <div className="planGrid">
+          {PLANS.map((plan) => (
+            <article className="planCard" key={plan.price}>
+              <span className="planSpeed">
+                {plan.mbps}
+                <small>Mbps</small>
+              </span>
+              <strong className="planPrice">
+                ₱{plan.price.toLocaleString()}
+                <small>/ month</small>
+              </strong>
+              <a href={SIGNUP_URL} className="planApply">
+                APPLY <span>→</span>
+              </a>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="systems storySection" id="systems" data-story-section="systems">
         <div className="sectionHeading">
           <div>
-            <span className="sectionKicker">THE SYSTEM</span>
+            <span className="sectionKicker">HOW IT WORKS</span>
             <h2>
-              One view.
+              One app.
               <br />
-              <em>Every signal.</em>
+              <em>Everything handled.</em>
             </h2>
           </div>
           <p>
-            One operational layer for the signals your team actually needs.
-            Clear enough to understand at a glance, powerful enough to grow with the work.
+            Apply, pay your bills, ask for repairs and see when your technician
+            is coming, all from the PKC BIZOFT app.
           </p>
         </div>
         <div className="systemGrid">
@@ -770,10 +768,10 @@ export default function HomePage() {
               <div className="dataParticle p3" />
             </div>
             <div className="systemCopy">
-              <h3>Everything works together.</h3>
+              <h3>Apply and get connected.</h3>
               <p>
-                Connect clients, billing, operations and data so one update can
-                move through the business without getting lost between systems.
+                Pick a plan and send your application. We schedule a technician
+                to install your WiFi.
               </p>
             </div>
           </article>
@@ -801,10 +799,10 @@ export default function HomePage() {
               </div>
             </div>
             <div className="systemCopy">
-              <h3>See the signal, not the noise.</h3>
+              <h3>Know what is happening.</h3>
               <p>
-                Turn scattered activity into clear operational signals your team
-                can understand and act on quickly.
+                See your bills, payments and repair updates as they happen,
+                without calling the office.
               </p>
             </div>
           </article>
@@ -821,10 +819,10 @@ export default function HomePage() {
               <span>SECURE</span>
             </div>
             <div className="systemCopy">
-              <h3>Keep every workspace protected.</h3>
+              <h3>Your account stays safe.</h3>
               <p>
-                Controlled, tenant-aware access keeps business information
-                separated while the right people stay connected to their work.
+                Two-step sign-in and protected records keep your details
+                private.
               </p>
             </div>
           </article>
@@ -833,15 +831,14 @@ export default function HomePage() {
 
       <section className="features storySection" id="features" data-story-section="features">
         <div className="featureIntro">
-          <span className="sectionKicker">CAPABILITIES</span>
+          <span className="sectionKicker">IN THE APP</span>
           <h2>
-            Built around
+            Less waiting.
             <br />
-            <em>your workflow.</em>
+            <em>Fewer office visits.</em>
           </h2>
           <p>
-            Practical tools for the moments where clarity matters most —
-            from customer relationships to day-to-day operations.
+            Everything you used to do in person, now on your phone.
           </p>
         </div>
         <div className="featureList">
@@ -879,21 +876,25 @@ export default function HomePage() {
             <div className="featureDetailIcon"><Icon name={features[activeFeature].icon} size={28} /></div>
             <h3>{features[activeFeature].title}</h3>
             <p>{features[activeFeature].text}</p>
-            <div className="featureDetailList"><span><i /> CONNECTED WORKFLOW</span><span><i /> CLEAR OPERATIONAL SIGNALS</span><span><i /> BUILT TO SCALE</span></div>
-            <button type="button" className="primaryButton detailAction" onClick={() => { setShowFeatureDetail(false); document.getElementById("network")?.scrollIntoView({ behavior: "smooth" }); }}>BACK TO NETWORK <span>↑</span></button>
+            <div className="featureDetailList"><span><i /> IN THE APP</span><span><i /> NO OFFICE VISIT</span><span><i /> ANDROID</span></div>
+            <button type="button" className="primaryButton detailAction" onClick={() => { setShowFeatureDetail(false); document.getElementById("network")?.scrollIntoView({ behavior: "smooth" }); }}>BACK TO TOP <span>↑</span></button>
           </aside>
         </div>
       )}
 
-      <section className="finalCta storySection" data-story-section="features">
+      <section className="finalCta storySection" id="contact" data-story-section="features">
         <div className="finalCtaGrid" />
         <div className="finalCtaCopy">
-          <span className="sectionKicker">NEXT / PRIVATE WORKSPACE</span>
-          <h2>Ready to put<br /><em>the network to work?</em></h2>
-          <p>The public network shows how the pieces connect. BIZOFT is where your team turns that connection into everyday action.</p>
-          <a href="/login" className="primaryButton">ENTER BIZOFT <span>↗</span></a>
+          <span className="sectionKicker">CONTACT US</span>
+          <h2>Ready for faster<br /><em>home WiFi?</em></h2>
+          <p>Apply online in a few minutes, or call, text or message us and we will check if we cover your area.</p>
+          <div className="heroActions">
+            <a href={SIGNUP_URL} className="primaryButton">APPLY FOR WIFI <span>→</span></a>
+            <a href={`tel:${CONTACT_PHONE}`} className="secondaryButton">CALL / TEXT {CONTACT_PHONE_LABEL}</a>
+            <a href={FACEBOOK_URL} className="secondaryButton" target="_blank" rel="noopener noreferrer">FACEBOOK PAGE ↗</a>
+          </div>
         </div>
-        <div className="finalCtaCore"><div className="ctaRing ctaRingA" /><div className="ctaRing ctaRingB" /><img src={PKC_LOGO} alt="PKC BIZOFT" /><span>PRIVATE / 01</span></div>
+        <div className="finalCtaCore"><div className="ctaRing ctaRingA" /><div className="ctaRing ctaRingB" /><img src={PKC_LOGO} alt="PKC BIZOFT" /></div>
       </section>
 
       <footer className="siteFooter">
@@ -906,13 +907,14 @@ export default function HomePage() {
           />
           <div>
             <strong>PKC BIZOFT</strong>
-            <small>BUSINESS OPERATIONS / CONNECTED</small>
+            <small>HOME WIFI / PHILIPPINES</small>
           </div>
         </div>
         <div className="footerLinks">
-          <a href="#network">NETWORK</a>
-          <a href="#systems">SYSTEMS</a>
-          <a href="#features">CAPABILITIES</a>
+          <a href="#plans">PLANS</a>
+          <a href="#systems">HOW IT WORKS</a>
+          <a href="#contact">CONTACT</a>
+          <a href={`tel:${CONTACT_PHONE}`}>{CONTACT_PHONE_LABEL}</a>
           <a href="/who-we-are">WHO WE ARE</a>
           <a href="/terms">TERMS</a>
           <a href="/privacy">PRIVACY</a>
@@ -928,6 +930,113 @@ export default function HomePage() {
       <CardFX cards=".systemCard, .featureCard" visuals="" />
 
       <style jsx>{`
+        .plansSection {
+          position: relative;
+          z-index: 2;
+          width: min(1240px, calc(100% - 64px));
+          margin: 0 auto;
+          padding: 96px 0 40px;
+          scroll-margin-top: 90px;
+        }
+        .plansHead {
+          max-width: 640px;
+          margin-bottom: 36px;
+        }
+        .plansHead h2 {
+          margin: 14px 0 16px;
+          font-size: clamp(38px, 5vw, 64px);
+          line-height: 1;
+          letter-spacing: -0.04em;
+          color: #eaffff;
+        }
+        .plansHead h2 em {
+          font-style: normal;
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(107, 237, 255, 0.75);
+        }
+        .plansHead p {
+          margin: 0;
+          color: rgba(214, 245, 255, 0.82);
+          font-size: 16px;
+          line-height: 1.65;
+        }
+        .planGrid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+        }
+        .planCard {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          padding: 26px 22px 22px;
+          border: 1px solid rgba(76, 232, 255, 0.22);
+          border-radius: 18px;
+          background: linear-gradient(180deg, rgba(10, 34, 44, 0.75), rgba(3, 12, 18, 0.85));
+          transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+        .planCard:hover {
+          border-color: rgba(76, 232, 255, 0.6);
+          transform: translateY(-3px);
+        }
+        .planSpeed {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          font-size: 46px;
+          font-weight: 700;
+          letter-spacing: -0.03em;
+          color: #eaffff;
+        }
+        .planSpeed small,
+        .planPrice small {
+          font-size: 14px;
+          font-weight: 500;
+          letter-spacing: 0;
+          color: rgba(214, 245, 255, 0.7);
+        }
+        .planPrice {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          font-size: 24px;
+          color: #4ce8ff;
+        }
+        .planApply {
+          margin-top: auto;
+          display: flex;
+          justify-content: space-between;
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: #c9fbff;
+          color: #02080c;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+        }
+        @media (max-width: 900px) {
+          .planGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (max-width: 620px) {
+          .plansSection {
+            width: calc(100% - 32px);
+            padding-top: 64px;
+          }
+          .planGrid {
+            gap: 10px;
+          }
+          .planCard {
+            padding: 18px 14px 14px;
+          }
+          .planSpeed {
+            font-size: 34px;
+          }
+          .planPrice {
+            font-size: 19px;
+          }
+        }
         :global(*) {
           box-sizing: border-box;
         }

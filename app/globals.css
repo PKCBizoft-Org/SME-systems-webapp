@@ -461,6 +461,12 @@ html.lite .fxCanvas {
   display: none !important;
 }
 
+/* Intros play once per visit; the head script in layout.tsx marks the ones already seen. */
+html.homeIntroSeen .introScreen,
+html.whoIntroSeen .whoIntro {
+  display: none !important;
+}
+
 /* The cookie notice waits until an intro has finished so it never covers it. */
 body:has(.introScreen, .whoIntro) [aria-label="Cookie notice"] {
   display: none;
