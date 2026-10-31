@@ -375,7 +375,7 @@ export default function HomePage() {
     controls.enableZoom = false;
     controls.enablePan = false;
     controls.enableRotate = true;
-    globe.pointOfView({ lat: 13, lng: 118, altitude: 1.8 }, 0);
+    globe.pointOfView({ lat: 13, lng: 118, altitude: 2.2 }, 0);
   }, []);
 
   useEffect(() => {
@@ -1071,7 +1071,8 @@ export default function HomePage() {
         .page {
           min-height: 100vh;
           position: relative;
-          overflow: hidden;
+          /* clip, not hidden: hidden makes this a scroll box and the sticky menu stops sticking. */
+          overflow: clip;
           background:
             radial-gradient(
               circle at 72% 20%,
