@@ -45,7 +45,7 @@ await t('too short, too long and odd characters', async () => {
   await rejects(() => set(TECH, ID.c1, "ZTE'; drop table clients;--"), /Use only letters/)
 })
 await t('a serial already on another account is refused without naming it', async () => {
-  const e = await rejects(() => set(TECH, ID.c3, 'ZTE-9999ZZZZ'), /already registered to another account/)
+  await rejects(() => set(TECH, ID.c3, 'ZTE-9999ZZZZ'), /already registered to another account/)
 })
 await t('the same account can save its own serial again', async () => {
   eq(await set(TECH, ID.c1, 'zte-9999zzzz'), 'ZTE-9999ZZZZ')

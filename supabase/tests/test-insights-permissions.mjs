@@ -103,7 +103,7 @@ await t('nobody can write the permission table directly', async () => {
 
 section('2. Revenue analytics')
 // Two bills for c1 this month: one paid in full, one part-paid and overdue.
-const b1 = await addBill(db, { billId: 'B-1', amount: 750, dueOffset: -3, status: 'Unpaid', periodStartOffset: -30 })
+await addBill(db, { billId: 'B-1', amount: 750, dueOffset: -3, status: 'Unpaid', periodStartOffset: -30 })
 const b2 = await addBill(db, { billId: 'B-2', amount: 1000, dueOffset: -2, status: 'Unpaid', periodStartOffset: 0 })
 await addBill(db, { client: ID.c3, billId: 'B-3', amount: 500, dueOffset: -2, status: 'Cancelled', periodStartOffset: 0 })
 const b4 = await addBill(db, { client: ID.c2, billId: 'B-4', amount: 750, dueOffset: -1, status: 'Paid', periodStartOffset: 0 })

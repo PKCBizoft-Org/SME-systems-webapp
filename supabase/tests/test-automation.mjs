@@ -29,7 +29,7 @@ await db.exec(`
 
 section('1. A paid plan change switches on its date')
 let REQ
-const B3 = await addBill(db, { client: ID.c3, billId: 'SAM-OLD-3', amount: 750, dueOffset: -20, periodStartOffset: -45, periodEndOffset: 4, status: 'Paid' })
+await addBill(db, { client: ID.c3, billId: 'SAM-OLD-3', amount: 750, dueOffset: -20, periodStartOffset: -45, periodEndOffset: 4, status: 'Paid' })
 await t('the application is scheduled for the day after the paid period ends', async () => {
   REQ = (
     await as(

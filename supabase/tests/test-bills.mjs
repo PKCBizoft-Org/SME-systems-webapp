@@ -1,4 +1,4 @@
-import { createDb, asUser, msg } from './lib.mjs'
+import { createDb, asUser } from './lib.mjs'
 import { applyMigrations } from './migrate.mjs'
 import { ID, seed, addBill } from './seed.mjs'
 import { t, rejects, eq, ok, section, summary } from './kit.mjs'

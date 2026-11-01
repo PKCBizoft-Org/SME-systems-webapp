@@ -1,7 +1,7 @@
 import { createDb, asUser } from './lib.mjs'
 import { applyMigrations } from './migrate.mjs'
 import { ID, seed, addBill } from './seed.mjs'
-import { t, rejects, eq, ok, section, summary } from './kit.mjs'
+import { t, rejects, eq, section, summary } from './kit.mjs'
 
 const { db } = await createDb()
 await applyMigrations(db, ['20261009220000_bill_payments.sql', '20261009230000_referral_payouts.sql', '20261009240000_db_hygiene.sql'])

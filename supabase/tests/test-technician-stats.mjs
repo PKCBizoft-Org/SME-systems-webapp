@@ -20,7 +20,7 @@ await db.exec(`
 const q = async (sql, params) => (await db.query(sql, params)).rows
 const one = async (sql, params) => (await q(sql, params))[0]
 const stats = async (user) => (await asUser(db, user, () => db.query(`select public.my_technician_stats() s`))).rows[0].s
-const job = async ({ tech = T1, status = 'Assigned', repairDate = 'current_date', accepted = 'null', id } = {}) =>
+const job = async ({ tech = T1, status = 'Assigned', repairDate = 'current_date', accepted = 'null' } = {}) =>
   (
     await one(
       `insert into public.repair_records (client_id, technician_user_id, status, repair_date, accepted_at, problem_description)

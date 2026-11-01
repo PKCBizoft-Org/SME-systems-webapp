@@ -1,4 +1,4 @@
-import { createDb, asUser, msg } from './lib.mjs'
+import { createDb, asUser } from './lib.mjs'
 import { applyMigrations } from './migrate.mjs'
 import { ID, seed } from './seed.mjs'
 import { t, rejects, eq, ok, section, summary } from './kit.mjs'
@@ -81,7 +81,7 @@ await t('payment staff see the request; other tenants and customers do not', asy
   eq((await as(ID.acc, `select id from public.referral_rewards`)).rows.length, 2, 'acc sees rewards')
 })
 await t('start processing', async () => {
-  const r = await act(W1, 'processing')
+  await act(W1, 'processing')
   eq((await one(`select status, processed_by from public.referral_withdrawals where id = $1`, [W1])).status, 'Processing')
   ok((await pushes()).some((b) => b.title === 'Your payout is being processed'), 'push')
 })

@@ -220,10 +220,6 @@ export default function ClientDetailPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [tab, setTab] = useState<ClientTab>("details");
-  const [installationSaveStatus, setInstallationSaveStatus] =
-    useState<SaveStatus>("idle");
-  const [accountSaveStatus, setAccountSaveStatus] =
-    useState<SaveStatus>("idle");
   const [locatingServiceArea, setLocatingServiceArea] = useState(false);
   const [locatedServiceArea, setServiceAreaLocation] = useState<{
     latitude: number;
@@ -435,14 +431,7 @@ export default function ClientDetailPage() {
     ) => {
       if (!client) return;
 
-      const isStatusField =
-        field === "installation_status" || field === "account_status";
-      if (isStatusField) {
-        if (field === "installation_status") setInstallationSaveStatus("saving");
-        if (field === "account_status") setAccountSaveStatus("saving");
-      } else {
-        setFieldSaveStatus((current) => ({ ...current, [field]: "saving" }));
-      }
+      setFieldSaveStatus((current) => ({ ...current, [field]: "saving" }));
 
       const supabase = createClient();
       const { data: userData } = await supabase.auth.getUser();
@@ -458,12 +447,7 @@ export default function ClientDetailPage() {
         setClient((current) =>
           current ? { ...current, [field]: previousValue } : current,
         );
-        if (isStatusField) {
-          if (field === "installation_status") setInstallationSaveStatus("error");
-          if (field === "account_status") setAccountSaveStatus("error");
-        } else {
-          setFieldSaveStatus((current) => ({ ...current, [field]: "error" }));
-        }
+        setFieldSaveStatus((current) => ({ ...current, [field]: "error" }));
         setNotice(
           `Could not save ${String(field).replaceAll("_", " ")}: ${saveError.message}`,
         );
@@ -475,21 +459,10 @@ export default function ClientDetailPage() {
       // starts fresh from the just-saved value.
       delete fieldBaselines.current[String(field)];
 
-      if (isStatusField) {
-        if (field === "installation_status") {
-          setInstallationSaveStatus("saved");
-          window.setTimeout(() => setInstallationSaveStatus("idle"), 2200);
-        }
-        if (field === "account_status") {
-          setAccountSaveStatus("saved");
-          window.setTimeout(() => setAccountSaveStatus("idle"), 2200);
-        }
-      } else {
-        setFieldSaveStatus((current) => ({ ...current, [field]: "saved" }));
-        window.setTimeout(() => {
-          setFieldSaveStatus((current) => ({ ...current, [field]: "idle" }));
-        }, 1800);
-      }
+      setFieldSaveStatus((current) => ({ ...current, [field]: "saved" }));
+      window.setTimeout(() => {
+        setFieldSaveStatus((current) => ({ ...current, [field]: "idle" }));
+      }, 1800);
 
       // Prefer the database audit trigger. If the project does not have one,
       // create a client-side fallback record with the currently signed-in email.
