@@ -32,6 +32,7 @@ type Profit = {
   by_category: Record<string, number>;
   stock_bought: number;
   materials_used: number;
+  referral_payouts?: number;
   profit: number;
 };
 
@@ -481,6 +482,10 @@ export default function MoneyPage() {
                     <tr>
                       <td>Stock bought (received into Inventory)</td>
                       <td className={`${styles.right} ${styles.bad}`}>-{formatPeso(profit.stock_bought)}</td>
+                    </tr>
+                    <tr>
+                      <td>Referral rewards paid to customers</td>
+                      <td className={`${styles.right} ${styles.bad}`}>-{formatPeso(profit.referral_payouts || 0)}</td>
                     </tr>
                     <tr>
                       <td>
