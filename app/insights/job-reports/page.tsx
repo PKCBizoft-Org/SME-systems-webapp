@@ -178,7 +178,7 @@ export default function JobReportsPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 10 }}>
                 {KINDS.map(([kind, label]) => (
                   <div key={kind}>
-                    <small className={styles.muted} style={{ textTransform: "uppercase", letterSpacing: ".12em", fontSize: 10 }}>
+                    <small className={styles.muted} style={{ textTransform: "uppercase", letterSpacing: ".12em", fontSize: 12 }}>
                       {label}
                     </small>
                     <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
