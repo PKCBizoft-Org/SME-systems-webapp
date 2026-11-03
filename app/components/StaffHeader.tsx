@@ -72,6 +72,7 @@ const GROUPS: { key: GroupKey; label: string; roles: string[]; badge?: Item["bad
       { label: "Truck stock", href: "/insights/trucks", permission: "inventory" },
       { label: "Backbone jobs", href: "/insights/backbone", permission: "dispatch" },
       { label: "Job reports (photos + signature)", href: "/insights/job-reports", permission: "dispatch" },
+      { label: "Technician performance", href: "/insights/technicians", permission: "dispatch" },
     ],
   },
   {
@@ -105,6 +106,7 @@ const GROUPS: { key: GroupKey; label: string; roles: string[]; badge?: Item["bad
     label: "Insights",
     roles: ["admin", "accounting"],
     items: [
+      { label: "All reports", href: "/reports" },
       { label: "Revenue analytics", href: "/insights/analytics", permission: "analytics" },
       { label: "Expansion planner", href: "/insights/expansion", adminOnly: true },
       { label: "App errors", href: "/insights/errors", permission: "audit" },

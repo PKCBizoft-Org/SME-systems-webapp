@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminClient } from '@/lib/serverSecurity'
 import { smtpConfigured } from '@/lib/mailer'
 import { sendMail, sendReminderEmail } from '@/lib/notifyEmail'
+import { buildMorningEmail, type MorningReport } from '@/lib/morningEmail'
 
 // Called once a day by Vercel Cron (see vercel.json). Vercel sends
 // "Authorization: Bearer <CRON_SECRET>" when the CRON_SECRET variable is set.
@@ -93,71 +94,34 @@ export async function GET(request: NextRequest) {
     .lt('created_at', twoDaysAgo)
   if (stuck) problems.push(`${stuck} customer payment(s) have waited over 2 days in Payment verification.`)
 
+  // Every morning: one designed email with yesterday's numbers and anything that
+  // needs a human (the health-check problems above are listed first).
   let alerted = false
-  const alertTo = process.env.ALERT_EMAIL || process.env.SMTP_USER
-  if (problems.length > 0 && alertTo && smtpConfigured()) {
-    try {
-      await sendMail({
-        to: alertTo,
-        subject: `PKC BIZOFT daily check: ${problems.length} thing${problems.length === 1 ? '' : 's'} need attention`,
-        text: problems.map((p) => `- ${p}`).join('\n'),
-        html: `<p>The daily check found:</p><ul>${problems.map((p) => `<li>${p.replace(/</g, '&lt;')}</li>`).join('')}</ul><p>Open the website's Accounting section to deal with them.</p>`,
-      })
-      alerted = true
-    } catch (err) {
-      console.error('Health alert email failed:', err)
-    }
-  }
-
-  // Every morning: what came in yesterday, what is waiting, who owes.
   let summarySent = false
+  const alertTo = process.env.ALERT_EMAIL || process.env.SMTP_USER
   if (alertTo && smtpConfigured()) {
+    const yesterday = new Date(Date.now() + 8 * 3_600_000 - 86_400_000).toISOString().slice(0, 10) // the job runs at 9am PH
+    const { data: report, error: reportError } = await admin.rpc('morning_report', { p_day: yesterday })
+    if (reportError) console.error('morning_report failed:', reportError.message)
     try {
-      const today = new Date(Date.now() + 8 * 3_600_000 - 86_400_000).toISOString().slice(0, 10) // yesterday (the job runs at 9am)
-      const peso = (n: number) => `PHP ${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
-      const { data: paidToday } = await admin.from('payments').select('amount_paid').eq('payment_date', today).gt('amount_paid', 0)
-      const collected = (paidToday || []).reduce((sum, row) => sum + Number(row.amount_paid || 0), 0)
-
-      const { count: waiting } = await admin
-        .from('payment_submissions')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'Pending')
-
-      const { data: overdueRows } = await admin
-        .from('billing_balances')
-        .select('client_id, balance')
-        .eq('closed', false)
-        .gt('balance', 0)
-        .gt('days_overdue', 0)
-      const overdueClients = new Set((overdueRows || []).map((row) => row.client_id)).size
-      const overdueTotal = (overdueRows || []).reduce((sum, row) => sum + Number(row.balance || 0), 0)
-
-      const { data: openInstalls } = await admin
-        .from('repair_records')
-        .select('status, technician_user_id')
-        .eq('job_type', 'installation')
-        .not('status', 'ilike', '%complete%')
-        .not('status', 'ilike', '%cancel%')
-      const unaccepted = (openInstalls || []).filter((row) => !row.technician_user_id).length
-      const awaitingSignature = (openInstalls || []).filter((row) => /awaiting signature/i.test(row.status || '')).length
-
-      const lines = [
-        `Collected yesterday: ${peso(collected)} (${(paidToday || []).length} payment${(paidToday || []).length === 1 ? '' : 's'})`,
-        `Waiting to be checked: ${waiting ?? 0} payment${waiting === 1 ? '' : 's'}`,
-        `Overdue: ${overdueClients} customer${overdueClients === 1 ? '' : 's'}, ${peso(overdueTotal)}`,
-        `Installations not yet accepted by a technician: ${unaccepted}`,
-        `Installations waiting for the customer's signature: ${awaitingSignature}`,
-      ]
-      await sendMail({
-        to: alertTo,
-        subject: `PKC BIZOFT daily summary: ${peso(collected)} collected yesterday`,
-        text: `Summary for ${today} (yesterday)\n\n${lines.join('\n')}\n`,
-        html: `<p>Summary for ${today} (yesterday)</p><ul>${lines.map((l) => `<li>${l.replace(/</g, '&lt;')}</li>`).join('')}</ul>`,
-      })
-      summarySent = true
+      if (report) {
+        const siteUrl = (process.env.PUBLIC_SITE_URL || 'https://bizoftph.com').replace(/\/$/, '')
+        const email = buildMorningEmail(report as MorningReport, problems, siteUrl)
+        await sendMail({ to: alertTo, ...email })
+        summarySent = true
+        alerted = problems.length > 0
+      } else if (problems.length > 0) {
+        // The summary could not be built; still send the problems.
+        await sendMail({
+          to: alertTo,
+          subject: `PKC BIZOFT daily check: ${problems.length} thing${problems.length === 1 ? '' : 's'} need attention`,
+          text: problems.map((p) => `- ${p}`).join('\n'),
+          html: `<p>The daily check found:</p><ul>${problems.map((p) => `<li>${p.replace(/</g, '&lt;')}</li>`).join('')}</ul>`,
+        })
+        alerted = true
+      }
     } catch (err) {
-      console.error('Daily summary email failed:', err)
+      console.error('Morning email failed:', err)
     }
   }
 

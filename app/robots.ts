@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         "/inventory",
         "/users",
         "/ratings",
+        "/reports",
         "/set-password",
         "/open-app",
       ],

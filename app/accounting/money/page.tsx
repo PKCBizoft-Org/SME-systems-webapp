@@ -92,6 +92,7 @@ export default function MoneyPage() {
 
   const [month, setMonth] = useState(phToday().slice(0, 7));
   const [profit, setProfit] = useState<Profit | null>(null);
+  const [trend, setTrend] = useState<{ month: string; p: Profit }[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,14 +146,32 @@ export default function MoneyPage() {
     setProfit(data as Profit);
   }, [tenantId, month]);
 
+  // The last 12 months side by side, to see whether profit is growing.
+  const loadTrend = useCallback(async () => {
+    if (!tenantId) return;
+    const [y, m] = phToday().slice(0, 7).split("-").map(Number);
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(Date.UTC(y, m - 1 - i, 1));
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    }).reverse();
+    const results = await Promise.all(
+      months.map(async (mo) => {
+        const { from, to } = monthRange(mo);
+        const { data } = await supabase.rpc("profit_summary", { p_tenant: tenantId, p_from: from, p_to: to });
+        return data ? { month: mo, p: data as Profit } : null;
+      }),
+    );
+    setTrend(results.filter((r): r is { month: string; p: Profit } => !!r));
+  }, [tenantId]);
+
   useEffect(() => {
     async function run() {
       if (tab === "cash") await loadCash();
       if (tab === "expenses") await loadExpenses();
-      if (tab === "profit") await loadProfit();
+      if (tab === "profit") await Promise.all([loadProfit(), loadTrend()]);
     }
     void run();
-  }, [tab, loadCash, loadExpenses, loadProfit]);
+  }, [tab, loadCash, loadExpenses, loadProfit, loadTrend]);
 
   async function saveMovement() {
     const amount = Number(moveAmount);
@@ -477,6 +496,55 @@ export default function MoneyPage() {
                   For information: {formatPeso(profit.materials_used)} of materials were used on jobs this month. They are not subtracted again because they were
                   already counted when the stock was bought. Stock bought uses each item&apos;s cost in Inventory, so keep item costs filled in.
                 </p>
+              </div>
+            )}
+            {trend.length > 0 && (
+              <div className={styles.panel}>
+                <h2>Last 12 months</h2>
+                <div className={styles.wrap}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Month</th>
+                        <th className={styles.right}>Collected</th>
+                        <th className={styles.right}>Expenses</th>
+                        <th className={styles.right}>Stock bought</th>
+                        <th className={styles.right}>Profit</th>
+                        <th style={{ width: "30%" }} />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const max = Math.max(...trend.map((t) => Math.abs(t.p.profit)), 1);
+                        return trend.map(({ month: mo, p }) => (
+                          <tr key={mo} style={mo === month ? { background: "rgba(76,232,255,.06)" } : undefined}>
+                            <td>
+                              <button className={styles.link} style={{ background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit" }} onClick={() => setMonth(mo)}>
+                                {new Date(`${mo}-01T00:00:00`).toLocaleDateString("en-PH", { month: "short", year: "numeric" })}
+                              </button>
+                            </td>
+                            <td className={styles.right}>{formatPeso(p.collected)}</td>
+                            <td className={styles.right}>{formatPeso(p.expenses)}</td>
+                            <td className={styles.right}>{formatPeso(p.stock_bought)}</td>
+                            <td className={`${styles.right} ${p.profit < 0 ? styles.bad : styles.good}`}>{formatPeso(p.profit)}</td>
+                            <td>
+                              <div
+                                title={formatPeso(p.profit)}
+                                style={{
+                                  height: 10,
+                                  borderRadius: 5,
+                                  width: `${Math.max((Math.abs(p.profit) / max) * 100, p.profit === 0 ? 0 : 3)}%`,
+                                  background: p.profit < 0 ? "#ff7777" : "#3ddc97",
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+                <p className={styles.muted}>Click a month to see its breakdown above.</p>
               </div>
             )}
           </>

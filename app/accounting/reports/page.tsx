@@ -262,7 +262,7 @@ export default function ReportsPage() {
 
   const clientList = useMemo(() => [...clients.values()], [clients]);
 
-  async function exportMonth(kind: "payments" | "bills") {
+  async function exportMonth(kind: "payments" | "bills" | "expenses") {
     setExporting(true);
     setError("");
     try {
@@ -280,6 +280,26 @@ export default function ReportsPage() {
             const c = p.client_id ? clients.get(p.client_id) : undefined;
             return [p.payment_date, p.receipt_number, p.payment_id, c?.customer_name, c?.account_id, p.payment_method, p.amount_paid];
           }),
+        ]);
+      } else if (kind === "expenses") {
+        const { data, error: e } = await supabase
+          .from("expenses")
+          .select("expense_date, category, description, paid_from, amount, voided_at, void_reason")
+          .gte("expense_date", start)
+          .lt("expense_date", end)
+          .order("expense_date");
+        if (e) throw new Error(e.message);
+        downloadCsv(`expenses-${month}.csv`, [
+          ["Date", "Category", "What for", "Paid from", "Amount", "Removed", "Why removed"],
+          ...((data || []) as { expense_date: string; category: string; description: string; paid_from: string; amount: number; voided_at: string | null; void_reason: string | null }[]).map((x) => [
+            x.expense_date,
+            x.category,
+            x.description,
+            x.paid_from,
+            x.amount,
+            x.voided_at ? "Yes" : "",
+            x.void_reason,
+          ]),
         ]);
       } else {
         const { data, error: e } = await supabase.from("billing").select("id, client_id, bill_id, status, bill_date, due_date, amount_due, final_amount").gte("bill_date", start).lt("bill_date", end).order("bill_date");
@@ -582,6 +602,9 @@ export default function ReportsPage() {
               </button>
               <button className={styles.btn} disabled={exporting} onClick={() => void exportMonth("bills")}>
                 Download bills (CSV)
+              </button>
+              <button className={styles.btn} disabled={exporting} onClick={() => void exportMonth("expenses")}>
+                Download expenses (CSV)
               </button>
             </div>
             <p style={{ color: "#8fa8b8", fontSize: 13, margin: 0 }}>
