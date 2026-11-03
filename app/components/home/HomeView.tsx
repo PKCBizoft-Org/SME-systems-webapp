@@ -9,8 +9,8 @@ import { HOME_TEXT, LANG_KEY, LANGS, type Lang } from "./homeText";
 import styles from "./home.module.css";
 
 const APP_DOWNLOAD_URL = "/download";
-const CONTACT_PHONE = "09537404840";
-const CONTACT_PHONE_LABEL = "0953 740 4840";
+const CONTACT_PHONE = "09057404840";
+const CONTACT_PHONE_LABEL = "0905 740 4840";
 const FACEBOOK_URL = "https://www.facebook.com/PKCGrpofCmpny";
 
 // The FAQ in the format Google and Bing read (always the English answers).
