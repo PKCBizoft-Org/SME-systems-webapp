@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -181,6 +183,8 @@ export default function ClientDetailPage() {
   const id = params.id as string;
 
   const [client, setClient] = useState<Client | null>(null);
+  // A technician (without admin) sees the record, not the money, and cannot edit details.
+  const [techOnly, setTechOnly] = useState(false);
   const [billing, setBilling] = useState<Billing[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -337,6 +341,7 @@ export default function ClientDetailPage() {
         router.replace(`/accounting/${id}`);
         return;
       }
+      setTechOnly(roles.includes("technician") && !roles.includes("admin"));
 
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
@@ -1143,6 +1148,7 @@ export default function ClientDetailPage() {
   };
 
   return (
+    <ReadOnlyFields.Provider value={techOnly}>
     <main className="clientPage">
       <div className="ambient ambientOne" />
       <div className="ambient ambientTwo" />
@@ -1224,6 +1230,7 @@ export default function ClientDetailPage() {
             </strong>
             <small>{formatDate(client.install_date)}</small>
           </div>
+          {!techOnly && (<>
           <div className="stat">
             <span>TOTAL BILLED</span>
             <strong>{formatPeso(totals.billed)}</strong>
@@ -1236,6 +1243,7 @@ export default function ClientDetailPage() {
             </strong>
             <small>{outstanding > 0 ? "Balance requiring attention" : "Account is settled"}</small>
           </div>
+          </>)}
           <div className="stat">
             <span>SITE PHOTOS</span>
             <strong>{sitePhotos.length}</strong>
@@ -1258,7 +1266,7 @@ export default function ClientDetailPage() {
               ["billing", "Billing", billing.length + payments.length],
               ["activity", "Activity", auditLogs.length],
             ] as [ClientTab, string, number][]
-          ).map(([key, label, count]) => (
+          ).filter(([key]) => !techOnly || key !== "billing").map(([key, label, count]) => (
             <button
               key={key}
               type="button"
@@ -1820,7 +1828,7 @@ export default function ClientDetailPage() {
           </div>
         )}
 
-        {tab === "billing" && (
+        {tab === "billing" && !techOnly && (
         <section className="contentGrid lowerGrid tabPane">
           <article className="panel tablePanel">
             <PanelHeader
@@ -2069,6 +2077,7 @@ export default function ClientDetailPage() {
       </div>
       <style jsx>{styles}</style>
     </main>
+    </ReadOnlyFields.Provider>
   );
 }
 
@@ -2258,6 +2267,10 @@ function PanelHeader({
     </div>
   );
 }
+// Technicians may only change installation status and location (the database
+// enforces this), so for them the detail fields are shown read-only.
+const ReadOnlyFields = createContext(false);
+
 function EditableField({
   label,
   value,
@@ -2273,6 +2286,7 @@ function EditableField({
   saveStatus?: SaveStatus;
   onChange: (value: string) => void;
 }) {
+  const readOnly = useContext(ReadOnlyFields);
   return (
     <label className="editableField">
       <span>{label}</span>
@@ -2282,8 +2296,9 @@ function EditableField({
           inputMode={inputMode}
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={`Enter ${label.toLowerCase()}`}
+          placeholder={readOnly ? "—" : `Enter ${label.toLowerCase()}`}
           aria-label={label}
+          readOnly={readOnly}
         />
         {saveStatus && saveStatus !== "idle" && (
           <em className={saveStatus}>
@@ -2295,7 +2310,7 @@ function EditableField({
           </em>
         )}
       </div>
-      <small>Autosaves after confirmation</small>
+      <small>{readOnly ? "Only an admin can change this" : "Autosaves after confirmation"}</small>
     </label>
   );
 }
@@ -2313,6 +2328,7 @@ function EditableSelect({
   saveStatus?: SaveStatus;
   onChange: (value: string) => void;
 }) {
+  const readOnly = useContext(ReadOnlyFields);
   return (
     <label className="editableField">
       <span>{label}</span>
@@ -2321,6 +2337,7 @@ function EditableSelect({
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
           aria-label={label}
+          disabled={readOnly}
         >
           <option value="">Select {label.toLowerCase()}</option>
           {value && !options.includes(value) && (
@@ -2342,7 +2359,7 @@ function EditableSelect({
           </em>
         )}
       </div>
-      <small>Autosaves after confirmation</small>
+      <small>{readOnly ? "Only an admin can change this" : "Autosaves after confirmation"}</small>
     </label>
   );
 }
