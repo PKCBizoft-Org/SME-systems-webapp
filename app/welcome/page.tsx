@@ -75,10 +75,10 @@ export default function WelcomePage() {
                 Your bills, payments, repair requests and chat with your technician are in the PKC BIZOFT app. This website is for PKC staff.
               </p>
               <div className={s.form}>
-                <a className={s.btn} href="/open-app" style={{ textAlign: "center", textDecoration: "none" }}>
+                <a className={s.btn} href="/open-app" style={{ display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
                   Open the app
                 </a>
-                <a className={s.btn} href="/download" style={{ textAlign: "center", textDecoration: "none", background: "transparent", color: "inherit", border: "1px solid currentColor" }}>
+                <a className={s.btn} href="/download" style={{ display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", background: "transparent", color: "inherit", border: "1px solid currentColor" }}>
                   Download the app (Android)
                 </a>
                 <p className={s.note}>Sign in to the app with the same email and password you just used.</p>
