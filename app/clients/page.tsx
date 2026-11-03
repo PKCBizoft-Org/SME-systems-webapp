@@ -215,10 +215,8 @@ export default function ClientsPage() {
         setStaffRoles((memberships || []).map((membership) => membership.role))
 
         if (tenantIds.length === 0) {
-          setClients([])
-          setError(
-            'This account is authenticated but has no tenant membership. Add the account to tenant_users before loading the client directory.',
-          )
+          // Not staff: a customer account. They use the app, not this page.
+          window.location.replace('/welcome')
           return
         }
 

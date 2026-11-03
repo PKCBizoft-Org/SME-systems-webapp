@@ -327,7 +327,7 @@ export default function SignupPage() {
               <p className={s.kicker}>PKC BIZOFT</p>
               <h1 id="signup-title" className={`${s.title} ${sx.title}`}>Create your account</h1>
             </div>
-            <p className={sx.already}>Already have an account? <a href="/login">Sign in</a></p>
+            <p className={sx.already}>For PKC customers: your account works in the PKC BIZOFT app. Already have one? <a href="/login">Sign in</a></p>
           </div>
 
           <form className={sx.form} onSubmit={handleSubmit} noValidate>
@@ -341,7 +341,7 @@ export default function SignupPage() {
               </label>
               <label className={s.label}>
                 Email
-                <input className={s.input} type="email" value={email} placeholder="name@company.com"
+                <input className={s.input} type="email" value={email} placeholder="name@gmail.com"
                        autoComplete="email" inputMode="email" spellCheck={false}
                        aria-invalid={email.length > 0 && !emailLooksValid}
                        onChange={(e) => { setEmail(e.target.value); setError(""); }} />
@@ -509,7 +509,7 @@ export default function SignupPage() {
                   {submitting ? "Creating account…" : "Create account"}
                 </button>
                 <p className={sx.fine}>
-                  You get access to a business&apos;s data once that business adds you.
+                  This creates your PKC BIZOFT customer account. You will use it in the PKC BIZOFT app to see your bills, pay and ask for repairs.
                 </p>
               </div>
             </div>
