@@ -6,7 +6,7 @@ import { PhoneDemo } from "./PhoneDemo";
 
 export const metadata: Metadata = {
   title: "Get the app",
-  description: "Download the PKC BIZOFT Android app: pay bills, follow requests and chat with technicians. Technicians run their jobs in it too.",
+  description: "Download the PKC NetLink Android app: pay bills, follow requests and chat with technicians. Technicians run their jobs in it too.",
 };
 
 const REPO = "pkcbizoft26gh/pkc-bizoft-mobile";
@@ -65,7 +65,7 @@ const STEPS = [
   },
   {
     title: "Open it and tap Install",
-    text: "Open the downloaded file and confirm. Then sign in with your PKC BIZOFT account.",
+    text: "Open the downloaded file and confirm. Then sign in with your PKC NetLink account.",
   },
 ];
 
@@ -130,10 +130,10 @@ export default async function DownloadPage() {
         <section className={`${styles.section} ${styles.hero}`}>
           <div>
             <p className={shared.kicker}>Android app</p>
-            <h1 className={shared.title}>The PKC BIZOFT app.</h1>
+            <h1 className={shared.title}>The PKC NetLink app.</h1>
             <p className={shared.lead}>
               Customers check their account, pay bills, follow requests and chat with their technician.
-              Technicians run their jobs from it. Everything stays in sync with the PKC BIZOFT systems.
+              Technicians run their jobs from it. Everything stays in sync with the PKC NetLink systems.
             </p>
 
             <ul className={styles.facts} aria-label="App details">
@@ -158,7 +158,7 @@ export default async function DownloadPage() {
 
             <p className={styles.note}>
               Android only for now. An iPhone version isn&apos;t available yet. The file is hosted on
-              GitHub and is the official PKC BIZOFT build.
+              GitHub and is the official PKC NetLink build.
             </p>
           </div>
 
@@ -215,7 +215,7 @@ export default async function DownloadPage() {
                   <span className={styles.bigLabel}>for every person you refer</span>
                 </div>
                 <p className={styles.sectionLead}>
-                  Share your code with friends and neighbors. When they become PKC BIZOFT customers,
+                  Share your code with friends and neighbors. When they become PKC NetLink customers,
                   you get rewarded.
                 </p>
                 <ol className={styles.referralSteps}>
@@ -242,7 +242,7 @@ export default async function DownloadPage() {
             </div>
 
             <p className={styles.fineprint}>
-              Rewards are confirmed by PKC BIZOFT accounting. Your referral code and balance are
+              Rewards are confirmed by PKC NetLink accounting. Your referral code and balance are
               inside the app under Refer &amp; Earn.
             </p>
           </div>
@@ -252,7 +252,7 @@ export default async function DownloadPage() {
         <section className={`${styles.section} ${styles.closing}`} data-reveal>
           <h2 className={styles.closingTitle}>Ready when you are.</h2>
           <p className={styles.closingLead}>
-            Download the app and sign in with your PKC BIZOFT account.
+            Download the app and sign in with your PKC NetLink account.
           </p>
           <div className={styles.closingActions}>
             <a href={APK_URL} download className={shared.primary}>

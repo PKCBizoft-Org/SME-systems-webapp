@@ -15,7 +15,7 @@ function transport() {
 
 export async function sendMail(opts: { to: string; subject: string; text: string; html: string }) {
   await transport().sendMail({
-    from: process.env.SMTP_FROM || `PKC BIZOFT <${process.env.SMTP_USER}>`,
+    from: process.env.SMTP_FROM || `PKC NetLink <${process.env.SMTP_USER}>`,
     ...opts,
   })
 }
@@ -56,7 +56,7 @@ function shell(opts: { badge: string; badgeColor: string; title: string; intro: 
     <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background:#071a24;border:1px solid #17475c;border-radius:18px;overflow:hidden;font-family:Segoe UI,Arial,sans-serif">
       <tr><td style="height:5px;background:linear-gradient(90deg,#17c3e8,#0b86b5,#5fe5ff);font-size:0;line-height:0">&nbsp;</td></tr>
       <tr><td style="padding:26px 20px 6px">
-        <div style="font-size:13px;font-weight:700;letter-spacing:3px;color:#5fe5ff">PKC <span style="color:#ffffff">BIZOFT</span></div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:3px;color:#5fe5ff">PKC <span style="color:#ffffff">NETLINK</span></div><div style="font-size:10px;letter-spacing:2px;color:#5d7684;margin-top:3px">POWERED BY BIZOFT</div>
       </td></tr>
       <tr><td style="padding:14px 20px 0">
         <span style="display:inline-block;padding:5px 12px;border-radius:999px;background:${opts.badgeColor}22;border:1px solid ${opts.badgeColor};font-size:11px;font-weight:700;letter-spacing:1px;color:${opts.badgeColor}">${esc(opts.badge)}</span>
@@ -67,7 +67,7 @@ function shell(opts: { badge: string; badgeColor: string; title: string; intro: 
       ${opts.note ? `<tr><td style="padding:20px 20px 0"><div style="padding:14px 16px;border-radius:12px;background:${tone.bg};border:1px solid ${tone.border};font-size:13px;line-height:1.55;color:${tone.text}">${opts.note}</div></td></tr>` : ''}
       <tr><td style="padding:24px 20px 26px">
         <div style="border-top:1px solid #17475c;padding-top:16px;font-size:12px;color:#5d7684;line-height:1.6">
-          This is an automated message from PKC BIZOFT. Please do not reply to this email.
+          This is an automated message from PKC NetLink. Please do not reply to this email.
         </div>
       </td></tr>
     </table>
@@ -199,7 +199,7 @@ export async function sendWithdrawalEmail(
       badgeColor: d.paid ? '#34d399' : '#fb7185',
       title: d.paid ? 'Your referral payout was sent' : 'Your withdrawal was not approved',
       intro: d.paid
-        ? `Hi ${esc(first)}, thank you for referring a friend to PKC BIZOFT. Your payout is on its way.`
+        ? `Hi ${esc(first)}, thank you for referring a friend to PKC NetLink. Your payout is on its way.`
         : `Hi ${esc(first)}, Accounting could not approve this withdrawal.`,
       rows: d.paid
         ? [

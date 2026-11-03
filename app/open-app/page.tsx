@@ -48,13 +48,13 @@ export default function OpenAppPage() {
           textAlign: 'center',
         }}
       >
-        <div style={{ color: '#8ea6b2', fontSize: 14, fontWeight: 500 }}>PKC BIZOFT</div>
+        <div style={{ color: '#8ea6b2', fontSize: 14, fontWeight: 500 }}>PKC NetLink</div>
         <h1 style={{ fontSize: 22, margin: '10px 0 8px' }}>
           {isAndroid === false ? 'Use your Android phone' : 'Opening the app…'}
         </h1>
         <p style={{ color: '#8ea6b2', fontSize: 14, lineHeight: 1.6, margin: '0 0 18px' }}>
           {isAndroid === false
-            ? 'The PKC BIZOFT app is for Android phones. Open this email on your phone, or download the app below.'
+            ? 'The PKC NetLink app is for Android phones. Open this email on your phone, or download the app below.'
             : 'If nothing happens, tap Open the app. Not installed yet? Download it first.'}
         </p>
 

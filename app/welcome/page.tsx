@@ -65,14 +65,14 @@ export default function WelcomePage() {
 
       <main className={s.main}>
         <section className={s.card} aria-labelledby="welcome-title" aria-busy={!ready}>
-          <p className={s.kicker}>PKC BIZOFT</p>
+          <p className={s.kicker}>PKC NetLink</p>
           <h1 id="welcome-title" className={s.title}>
             {ready ? `Hi${name ? ` ${name}` : ""}, your account is ready` : "One moment…"}
           </h1>
           {ready && (
             <>
               <p className={s.lead}>
-                Your bills, payments, repair requests and chat with your technician are in the PKC BIZOFT app. This website is for PKC staff.
+                Your bills, payments, repair requests and chat with your technician are in the PKC NetLink app. This website is for PKC staff.
               </p>
               <div className={s.form}>
                 <a className={s.btn} href="/open-app" style={{ display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>

@@ -324,10 +324,10 @@ export default function SignupPage() {
         <section className={`${s.card} ${sx.card}`} aria-labelledby="signup-title">
           <div className={sx.top}>
             <div>
-              <p className={s.kicker}>PKC BIZOFT</p>
+              <p className={s.kicker}>PKC NetLink</p>
               <h1 id="signup-title" className={`${s.title} ${sx.title}`}>Create your account</h1>
             </div>
-            <p className={sx.already}>For PKC customers: your account works in the PKC BIZOFT app. Already have one? <a href="/login">Sign in</a></p>
+            <p className={sx.already}>For PKC customers: your account works in the PKC NetLink app. Already have one? <a href="/login">Sign in</a></p>
           </div>
 
           <form className={sx.form} onSubmit={handleSubmit} noValidate>
@@ -509,7 +509,7 @@ export default function SignupPage() {
                   {submitting ? "Creating account…" : "Create account"}
                 </button>
                 <p className={sx.fine}>
-                  This creates your PKC BIZOFT customer account. You will use it in the PKC BIZOFT app to see your bills, pay and ask for repairs.
+                  This creates your PKC NetLink customer account. You will use it in the PKC NetLink app to see your bills, pay and ask for repairs.
                 </p>
               </div>
             </div>

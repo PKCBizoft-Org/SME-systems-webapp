@@ -17,20 +17,20 @@ export async function sendCodeEmail(to: string, code: string, purpose: 'login' |
 
   const reason =
     purpose === 'reset'
-      ? 'reset your PKC BIZOFT password'
+      ? 'reset your PKC NetLink password'
       : purpose === 'signup'
-      ? 'verify your new PKC BIZOFT account'
+      ? 'verify your new PKC NetLink account'
       : purpose === 'login'
-        ? 'sign in to PKC BIZOFT'
-        : 'open User Management in PKC BIZOFT'
+        ? 'sign in to PKC NetLink'
+        : 'open User Management in PKC NetLink'
 
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || `PKC BIZOFT <${process.env.SMTP_USER}>`,
+    from: process.env.SMTP_FROM || `PKC NetLink <${process.env.SMTP_USER}>`,
     to,
     // Code first in the subject and the text: the shape Gmail and phones recognise
     // as a one-time code (and then offer their own "Copy code" button).
-    subject: `${code} is your PKC BIZOFT verification code`,
-    text: `${code} is your PKC BIZOFT verification code.\n\nUse it to ${reason}. It expires in 10 minutes. If you did not request this, change your password and tell your administrator.`,
+    subject: `${code} is your PKC NetLink verification code`,
+    text: `${code} is your PKC NetLink verification code.\n\nUse it to ${reason}. It expires in 10 minutes. If you did not request this, change your password and tell your administrator.`,
     html: emailHtml(code, reason),
   })
 }
@@ -44,7 +44,7 @@ function emailHtml(code: string, reason: string) {
     <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background:#071a24;border:1px solid #17475c;border-radius:18px;overflow:hidden;font-family:Segoe UI,Arial,sans-serif">
       <tr><td style="height:5px;background:linear-gradient(90deg,#17c3e8,#0b86b5,#5fe5ff);font-size:0;line-height:0">&nbsp;</td></tr>
       <tr><td style="padding:26px 20px 6px">
-        <div style="font-size:13px;font-weight:700;letter-spacing:3px;color:#5fe5ff">PKC <span style="color:#ffffff">BIZOFT</span></div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:3px;color:#5fe5ff">PKC <span style="color:#ffffff">NETLINK</span></div><div style="font-size:10px;letter-spacing:2px;color:#5d7684;margin-top:3px">POWERED BY BIZOFT</div>
       </td></tr>
       <tr><td style="padding:10px 20px 0">
         <h1 style="margin:0;font-size:24px;line-height:1.3;color:#ffffff;font-weight:700">Your verification code</h1>
@@ -60,12 +60,12 @@ function emailHtml(code: string, reason: string) {
       </td></tr>
       <tr><td style="padding:24px 20px 0">
         <div style="padding:14px 16px;border-radius:12px;background:#2a1a10;border:1px solid #6b3f1d;font-size:13px;line-height:1.55;color:#f3c9a0">
-          <strong style="color:#ffd9b0">Never share this code.</strong> PKC BIZOFT staff will never ask you for it. If you did not try to sign in, change your password and tell your administrator.
+          <strong style="color:#ffd9b0">Never share this code.</strong> PKC NetLink staff will never ask you for it. If you did not try to sign in, change your password and tell your administrator.
         </div>
       </td></tr>
       <tr><td style="padding:22px 20px 26px">
         <div style="border-top:1px solid #17475c;padding-top:16px;font-size:12px;color:#5d7684;line-height:1.6">
-          This is an automated security message from PKC BIZOFT. Please do not reply.
+          This is an automated security message from PKC NetLink. Please do not reply.
         </div>
       </td></tr>
     </table>

@@ -139,7 +139,7 @@ function shell(title: string, body: string) {
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#0a2230;border:1px solid #17475c;border-radius:16px">
         <tr><td style="padding:24px">
-          <div style="color:#22d3ee;font-size:11px;letter-spacing:2px;font-weight:700">PKC BIZOFT</div>
+          <div style="color:#22d3ee;font-size:11px;letter-spacing:2px;font-weight:700">PKC NETLINK</div><div style="color:#5d7684;font-size:10px;letter-spacing:2px;margin-top:2px">POWERED BY BIZOFT</div>
           <h1 style="color:#eaf7ff;font-size:20px;margin:8px 0 14px">${esc(title)}</h1>
           ${body}
         </td></tr>
@@ -165,11 +165,11 @@ export async function sendWelcomeEmail(
   // (admin, accounting, inventory) signs in on the website.
   const usesApp = d.role === 'technician' || d.role === 'customer'
   const buttonUrl = new URL(usesApp ? '/open-app' : '/login', d.origin).toString()
-  const buttonLabel = usesApp ? 'Open the PKC BIZOFT app' : 'Sign in on the website'
+  const buttonLabel = usesApp ? 'Open the PKC NetLink app' : 'Sign in on the website'
   const extra = usesApp
     ? `<p style="color:#8fa8b8;font-size:12px;line-height:1.6;margin:14px 0 0">Don&#39;t have the app yet? <a href="${esc(new URL('/download', d.origin).toString())}" style="color:#22d3ee">Download it here</a> (Android), install it, then sign in with the details above.</p>`
     : ''
-  const title = d.reissued ? 'Your temporary password was reset' : 'Your PKC BIZOFT staff account is ready'
+  const title = d.reissued ? 'Your temporary password was reset' : 'Your PKC NetLink staff account is ready'
   const html = shell(
     title,
     `<p style="color:#8fa8b8;font-size:14px;line-height:1.6;margin:0 0 14px">Hi ${esc(d.name)}, you ${
@@ -191,8 +191,8 @@ export async function sendWelcomeEmail(
   )
   await sendMail({
     to,
-    subject: d.reissued ? 'Your PKC BIZOFT temporary password' : 'Your PKC BIZOFT staff account',
-    text: `Hi ${d.name},\n\n${d.reissued ? 'Your temporary password was reset.' : `You were added to PKC BIZOFT as ${roleLabel(d.role)}.`}\n\n${d.employeeNumber ? `Employee no.: ${d.employeeNumber}\n` : ''}Email: ${to}\nTemporary password: ${d.password}\n\nYou must choose your own password at first sign-in. This temporary password expires in ${d.hours} hours.\n${usesApp ? `Open the app: ${buttonUrl}\nDownload the app: ${new URL('/download', d.origin).toString()}` : `Sign in: ${buttonUrl}`}\n`,
+    subject: d.reissued ? 'Your PKC NetLink temporary password' : 'Your PKC NetLink staff account',
+    text: `Hi ${d.name},\n\n${d.reissued ? 'Your temporary password was reset.' : `You were added to PKC NetLink as ${roleLabel(d.role)}.`}\n\n${d.employeeNumber ? `Employee no.: ${d.employeeNumber}\n` : ''}Email: ${to}\nTemporary password: ${d.password}\n\nYou must choose your own password at first sign-in. This temporary password expires in ${d.hours} hours.\n${usesApp ? `Open the app: ${buttonUrl}\nDownload the app: ${new URL('/download', d.origin).toString()}` : `Sign in: ${buttonUrl}`}\n`,
     html,
   })
 }
@@ -226,7 +226,7 @@ export async function sendAdminNotice(ctx: AdminContext, subject: string, lines:
     // One bad address must not stop the others.
     await Promise.allSettled(
       recipients.map((to) =>
-        sendMail({ to, subject: `PKC BIZOFT: ${subject}`, text: `${lines.join('\n')}\n\nDone by ${ctx.actorEmail}.`, html }),
+        sendMail({ to, subject: `PKC NetLink: ${subject}`, text: `${lines.join('\n')}\n\nDone by ${ctx.actorEmail}.`, html }),
       ),
     )
   } catch (error) {
