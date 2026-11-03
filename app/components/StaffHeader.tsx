@@ -92,6 +92,7 @@ const GROUPS: { key: GroupKey; label: string; roles: string[]; badge?: Item["bad
       { label: "Overview", href: "/accounting" },
       { label: "Verify payments", href: "/accounting/verification", badge: "payments" },
       { label: "Collections", href: "/accounting/collections" },
+      { label: "Money (cash, expenses, profit)", href: "/accounting/money" },
       { label: "Referral payouts", href: "/accounting/referrals", badge: "withdrawals" },
       { label: "Plans & prices", href: "/accounting/plans" },
       { label: "Reports", href: "/accounting/reports" },

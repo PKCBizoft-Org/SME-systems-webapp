@@ -7,7 +7,7 @@ import { useInsightsAccess } from "../useInsightsAccess";
 import styles from "../../accounting/reports/reports.module.css";
 
 type Row = {
-  kind: "client" | "backbone";
+  kind: "client" | "backbone" | "truck";
   job_id: string;
   job: string;
   job_type: string | null;
@@ -170,7 +170,7 @@ export default function JobMaterialsPage() {
               <div key={head.job_id} className={styles.panel} style={{ marginBottom: 14 }}>
                 <h2>
                   <span className={styles.flag} style={head.kind === "backbone" ? { borderColor: "rgba(76,232,255,.5)", background: "rgba(76,232,255,.1)", color: "#bdf5ff" } : undefined}>
-                    {head.kind === "backbone" ? "Backbone" : "Client"}
+                    {head.kind === "backbone" ? "Backbone" : head.kind === "truck" ? "From truck" : "Client"}
                   </span>{" "}
                   {head.job}
                   <span className={styles.muted} style={{ fontWeight: 400, fontSize: 13 }}>
