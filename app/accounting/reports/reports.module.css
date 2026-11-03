@@ -158,6 +158,19 @@
   font-size: 16px;
 }
 
+/* Text, forms and grids inside a panel get the same side padding as the heading;
+   tables (and the .wrap that scrolls them) stay edge to edge. */
+.panel > *:not(h2):not(table):not(.wrap):not(.empty) {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+.panel > *:not(h2):not(table):not(.wrap):not(.empty):last-child {
+  margin-bottom: 14px;
+}
+.panel > h2 + * {
+  margin-top: 10px;
+}
+
 .panel table {
   width: 100%;
   border-collapse: collapse;

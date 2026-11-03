@@ -1,4 +1,4 @@
-﻿import nodemailer from 'nodemailer'
+import nodemailer from 'nodemailer'
 
 // Sends mail through any SMTP account (Gmail app password, Brevo, ...).
 // Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (and optionally SMTP_FROM).
@@ -35,16 +35,6 @@ export async function sendCodeEmail(to: string, code: string, purpose: 'login' |
 
 // Table-based layout with inline styles so it renders in Gmail, Outlook and phones.
 function emailHtml(code: string, reason: string) {
-  // Six boxes plus gaps must fit a ~360px phone inside the card padding
-  // (6 x 40 + 5 x 6 = 270px), or the card clips them.
-  const digits = code
-    .split('')
-    .map(
-      (digit, index) =>
-        `${index > 0 ? '<td style="width:6px;font-size:0;line-height:0">&nbsp;</td>' : ''}<td style="width:40px;height:54px;text-align:center;font-size:26px;font-weight:700;color:#e8fbff;background:#0b2230;border:1px solid #1f5a73;border-radius:9px;font-family:'Courier New',monospace">${digit}</td>`,
-    )
-    .join('')
-
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#030b11">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#030b11;padding:24px 10px">
@@ -59,7 +49,9 @@ function emailHtml(code: string, reason: string) {
         <p style="margin:10px 0 0;font-size:15px;line-height:1.6;color:#9db9c6">Use this code to ${reason}.</p>
       </td></tr>
       <tr><td align="center" style="padding:24px 12px 8px">
-        <table role="presentation" cellpadding="0" cellspacing="0"><tr>${digits}</tr></table>
+        <!-- One block (not six boxes) so a single tap-and-hold selects the whole code. -->
+        <div style="display:inline-block;padding:14px 22px;background:#0b2230;border:1px solid #1f5a73;border-radius:12px;font-size:34px;font-weight:700;letter-spacing:8px;color:#e8fbff;font-family:'Courier New',monospace;-webkit-user-select:all;user-select:all">${code}</div>
+        <p style="margin:10px 0 0;font-size:13px;color:#8fd8ea">Tap and hold the code to copy it, then paste it on the sign-in page.</p>
       </td></tr>
       <tr><td align="center" style="padding:14px 20px 0">
         <span style="display:inline-block;padding:6px 14px;border-radius:999px;background:#0b2230;border:1px solid #1f5a73;font-size:12px;color:#8fd8ea">Expires in 10 minutes &middot; one use only</span>
