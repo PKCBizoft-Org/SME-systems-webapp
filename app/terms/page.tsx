@@ -9,16 +9,17 @@ export default function TermsPage() {
   return (
     <LegalLayout kicker="Legal" title="Terms and Conditions" current="/terms">
       <p className={styles.lead}>
-        These terms are the agreement between you and PKC BIZOFT (&ldquo;PKC&rdquo;, &ldquo;we&rdquo;) for the PKC BIZOFT website,
-        the PKC BIZOFT mobile app and the services we provide through them, including our home internet service. By creating an account or using the service you
-        agree to them. If you do not agree, please do not create an account.
+        These terms are the agreement between you and PKC NetLink (&ldquo;PKC&rdquo;, &ldquo;we&rdquo;), the provider of your home
+        internet service, for that service and for the PKC NetLink app and customer website we provide it through. The app and
+        website are built and run for PKC NetLink by BIZOFT, its software provider; BIZOFT is not a party to your internet
+        service. By creating an account or using the service you agree to these terms. If you do not agree, please do not create an account.
       </p>
 
       <section className={styles.sec}>
         <h2>1. Your account</h2>
         <ul>
           <li>You must give true and complete details (name, email, mobile number, installation address) and keep them up to date.</li>
-          <li>You must be at least 18, or have a parent or guardian who accepts these terms for you.</li>
+          <li>You must be at least 18 years old to create an account.</li>
           <li>You are responsible for your password and for what happens under your account. Tell us at once if you think someone else has access.</li>
           <li>One household account per service address. Accounts cannot be sold or transferred without our written approval.</li>
         </ul>
@@ -53,7 +54,8 @@ export default function TermsPage() {
         <h2>4. Referrals</h2>
         <p>
           If you invite a friend with your referral code, you may earn a reward (currently PHP 250 per qualifying referral, after
-          your friend&rsquo;s installation and first payment are confirmed). Withdrawals carry a
+          your friend&rsquo;s installation and first payment are confirmed). You can withdraw rewards only while both you and the
+          friend you referred are active customers (installed and connected). Withdrawals carry a
           PHP 5 fee. We may change or end the referral program, and we may refuse or cancel rewards we reasonably believe came from
           false, duplicate or self-referred accounts.
         </p>

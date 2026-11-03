@@ -9,9 +9,11 @@ export default function PrivacyPage() {
   return (
     <LegalLayout kicker="Legal" title="Privacy Policy" current="/privacy">
       <p className={styles.lead}>
-        PKC BIZOFT respects your privacy and follows the Data Privacy Act of 2012 (Republic Act No. 10173) and its rules. This policy
-        explains what personal information we collect, why, who sees it, and what rights you have. We are the personal information
-        controller. You can reach us, including our data protection contact, at {CONTACT_EMAIL}.
+        PKC NetLink (&ldquo;we&rdquo;), your internet service provider, respects your privacy and follows the Data Privacy Act of
+        2012 (Republic Act No. 10173) and its rules. This policy explains what personal information we collect, why, who sees it,
+        and what rights you have. PKC NetLink is the personal information controller. BIZOFT, which builds and runs the app and
+        website for us, processes the data only on our instructions and for this service. You can reach us, including our data
+        protection officer, at {CONTACT_EMAIL}.
       </p>
 
       <section className={styles.sec}>
@@ -27,7 +29,8 @@ export default function PrivacyPage() {
             <tr><td>Phone push notification token, app version, crash and error reports</td><td>To send notices and fix bugs.</td></tr>
             <tr><td>IP address and device type, handled by our hosting and database providers when you use the site or app</td><td>To deliver the service and keep it safe.</td></tr>
             <tr><td>Sign-in attempts and audit records</td><td>To stop abuse and protect accounts.</td></tr>
-            <tr><td>Technicians only: live location while the Jobs screen is open</td><td>To dispatch the nearest technician and show arrival.</td></tr>
+            <tr><td>Technicians only: live location while the Jobs screen is open (never in the background)</td><td>To dispatch the nearest technician and show arrival.</td></tr>
+            <tr><td>Fingerprint or face unlock, if you turn it on</td><td>Checked by your phone only. We never receive or store your fingerprint or face.</td></tr>
           </tbody>
         </table>
         <p>We do not ask for government ID numbers, and we do not sell your personal information.</p>
@@ -49,7 +52,10 @@ export default function PrivacyPage() {
         <ul>
           <li><b>Supabase</b> &ndash; database, sign-in and file storage.</li>
           <li><b>Vercel</b> &ndash; hosting for the website and its server functions.</li>
-          <li><b>Google (Gmail, Firebase)</b> &ndash; sending our emails with verification codes, and phone push notifications.</li>
+          <li><b>BIZOFT</b> &ndash; builds, hosts and maintains the app and website for PKC NetLink.</li>
+          <li><b>Brevo</b> &ndash; sending our emails (verification codes, receipts and reminders).</li>
+          <li><b>Google Firebase</b> &ndash; phone push notifications.</li>
+          <li><b>Cloudflare</b> &ndash; our web address (DNS) and protection against attacks.</li>
           <li><b>Semaphore</b> &ndash; SMS alerts, where used.</li>
           <li><b>OpenStreetMap Nominatim and Google Maps</b> &ndash; finding and showing addresses and routes.</li>
           <li><b>GCash and your bank</b> &ndash; when you pay. We do not receive your GCash PIN or bank password.</li>

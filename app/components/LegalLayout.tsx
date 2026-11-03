@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import styles from "./legal.module.css";
 import { SiteNav } from "./SiteNav";
 
-export const LEGAL_UPDATED = "October 15, 2026";
+export const LEGAL_UPDATED = "November 3, 2026";
 export const CONTACT_EMAIL = "pkc.netlink.biz@gmail.com";
 
 const LINKS = [

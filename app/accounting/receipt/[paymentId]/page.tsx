@@ -90,9 +90,9 @@ export default function ReceiptPage() {
             <header className={styles.head}>
               <div>
                 <div className={styles.brand}>
-                  PKC <strong>BIZOFT</strong>
+                  PKC <strong>NETLINK</strong>
                 </div>
-                <small>Official receipt</small>
+                <small>Acknowledgment receipt &middot; not a BIR official receipt or invoice</small>
               </div>
               <div className={styles.number}>
                 <small>Receipt no.</small>
