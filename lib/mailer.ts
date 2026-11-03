@@ -27,8 +27,10 @@ export async function sendCodeEmail(to: string, code: string, purpose: 'login' |
   await transporter.sendMail({
     from: process.env.SMTP_FROM || `PKC BIZOFT <${process.env.SMTP_USER}>`,
     to,
-    subject: `Your PKC BIZOFT verification code: ${code}`,
-    text: `Your verification code is ${code}.\n\nUse it to ${reason}. It expires in 10 minutes. If you did not request this, change your password and tell your administrator.`,
+    // Code first in the subject and the text: the shape Gmail and phones recognise
+    // as a one-time code (and then offer their own "Copy code" button).
+    subject: `${code} is your PKC BIZOFT verification code`,
+    text: `${code} is your PKC BIZOFT verification code.\n\nUse it to ${reason}. It expires in 10 minutes. If you did not request this, change your password and tell your administrator.`,
     html: emailHtml(code, reason),
   })
 }
