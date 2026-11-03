@@ -71,6 +71,7 @@ const GROUPS: { key: GroupKey; label: string; roles: string[]; badge?: Item["bad
       { label: "Outages", href: "/insights/outages", permission: "dispatch" },
       { label: "Truck stock", href: "/insights/trucks", permission: "inventory" },
       { label: "Backbone jobs", href: "/insights/backbone", permission: "dispatch" },
+      { label: "Job reports (photos + signature)", href: "/insights/job-reports", permission: "dispatch" },
     ],
   },
   {
