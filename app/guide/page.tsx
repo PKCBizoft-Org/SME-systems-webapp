@@ -29,7 +29,7 @@ const TECHNICIAN: Step[] = [
 
 const ACCOUNTING: Step[] = [
   ["Check payments", "On the Accounting page, the top card lists payments waiting. Open your GCash or bank history, confirm the money arrived, then verify or reject (with a reason)."],
-  ["Customers and bills", "Open a customer to see their bills, payments, billing day and service status. You can add an Installation Fee or Adjustment bill and send a reminder."],
+  ["Customers and bills", "Open a customer to see their bills, payments, billing day and service status. You can add an Installation Fee, Reconnection Fee (fixed ₱250) or Adjustment bill and send a reminder."],
   ["Grace and disconnection", "The Grace and disconnection panel lists who is late, grouped by stage, with a Remind button."],
   ["Collections and reports", "Collections shows money in by day and month. Reports and Insights show revenue and tickets."],
   ["Referral payouts", "Under More, approve or reject referral withdrawals."],

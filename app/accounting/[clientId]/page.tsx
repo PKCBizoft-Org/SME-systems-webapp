@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabaseClient";
 import { formatDate, formatPeso } from "@/lib/format";
 import { INSTALL_FEE, planLabel, usePlanCatalog } from "@/lib/plans";
-import { BILL_TYPES_BY_HAND, billingDayFor, billingDayText, nextBillDate, SCHEDULE_TEXT } from "@/lib/billingSchedule";
+import { BILL_TYPES_BY_HAND, RECONNECTION_FEE, billingDayFor, billingDayText, nextBillDate, SCHEDULE_TEXT } from "@/lib/billingSchedule";
 import { StaffHeader } from "../../components/StaffHeader";
 import { StaffMotion } from "../../components/StaffMotion";
 import { PkcLoader } from "../../components/PkcLoader";
@@ -255,7 +255,7 @@ export default function AccountingCustomerPage() {
   const [recWaiting, setRecWaiting] = useState(0);
   const [flash, setFlash] = useState<string | null>(null);
 
-  // Adding a bill by hand: Monthly (a missed month, or early), Installation Fee or Adjustment.
+  // Adding a bill by hand: Monthly (a missed month, or early), Installation Fee, Reconnection Fee (fixed ₱250) or Adjustment.
   const [addOpen, setAddOpen] = useState(false);
   const [installFee, setInstallFee] = useState(INSTALL_FEE);
   const [addType, setAddType] = useState<string>(BILL_TYPES_BY_HAND[0]);
@@ -582,7 +582,9 @@ export default function AccountingCustomerPage() {
 
   function chooseAddType(type: string) {
     setAddType(type);
-    setAddAmount(type === "Installation Fee" ? installFee.toFixed(2) : "");
+    setAddAmount(
+      type === "Installation Fee" ? installFee.toFixed(2) : type === "Reconnection Fee" ? RECONNECTION_FEE.toFixed(2) : "",
+    );
     // A monthly bill starts at the customer's plan price.
     if (type === "Monthly" && client?.plan_name?.trim()) {
       void supabase
@@ -1417,7 +1419,14 @@ export default function AccountingCustomerPage() {
               </label>
               <label className="field">
                 <span>AMOUNT (₱)</span>
-                <input value={addAmount} onChange={(e) => setAddAmount(e.target.value)} inputMode="decimal" disabled={addBusy} />
+                <input
+                  value={addAmount}
+                  onChange={(e) => setAddAmount(e.target.value)}
+                  inputMode="decimal"
+                  disabled={addBusy}
+                  readOnly={addType === "Reconnection Fee"}
+                  title={addType === "Reconnection Fee" ? "The reconnection fee is fixed at ₱250." : undefined}
+                />
               </label>
               <label className="field">
                 <span>DUE DATE (OPTIONAL)</span>

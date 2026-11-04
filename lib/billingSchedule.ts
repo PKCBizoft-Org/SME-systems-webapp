@@ -1,6 +1,9 @@
 // The bill schedule, as the Accounting screens describe it. The dates themselves are set by the
 // database (run_billing_automation); keep this wording in step with it.
-export const BILL_TYPES_BY_HAND = ["Monthly", "Installation Fee", "Adjustment"] as const;
+export const BILL_TYPES_BY_HAND = ["Monthly", "Installation Fee", "Reconnection Fee", "Adjustment"] as const;
+
+/** Fixed price of a Reconnection Fee bill (PHP). The database enforces it too (add_manual_bill_as). */
+export const RECONNECTION_FEE = 250;
 
 export const SCHEDULE_TEXT = {
   due: "Last day of the month",

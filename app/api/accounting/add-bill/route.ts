@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCaller, hasTenantRole, isSessionVerified } from '@/lib/serverSecurity'
 
-const TYPES = ['Monthly', 'Installation Fee', 'Adjustment']
+import { BILL_TYPES_BY_HAND, RECONNECTION_FEE } from '@/lib/billingSchedule'
+
+const TYPES: readonly string[] = BILL_TYPES_BY_HAND
 
 // Accounting adds a bill by hand: a Monthly bill (a missed month, or billing early; the nightly job
-// then skips that month), the one-time installation fee, or an adjustment (extra materials, a visit
+// then skips that month), the one-time installation fee, a reconnection fee (fixed PHP 250), or an adjustment (extra materials, a visit
 // fee). The database checks the rules again, this only turns the form into a call.
 export async function POST(request: NextRequest) {
   const caller = await getCaller(request)
@@ -16,13 +18,13 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}))
   const clientId = typeof body.clientId === 'string' ? body.clientId : ''
   const billType = typeof body.billType === 'string' ? body.billType : ''
-  const amount = Number(body.amount)
+  const amount = billType === 'Reconnection Fee' ? RECONNECTION_FEE : Number(body.amount)
   const dueDate = typeof body.dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.dueDate) ? body.dueDate : null
   const note = typeof body.note === 'string' ? body.note.trim().slice(0, 300) : ''
 
   if (!clientId) return NextResponse.json({ error: 'Choose the customer.' }, { status: 400 })
   if (!TYPES.includes(billType)) {
-    return NextResponse.json({ error: 'Choose Monthly, Installation Fee or Adjustment.' }, { status: 400 })
+    return NextResponse.json({ error: 'Choose Monthly, Installation Fee, Reconnection Fee or Adjustment.' }, { status: 400 })
   }
   if (!Number.isFinite(amount) || amount <= 0) return NextResponse.json({ error: 'Enter the amount.' }, { status: 400 })
 
