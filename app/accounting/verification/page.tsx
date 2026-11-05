@@ -348,6 +348,30 @@ export default function PaymentVerificationPage() {
         ...p,
         [s.id]: { state: "done", ref: imgRef || undefined, amount: imgAmount, refMatch, amountMatch },
       }));
+
+      // Persist the finding so a mismatch also reaches the signals inbox and the daily digest.
+      const mismatch = refMatch === false || amountMatch === false;
+      const decided = mismatch || refMatch === true || amountMatch === true;
+      if (decided) {
+        const headers = await authHeader();
+        if (headers) {
+          const summary = mismatch
+            ? `Receipt image contradicts typed details` +
+              (refMatch === false ? ` (ref ${imgRef} ≠ typed ${typedRef})` : "") +
+              (amountMatch === false ? ` (amount ${imgAmount} ≠ claimed ${claimed})` : "")
+            : "";
+          void fetch("/api/accounting/ocr-flag", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...headers },
+            body: JSON.stringify({
+              submissionId: s.id,
+              mismatch,
+              summary,
+              details: { image_ref: imgRef || null, image_amount: imgAmount ?? null },
+            }),
+          }).catch(() => {});
+        }
+      }
     } catch (e) {
       setOcr((p) => ({ ...p, [s.id]: { state: "error", note: e instanceof Error ? e.message : "OCR failed" } }));
     }
@@ -622,6 +646,9 @@ export default function PaymentVerificationPage() {
               ← Accounting
             </Link>
             <h1>Payment verification</h1>
+            <Link href="/accounting/signals" style={{ fontSize: 14, display: "inline-block", marginBottom: 6 }}>
+              🚩 Fraud &amp; ops signals →
+            </Link>
             <p>
               Check each GCash or bank payment against your own transaction history, then verify it. Verifying records the
               payment, emails the customer, and sets up their plan (new customers go to installation).

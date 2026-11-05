@@ -100,13 +100,15 @@ export async function GET(request: NextRequest) {
   if (stuck) problems.push(`${stuck} customer payment(s) have waited over 2 days in Payment verification.`)
 
   const sig = signals as {
-    open?: number; duplicate_reference?: number; duplicate_image?: number; amount_mismatch?: number; alert?: number
+    open?: number; duplicate_reference?: number; duplicate_image?: number
+    amount_mismatch?: number; ocr_mismatch?: number; alert?: number
   } | null
   if (sig && (sig.open || 0) > 0) {
     const parts: string[] = []
     if (sig.duplicate_image) parts.push(`${sig.duplicate_image} duplicate receipt image(s)`)
     if (sig.duplicate_reference) parts.push(`${sig.duplicate_reference} reused reference number(s)`)
     if (sig.amount_mismatch) parts.push(`${sig.amount_mismatch} amount mismatch(es)`)
+    if (sig.ocr_mismatch) parts.push(`${sig.ocr_mismatch} receipt(s) that don't match their image`)
     problems.push(
       `Fraud guard: ${sig.open} pending payment(s) flagged${parts.length ? ' — ' + parts.join(', ') : ''}` +
         `${sig.alert ? ` (${sig.alert} already-approved match${sig.alert === 1 ? '' : 'es'} — urgent)` : ''}. ` +
