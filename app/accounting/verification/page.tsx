@@ -30,6 +30,7 @@ type Submission = {
   bank_name: string | null;
   payment_date: string | null;
   proof_path: string | null;
+  proof_hash?: string | null;
   status: string | null;
   reviewed_at: string | null;
   reviewed_by: string | null;
@@ -122,6 +123,44 @@ export default function PaymentVerificationPage() {
   const [proofFor, setProofFor] = useState<string | null>(null);
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [proofError, setProofError] = useState<string | null>(null);
+
+  // Fraud guard: flag a pending submission when another submission (not in the same
+  // split-receipt group) shares its GCash reference number or its exact receipt image.
+  // Reference reuse and image reuse are both strong "paid once, claimed twice" signals;
+  // a twin that was already VERIFIED is the worst case, so we surface that one.
+  const duplicates = useMemo(() => {
+    const norm = (v: string | null | undefined) =>
+      String(v || "").trim().toLowerCase().replace(/[\s-]/g, "");
+    const byRef = new Map<string, Submission[]>();
+    const byHash = new Map<string, Submission[]>();
+    const push = (m: Map<string, Submission[]>, k: string, s: Submission) => {
+      const arr = m.get(k);
+      if (arr) arr.push(s);
+      else m.set(k, [s]);
+    };
+    for (const s of submissions) {
+      const ref = norm(s.reference_number);
+      if (ref) push(byRef, ref, s);
+      const h = String(s.proof_hash || "").trim();
+      if (h) push(byHash, h, s);
+    }
+    const sameGroup = (a: Submission, b: Submission) => !!a.group_id && a.group_id === b.group_id;
+    const twinsOf = (s: Submission, pool: Submission[]) =>
+      pool.filter((o) => o.id !== s.id && !sameGroup(s, o));
+
+    const flags = new Map<string, { reason: "reference" | "image" | "both"; twin: Submission }>();
+    for (const s of submissions) {
+      if (bucketOf(s.status) !== "pending") continue;
+      const refTwins = twinsOf(s, byRef.get(norm(s.reference_number)) || []);
+      const imgTwins = s.proof_hash ? twinsOf(s, byHash.get(s.proof_hash) || []) : [];
+      if (refTwins.length === 0 && imgTwins.length === 0) continue;
+      const reason = refTwins.length && imgTwins.length ? "both" : refTwins.length ? "reference" : "image";
+      const candidates = [...imgTwins, ...refTwins];
+      const twin = candidates.find((o) => bucketOf(o.status) === "verified") || candidates[0];
+      flags.set(s.id, { reason, twin });
+    }
+    return flags;
+  }, [submissions]);
 
   const load = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
@@ -226,6 +265,36 @@ export default function PaymentVerificationPage() {
       cancelled = true;
     };
   }, [submissions, receiptUrls]);
+
+  // Fingerprint pending receipts (SHA-256, server-side) so the duplicate guard can spot a
+  // re-sent screenshot. Runs once per submission — only those still missing a hash.
+  useEffect(() => {
+    const wanted = submissions.filter(
+      (s) => s.proof_path && !s.proof_hash && bucketOf(s.status) === "pending",
+    );
+    if (wanted.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session || cancelled) return;
+      try {
+        const response = await fetch("/api/accounting/proof-hash", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session.access_token}` },
+          body: JSON.stringify({ submissionIds: wanted.map((s) => s.id) }),
+        });
+        const result = (await response.json().catch(() => ({}))) as { hashes?: Record<string, string> };
+        const hashes = result.hashes || {};
+        if (cancelled || Object.keys(hashes).length === 0) return;
+        setSubmissions((prev) => prev.map((s) => (hashes[s.id] ? { ...s, proof_hash: hashes[s.id] } : s)));
+      } catch {
+        // A failed fingerprint just means no image-match flag; reference-number flags still work.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [submissions]);
 
   const counts = useMemo(() => {
     const c = { pending: 0, verified: 0, rejected: 0, all: submissions.length };
@@ -637,6 +706,37 @@ export default function PaymentVerificationPage() {
                     </div>
                   </dl>
 
+                  {bucket === "pending" && duplicates.has(s.id) && (() => {
+                    const dup = duplicates.get(s.id)!;
+                    const already = bucketOf(dup.twin.status) === "verified";
+                    const what =
+                      dup.reason === "both"
+                        ? "the same reference number and the same receipt image"
+                        : dup.reason === "image"
+                          ? "the same receipt image"
+                          : "the same reference number";
+                    const twinName =
+                      (dup.twin.client_id && clients.get(dup.twin.client_id)?.customer_name) || "another account";
+                    const whose = dup.twin.client_id === s.client_id ? "on this same account" : `on ${twinName}`;
+                    return (
+                      <p
+                        role="alert"
+                        style={{
+                          background: already ? "#fee2e2" : "#fef3c7",
+                          color: already ? "#991b1b" : "#92400e",
+                          border: `1px solid ${already ? "#fca5a5" : "#fcd34d"}`,
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          margin: "8px 0",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        ⚠ Possible duplicate — {what} was {already ? "already approved" : "also submitted"} {whose} on{" "}
+                        {formatDate(dup.twin.created_at)}. Check carefully before approving.
+                      </p>
+                    );
+                  })()}
                   {bucket === "pending" && receiptUrls[s.id] && proofFor !== s.id && (
                     <a href={receiptUrls[s.id]} target="_blank" rel="noreferrer" className={styles.proof} style={{ display: "block" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
