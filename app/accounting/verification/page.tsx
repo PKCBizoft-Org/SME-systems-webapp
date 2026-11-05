@@ -68,6 +68,15 @@ type BillInfo = {
   status: string | null;
 };
 
+type OcrResult = {
+  state: "loading" | "done" | "error";
+  ref?: string;
+  amount?: number;
+  refMatch?: boolean;
+  amountMatch?: boolean;
+  note?: string;
+};
+
 type Filter = "pending" | "verified" | "rejected" | "all";
 
 const supabase = createClient();
@@ -123,6 +132,7 @@ export default function PaymentVerificationPage() {
   const [proofFor, setProofFor] = useState<string | null>(null);
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [proofError, setProofError] = useState<string | null>(null);
+  const [ocr, setOcr] = useState<Record<string, OcrResult>>({});
 
   // Fraud guard: flag a pending submission when another submission (not in the same
   // split-receipt group) shares its GCash reference number or its exact receipt image.
@@ -306,6 +316,42 @@ export default function PaymentVerificationPage() {
     () => submissions.filter((s) => filter === "all" || bucketOf(s.status) === filter),
     [submissions, filter],
   );
+
+  // Reads the Ref No. and Amount off the receipt image (OCR, in the browser) and compares
+  // them with what the customer typed — catches edited amounts and re-screenshots where the
+  // typed reference was changed. It confirms consistency, not that the receipt is genuine.
+  async function runOcr(s: Submission) {
+    if (!s.proof_path) return;
+    setOcr((p) => ({ ...p, [s.id]: { state: "loading" } }));
+    try {
+      let url = receiptUrls[s.id];
+      if (!url) {
+        const { data } = await supabase.storage.from("payment-proofs").createSignedUrl(s.proof_path, 300);
+        url = data?.signedUrl || "";
+      }
+      if (!url) throw new Error("No image");
+      const blob = await (await fetch(url)).blob();
+      const Tesseract = (await import("tesseract.js")).default;
+      const { data } = await Tesseract.recognize(blob, "eng");
+      const text = data.text || "";
+
+      const imgRef = (text.match(/ref(?:erence)?\s*no\.?\s*[:.]?\s*([0-9][0-9 ]{8,})/i)?.[1] || "").replace(/\D/g, "");
+      const amounts = [...text.matchAll(/([0-9][0-9,]*\.\d{2})/g)].map((m) => Number(m[1].replace(/,/g, "")));
+      const imgAmount = amounts.length ? Math.max(...amounts) : undefined;
+
+      const typedRef = String(s.reference_number || "").replace(/\D/g, "");
+      const claimed = Number(s.amount_claimed || 0);
+      const refMatch = imgRef && typedRef ? imgRef === typedRef : undefined;
+      const amountMatch = imgAmount != null && claimed ? Math.abs(imgAmount - claimed) < 1 : undefined;
+
+      setOcr((p) => ({
+        ...p,
+        [s.id]: { state: "done", ref: imgRef || undefined, amount: imgAmount, refMatch, amountMatch },
+      }));
+    } catch (e) {
+      setOcr((p) => ({ ...p, [s.id]: { state: "error", note: e instanceof Error ? e.message : "OCR failed" } }));
+    }
+  }
 
   async function viewProof(submission: Submission) {
     if (proofFor === submission.id) {
@@ -781,6 +827,54 @@ export default function PaymentVerificationPage() {
                       </p>
                     );
                   })()}
+                  {bucket === "pending" && ocr[s.id] && ocr[s.id].state !== "loading" && (() => {
+                    const r = ocr[s.id];
+                    if (r.state === "error") {
+                      return (
+                        <p style={{ color: "#6b7280", fontSize: 13, margin: "8px 0" }}>
+                          🔍 Couldn&apos;t read the receipt clearly — check it by eye.
+                        </p>
+                      );
+                    }
+                    const bad = r.refMatch === false || r.amountMatch === false;
+                    const typedRef = String(s.reference_number || "").replace(/\D/g, "");
+                    const lines: string[] = [];
+                    if (r.ref) {
+                      lines.push(
+                        `Ref on image ${r.ref}` +
+                          (r.refMatch === false ? ` ✗ (typed ${typedRef || "—"})` : r.refMatch ? " ✓" : ""),
+                      );
+                    }
+                    if (r.amount != null) {
+                      lines.push(
+                        `Amount on image ${formatPeso(r.amount)}` +
+                          (r.amountMatch === false
+                            ? ` ✗ (claimed ${formatPeso(Number(s.amount_claimed || 0))})`
+                            : r.amountMatch
+                              ? " ✓"
+                              : ""),
+                      );
+                    }
+                    if (!r.ref && r.amount == null) lines.push("no reference or amount found on the image");
+                    return (
+                      <p
+                        role="alert"
+                        style={{
+                          background: bad ? "#fef3c7" : "#dcfce7",
+                          color: bad ? "#92400e" : "#166534",
+                          border: `1px solid ${bad ? "#fcd34d" : "#86efac"}`,
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          margin: "8px 0",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        🔍 {bad ? "Receipt doesn’t match — " : "Receipt reads: "}
+                        {lines.join(" · ")}
+                      </p>
+                    );
+                  })()}
                   {bucket === "pending" && receiptUrls[s.id] && proofFor !== s.id && (
                     <a href={receiptUrls[s.id]} target="_blank" rel="noreferrer" className={styles.proof} style={{ display: "block" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -802,6 +896,15 @@ export default function PaymentVerificationPage() {
                     <button className={styles.ghost} onClick={() => void viewProof(s)}>
                       {proofFor === s.id ? "Hide receipt" : "View receipt"}
                     </button>
+                    {bucket === "pending" && s.proof_path && (
+                      <button
+                        className={styles.ghost}
+                        disabled={ocr[s.id]?.state === "loading"}
+                        onClick={() => void runOcr(s)}
+                      >
+                        {ocr[s.id]?.state === "loading" ? "Reading…" : "🔍 Read & check receipt"}
+                      </button>
+                    )}
                     {bucket === "pending" && (
                       <>
                         <button className={styles.reject} disabled={busy} onClick={() => openReject(s)}>
