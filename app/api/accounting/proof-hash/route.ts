@@ -24,16 +24,15 @@ export async function POST(request: NextRequest) {
     .in('id', ids)
   if (!subs || subs.length === 0) return NextResponse.json({ hashes: {} })
 
-  // Only hash within tenants this staff member may review, and only when still missing.
+  // Compute the fingerprint only for rows this staff member may review and that
+  // are still missing it. Rows already hashed are skipped — the client reads those
+  // from its own RLS-scoped query, so the route never echoes a stored hash and
+  // never discloses anything about another tenant's submissions.
   const allowed = new Map<string, boolean>()
   const hashes: Record<string, string> = {}
 
   for (const sub of subs) {
-    if (sub.proof_hash) {
-      hashes[sub.id] = sub.proof_hash
-      continue
-    }
-    if (!sub.proof_path || !sub.tenant_id) continue
+    if (sub.proof_hash || !sub.proof_path || !sub.tenant_id) continue
 
     if (!allowed.has(sub.tenant_id)) {
       allowed.set(sub.tenant_id, await hasTenantRole(caller, sub.tenant_id, ['admin', 'accounting']))
