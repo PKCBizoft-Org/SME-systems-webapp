@@ -329,6 +329,29 @@ export default function PaymentVerificationPage() {
     setProofUrl(data.signedUrl);
   }
 
+  // Flags a pending payment whose claimed amount does not match what is actually due
+  // (short payment, or an overpayment that should become credit). Uses already-loaded
+  // bill/request data, so it costs nothing extra.
+  function amountIssue(s: Submission): string | null {
+    if (bucketOf(s.status) !== "pending") return null;
+    const claimed = Number(s.amount_claimed || 0);
+    if (!claimed) return null;
+    let expected: number | null = null;
+    if (s.billing_id) {
+      const b = bills.get(s.billing_id);
+      expected = b ? Number(b.balance ?? b.amount ?? 0) : null;
+    } else if (s.service_request_id) {
+      const r = requests.get(s.service_request_id);
+      expected = r && r.requested_amount != null ? Number(r.requested_amount) : null;
+    }
+    if (expected == null || expected <= 0) return null;
+    const diff = claimed - expected;
+    if (Math.abs(diff) < 1) return null;
+    return diff < 0
+      ? `Short by ${formatPeso(-diff)} — claims ${formatPeso(claimed)} but ${formatPeso(expected)} is due.`
+      : `Over by ${formatPeso(diff)} — claims ${formatPeso(claimed)} but only ${formatPeso(expected)} is due (the extra becomes credit).`;
+  }
+
   // Every part of the same receipt (just the submission itself when it is not split).
   function groupOf(submission: Submission) {
     if (!submission.group_id) return [submission];
@@ -734,6 +757,27 @@ export default function PaymentVerificationPage() {
                       >
                         ⚠ Possible duplicate — {what} was {already ? "already approved" : "also submitted"} {whose} on{" "}
                         {formatDate(dup.twin.created_at)}. Check carefully before approving.
+                      </p>
+                    );
+                  })()}
+                  {bucket === "pending" && (() => {
+                    const note = amountIssue(s);
+                    if (!note) return null;
+                    return (
+                      <p
+                        role="alert"
+                        style={{
+                          background: "#fef3c7",
+                          color: "#92400e",
+                          border: "1px solid #fcd34d",
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          margin: "8px 0",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        💳 Amount mismatch — {note}
                       </p>
                     );
                   })()}
