@@ -24,6 +24,11 @@ export async function GET(request: NextRequest) {
   const { data: billing, error: billingError } = await admin.rpc('run_billing_automation')
   if (billingError) console.error('run_billing_automation failed:', billingError.message)
 
+  // Fraud guard: recompute the payment signals (duplicate receipt / reference, amount
+  // mismatch) so today's digest can report anything still open for review.
+  const { data: signals, error: signalsError } = await admin.rpc('refresh_payment_signals')
+  if (signalsError) console.error('refresh_payment_signals failed:', signalsError.message)
+
   let sent = 0
   let failed = 0
 
@@ -93,6 +98,21 @@ export async function GET(request: NextRequest) {
     .eq('status', 'Pending')
     .lt('created_at', twoDaysAgo)
   if (stuck) problems.push(`${stuck} customer payment(s) have waited over 2 days in Payment verification.`)
+
+  const sig = signals as {
+    open?: number; duplicate_reference?: number; duplicate_image?: number; amount_mismatch?: number; alert?: number
+  } | null
+  if (sig && (sig.open || 0) > 0) {
+    const parts: string[] = []
+    if (sig.duplicate_image) parts.push(`${sig.duplicate_image} duplicate receipt image(s)`)
+    if (sig.duplicate_reference) parts.push(`${sig.duplicate_reference} reused reference number(s)`)
+    if (sig.amount_mismatch) parts.push(`${sig.amount_mismatch} amount mismatch(es)`)
+    problems.push(
+      `Fraud guard: ${sig.open} pending payment(s) flagged${parts.length ? ' — ' + parts.join(', ') : ''}` +
+        `${sig.alert ? ` (${sig.alert} already-approved match${sig.alert === 1 ? '' : 'es'} — urgent)` : ''}. ` +
+        `Review in Payment verification.`,
+    )
+  }
 
   // Every morning: one designed email with yesterday's numbers and anything that
   // needs a human (the health-check problems above are listed first).
